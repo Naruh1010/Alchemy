@@ -8,6 +8,7 @@ import 'package:lottie/lottie.dart';
 import 'package:alchemy/fonts/alchemy_icons.dart';
 import 'package:alchemy/ui/library_screen.dart';
 import 'package:alchemy/ui/restartable.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_displaymode/flutter_displaymode.dart';
@@ -136,7 +137,7 @@ class _AlchemyAppState extends State<AlchemyApp> {
           settings.isDark ? Brightness.light : Brightness.dark,
       statusBarColor: Colors.transparent,
     ));
-    settings.save();
+    Future.microtask(() => settings.save());
   }
 
   Locale? _locale() {
@@ -209,6 +210,19 @@ class _LoginMainWrapperState extends State<LoginMainWrapper> {
   }
 
   Future _logOut() async {
+    await compute(_logOutInBackground, null);
+    setState(() {
+      settings.arl = null;
+      settings.offlineMode = false;
+      deezerAPI = DeezerAPI();
+    });
+    await settings.save();
+    await Cache.wipe();
+    Restartable.restart();
+    //Restart.restartApp();
+  }
+
+  static Future<void> _logOutInBackground(void _) async {
     try {
       GetIt.I<AudioPlayerHandler>().stop();
       GetIt.I<AudioPlayerHandler>().updateQueue([]);
@@ -219,15 +233,6 @@ class _LoginMainWrapperState extends State<LoginMainWrapper> {
     }
     await downloadManager.stop();
     await DownloadManager.platform.invokeMethod('kill');
-    setState(() {
-      settings.arl = null;
-      settings.offlineMode = false;
-      deezerAPI = DeezerAPI();
-    });
-    await settings.save();
-    await Cache.wipe();
-    Restartable.restart();
-    //Restart.restartApp();
   }
 
   @override
@@ -271,36 +276,24 @@ class _MainScreenState extends State<MainScreen>
   }
 
   Future<void> _init() async {
-    //Set display mode
-    if ((settings.displayMode ?? -1) >= 0) {
-      FlutterDisplayMode.supported.then((modes) async {
-        if (modes.length - 1 >= settings.displayMode!.toInt()) {
-          FlutterDisplayMode.setPreferredMode(
-              modes[settings.displayMode!.toInt()]);
-        }
-      });
-    }
-
-    _preloadFavoriteTracksToCache();
-    _initDownloadManager();
-    _startStreamingServer();
-    await _setupServiceLocator();
-
-    //Do on BG
-    GetIt.I<AudioPlayerHandler>().authorizeLastFM();
-
-    //Start with parameters
-    _setupDeepLinks();
-    _loadPreloadInfo();
-    _prepareQuickActions();
+    await Future.wait<dynamic>([
+      _setDisplayMode(),
+      compute<DeezerAPI, List<String>?>(
+          _preloadFavoriteTracksToCache, deezerAPI),
+      Future.microtask(() => _initDownloadManager()),
+      Future.microtask(() => _startStreamingServer()),
+      _setupServiceLocator(),
+      Future.microtask(() => GetIt.I<AudioPlayerHandler>().authorizeLastFM()),
+      compute<AppLinks, void>(_setupDeepLinks, AppLinks()),
+      Future.microtask(() => _loadPreloadInfo()),
+      Future.microtask(() => _prepareQuickActions()),
+      Future.microtask(() => _loadSavedQueue()),
+    ]);
 
     //Check for updates on background
     Future.delayed(const Duration(seconds: 5), () {
-      DeezerLatest.checkUpdate();
+      compute<void, void>((_) async => DeezerLatest.checkUpdate(), null);
     });
-
-    //Restore saved queue
-    _loadSavedQueue();
 
     GetIt.I<AudioPlayerHandler>().playbackState.listen((event) {
       playerBarState.setPlayerBarState(
@@ -310,13 +303,25 @@ class _MainScreenState extends State<MainScreen>
     });
   }
 
-  void _preloadFavoriteTracksToCache() async {
+  Future<void> _setDisplayMode() async {
+    if ((settings.displayMode ?? -1) >= 0) {
+      final modes = await FlutterDisplayMode.supported;
+      if (modes.length - 1 >= settings.displayMode!.toInt()) {
+        await FlutterDisplayMode.setPreferredMode(
+            modes[settings.displayMode!.toInt()]);
+      }
+    }
+  }
+
+  static Future<List<String>?> _preloadFavoriteTracksToCache(
+      DeezerAPI api) async {
     try {
-      cache.libraryTracks = await deezerAPI.getFavoriteTrackIds();
-      Logger.root
-          .info('Cached favorite trackIds: ${cache.libraryTracks?.length}');
+      final trackIds = await api.getFavoriteTrackIds();
+      Logger.root.info('Cached favorite trackIds: ${trackIds?.length}');
+      return trackIds;
     } catch (e, st) {
       Logger.root.severe('Error loading favorite trackIds!', e, st);
+      return null;
     }
   }
 
@@ -387,8 +392,8 @@ class _MainScreenState extends State<MainScreen>
     switch (state) {
       case AppLifecycleState.detached:
         Logger.root.info('App detached.');
-        GetIt.I<AudioPlayerHandler>().dispose();
-        downloadManager.stop();
+        Future.microtask(() => GetIt.I<AudioPlayerHandler>().dispose());
+        Future.microtask(() => downloadManager.stop());
       case AppLifecycleState.resumed:
       case AppLifecycleState.inactive:
       case AppLifecycleState.hidden:
@@ -396,23 +401,13 @@ class _MainScreenState extends State<MainScreen>
     }
   }
 
-  void _setupDeepLinks() async {
-    AppLinks deepLinks = AppLinks();
-
+  static Future<void> _setupDeepLinks(AppLinks deepLinks) async {
     // Check initial link if app was in cold state (terminated)
     final deepLink = await deepLinks.getInitialLinkString();
     if (deepLink != null && deepLink.length > 4) {
       Logger.root.info('Opening app from deeplink: $deepLink');
       openScreenByURL(deepLink);
     }
-
-    //Listen to URLs when app is in warm state (front or background)
-    _urlLinkStream = deepLinks.stringLinkStream.listen((deeplink) {
-      Logger.root.info('Opening deeplink: $deeplink');
-      openScreenByURL(deeplink);
-    }, onError: (e) {
-      Logger.root.severe('Error handling app link: $e');
-    });
   }
 
   void _handleKey(KeyEvent event, FocusScopeNode navigationBarFocusNode,

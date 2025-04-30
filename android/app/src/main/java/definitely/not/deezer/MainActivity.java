@@ -2,12 +2,11 @@ package definitely.not.deezer;
 
 import android.content.ComponentName;
 import android.content.ContentValues;
-import android.content.Context; // Ajouté pour BIND_AUTO_CREATE
+import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
-// import android.net.Uri; // Pas directement utilisé pour ACR
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -17,7 +16,6 @@ import android.os.Message;
 import android.os.Messenger;
 import android.os.Parcelable;
 import android.os.RemoteException;
-// import android.provider.Settings; // Pas utilisé ici
 import android.util.Log;
 
 import androidx.annotation.NonNull;
@@ -26,39 +24,32 @@ import androidx.annotation.Nullable;
 import com.ryanheise.audioservice.AudioServiceActivity;
 
 import java.lang.ref.WeakReference;
-// import java.security.KeyManagementException; // Relatif à SSL, pas ACR
-// import java.security.NoSuchAlgorithmException; // Relatif à SSL, pas ACR
-// import java.security.cert.X509Certificate; // Relatif à SSL, pas ACR
 import java.util.ArrayList;
 import java.util.HashMap;
-
-// import javax.net.ssl.HttpsURLConnection; // Relatif à SSL, pas ACR
-// import javax.net.ssl.SSLContext; // Relatif à SSL, pas ACR
-// import javax.net.ssl.TrustManager; // Relatif à SSL, pas ACR
-// import javax.net.ssl.X509TrustManager; // Relatif à SSL, pas ACR
+import java.util.List;
 
 import io.flutter.embedding.engine.FlutterEngine;
 import io.flutter.plugin.common.EventChannel;
 import io.flutter.plugin.common.MethodChannel;
 
 public class MainActivity extends AudioServiceActivity {
-    private static final String NATIVE_CHANNEL = "definitely.not.deezer/native"; // Renommé pour clarté
-    private static final String EVENT_CHANNEL = "definitely.not.deezer/events"; // Renommé pour inclure tous les events
-    private static final String TAG = "MainActivity"; // Ajout d'un TAG pour les logs
+    private static final String NATIVE_CHANNEL = "definitely.not.deezer/native";
+    private static final String EVENT_CHANNEL = "definitely.not.deezer/events";
+    private static final String TAG = "MainActivity";
     EventChannel.EventSink eventSink;
 
     // --- Download Service ---
-    boolean downloadServiceBound = false; // Renommé
-    Messenger downloadServiceMessenger; // Renommé
-    Messenger activityMessengerForDownload; // Renommé
+    boolean downloadServiceBound = false;
+    Messenger downloadServiceMessenger;
+    Messenger activityMessengerForDownload;
 
     // --- ACRCloud Service ---
     boolean acrServiceBound = false;
-    Messenger acrServiceMessenger; // Messenger pour envoyer à AcrCloudHandler
-    Messenger activityMessengerForAcr; // Messenger pour recevoir de AcrCloudHandler
+    Messenger acrServiceMessenger;
+    Messenger activityMessengerForAcr;
 
     SQLiteDatabase db;
-    StreamServer streamServer; // Si toujours utilisé
+    StreamServer streamServer;
 
     String intentPreload;
 
@@ -68,208 +59,88 @@ public class MainActivity extends AudioServiceActivity {
         Intent intent = getIntent();
         intentPreload = intent.getStringExtra("preload");
         super.onCreate(savedInstanceState);
-        // Initialiser le messenger pour ACR ici (ou dans onStart)
-        // Le Handler a besoin du Looper principal, qui est disponible ici.
         activityMessengerForAcr = new Messenger(new IncomingHandler(this));
-        // Initialiser aussi celui pour le Download Service
-        activityMessengerForDownload = new Messenger(new IncomingHandler(this)); // Utilise le même Handler
+        activityMessengerForDownload = new Messenger(new IncomingHandler(this));
     }
 
     @Override
     public void configureFlutterEngine(@NonNull FlutterEngine flutterEngine) {
         Log.d(TAG, "configureFlutterEngine");
-        // Méthodes pour DownloadService (inchangées, juste adapter les noms de variables si nécessaire)
-        new MethodChannel(flutterEngine.getDartExecutor().getBinaryMessenger(), NATIVE_CHANNEL).setMethodCallHandler(((call, result) -> {
+        new MethodChannel(flutterEngine.getDartExecutor().getBinaryMessenger(), NATIVE_CHANNEL).setMethodCallHandler((call, result) -> {
             Log.d(TAG, "MethodChannel received: " + call.method);
-            // --- Download Service Methods ---
-            if (call.method.equals("addDownloads")) {
-                ArrayList<HashMap<String, Object>> downloads = call.arguments();
-                if (downloads != null) {
-                    db.beginTransaction();
-                    try {
-                        for (int i = 0; i < downloads.size(); i++) {
-                            Cursor cursor = db.rawQuery("SELECT id, state, quality FROM Downloads WHERE trackId == ? AND path == ?",
-                                    new String[]{(String) downloads.get(i).get("trackId"), (String) downloads.get(i).get("path")});
-                            if (cursor.getCount() > 0) {
-                                cursor.moveToNext();
-                                if (cursor.getInt(1) >= 3) { // DONE, ERROR, DEEZER_ERROR
-                                    ContentValues values = new ContentValues();
-                                    values.put("state", 0); // Reset to NONE
-                                    values.put("quality", cursor.getInt(2));
-                                    db.update("Downloads", values, "id == ?", new String[]{Integer.toString(cursor.getInt(0))});
-                                    Log.d(TAG, "Download exists, resetting state to NONE: " + downloads.get(i).get("trackId"));
-                                } else {
-                                    Log.d(TAG, "Download already in progress or queued: " + downloads.get(i).get("trackId"));
-                                }
-                                cursor.close();
-                                continue; // Skip insertion
-                            }
-                            cursor.close();
-                            ContentValues row = Download.flutterToSQL(downloads.get(i));
-                            db.insert("Downloads", null, row);
-                            Log.d(TAG, "Inserting new download: " + downloads.get(i).get("trackId"));
-                        }
-                        db.setTransactionSuccessful();
-                    } finally {
-                        db.endTransaction();
-                    }
-                    sendMessageToDownloadService(DownloadService.SERVICE_LOAD_DOWNLOADS, null);
-                    result.success(null);
-                } else {
-                    result.error("INVALID_ARGS", "Downloads list is null", null);
+            try {
+                switch (call.method) {
+                    case "addDownloads":
+                        addDownloads(call.arguments(), result);
+                        break;
+                    case "getDownloads":
+                        getDownloads(result);
+                        break;
+                    case "updateSettings":
+                        updateSettings(call.argument("json").toString(), result);
+                        break;
+                    case "loadDownloads":
+                        loadDownloads(result);
+                        break;
+                    case "start":
+                        startDownloads(result);
+                        break;
+                    case "stop":
+                        stopDownloads(result);
+                        break;
+                    case "removeDownload":
+                        removeDownload((int) call.argument("id"), result);
+                        break;
+                    case "retryDownloads":
+                        retryDownloads(result);
+                        break;
+                    case "removeDownloads":
+                        removeDownloads((int) call.argument("state"), result);
+                        break;
+                    case "getPreloadInfo":
+                        getPreloadInfo(result);
+                        break;
+                    case "arch":
+                        getArch(result);
+                        break;
+                    case "startServer":
+                        startServer(call.argument("arl"), result);
+                        break;
+                    case "getStreamInfo":
+                        getStreamInfo(call.argument("id").toString(), result);
+                        break;
+                    case "kill":
+                        killServices(result);
+                        break;
+                    case "acrConfigure":
+                        acrConfigure(call.argument("host"), call.argument("accessKey"), call.argument("accessSecret"), result);
+                        break;
+                    case "acrStart":
+                        acrStart(result);
+                        break;
+                    case "acrCancel":
+                        acrCancel(result);
+                        break;
+                    case "acrRelease":
+                        acrRelease(result);
+                        break;
+                    default:
+                        Log.w(TAG, "Unknown method called: " + call.method);
+                        result.notImplemented();
                 }
-                return;
+            } catch (Exception e) {
+                Log.e(TAG, "Error handling method call: " + call.method, e);
+                result.error("NATIVE_ERROR", "Error handling method call: " + call.method, e.getMessage());
             }
-            if (call.method.equals("getDownloads")) {
-                ArrayList<HashMap<?, ?>> downloadsList = new ArrayList<>();
-                db.beginTransaction();
-                try (Cursor cursor = db.query("Downloads", null, null, null, null, null, null)) {
-                    while (cursor.moveToNext()) {
-                        Download download = Download.fromSQL(cursor);
-                        downloadsList.add(download.toHashMap());
-                    }
-                    db.setTransactionSuccessful();
-                } finally {
-                    db.endTransaction();
-                }
-                result.success(downloadsList);
-                return;
-            }
-            if (call.method.equals("updateSettings")) {
-                 Bundle bundle = new Bundle();
-                 bundle.putString("json", call.argument("json").toString());
-                 sendMessageToDownloadService(DownloadService.SERVICE_SETTINGS_UPDATE, bundle);
-                 result.success(null);
-                 return;
-            }
-            if (call.method.equals("loadDownloads")) {
-                sendMessageToDownloadService(DownloadService.SERVICE_LOAD_DOWNLOADS, null);
-                result.success(null);
-                return;
-            }
-             if (call.method.equals("start")) {
-                 sendMessageToDownloadService(DownloadService.SERVICE_START_DOWNLOAD, null);
-                 result.success(downloadServiceBound); // Indicate if binding seems ok
-                 return;
-             }
-             if (call.method.equals("stop")) {
-                 sendMessageToDownloadService(DownloadService.SERVICE_STOP_DOWNLOADS, null);
-                 result.success(null);
-                 return;
-             }
-             if (call.method.equals("removeDownload")) {
-                 Bundle bundle = new Bundle();
-                 bundle.putInt("id", (int)call.argument("id"));
-                 sendMessageToDownloadService(DownloadService.SERVICE_REMOVE_DOWNLOAD, bundle);
-                 result.success(null);
-                 return;
-             }
-             if (call.method.equals("retryDownloads")) {
-                 sendMessageToDownloadService(DownloadService.SERVICE_RETRY_DOWNLOADS, null);
-                 result.success(null);
-                 return;
-             }
-             if (call.method.equals("removeDownloads")) {
-                 Bundle bundle = new Bundle();
-                 bundle.putInt("state", (int)call.argument("state"));
-                 sendMessageToDownloadService(DownloadService.SERVICE_REMOVE_DOWNLOADS, bundle);
-                 result.success(null);
-                 return;
-             }
-             // --- Common/Other Methods ---
-             if (call.method.equals("getPreloadInfo")) {
-                result.success(intentPreload);
-                intentPreload = null;
-                return;
-             }
-             if (call.method.equals("arch")) {
-                result.success(System.getProperty("os.arch"));
-                return;
-             }
-            // --- Stream Server Methods --- (si applicable)
-            if (call.method.equals("startServer")) {
-                 if (streamServer == null) {
-                    String offlinePath = getExternalFilesDir("offline").getAbsolutePath();
-                    streamServer = new StreamServer(call.argument("arl"), offlinePath);
-                    streamServer.start();
-                 }
-                 result.success(null);
-                 return;
-             }
-            if (call.method.equals("getStreamInfo")) {
-                 if (streamServer == null) {
-                    result.success(null);
-                    return;
-                 }
-                 StreamServer.StreamInfo info = streamServer.streams.get(call.argument("id").toString());
-                 if (info != null)
-                    result.success(info.toJSON());
-                 else
-                    result.success(null);
-                 return;
-            }
-             if (call.method.equals("kill")) {
-                 Log.d(TAG, "Kill command received");
-                 // Stop Download Service
-                 Intent dlIntent = new Intent(this, DownloadService.class);
-                 stopService(dlIntent);
-                 // Stop ACR Service (optionnel, unbind suffit s'il n'est pas démarré avec startService)
-                 Intent acrIntent = new Intent(this, AcrCloudHandler.class);
-                 stopService(acrIntent);
-                 // Stop Stream Server
-                 if (streamServer != null) {
-                     streamServer.stop();
-                     streamServer = null;
-                 }
-                 // Force close ? Usually not recommended. Let onDestroy handle unbinding.
-                 // System.exit(0);
-                 result.success(null);
-                 return;
-             }
+        });
 
-            // --- ACRCloud Service Methods ---
-            if (call.method.equals("acrConfigure")) {
-                 String host = call.argument("host");
-                 String key = call.argument("accessKey");
-                 String secret = call.argument("accessSecret");
-                 if (host != null && key != null && secret != null) {
-                    Bundle bundle = new Bundle();
-                    bundle.putString(AcrCloudHandler.KEY_ACR_HOST, host);
-                    bundle.putString(AcrCloudHandler.KEY_ACR_ACCESS_KEY, key);
-                    bundle.putString(AcrCloudHandler.KEY_ACR_ACCESS_SECRET, secret);
-                    sendMessageToAcrService(AcrCloudHandler.MSG_ACR_CONFIGURE, bundle);
-                    result.success(true); // Indicate command sent
-                 } else {
-                    result.error("INVALID_ARGS", "Missing ACR configuration arguments", null);
-                 }
-                 return;
-            }
-            if (call.method.equals("acrStart")) {
-                sendMessageToAcrService(AcrCloudHandler.MSG_ACR_START, null);
-                result.success(acrServiceBound); // Indicate if binding seems ok
-                return;
-            }
-            if (call.method.equals("acrCancel")) {
-                sendMessageToAcrService(AcrCloudHandler.MSG_ACR_CANCEL, null);
-                result.success(null);
-                return;
-            }
-
-            // Méthode non reconnue
-            Log.w(TAG, "Unknown method called: " + call.method);
-            result.notImplemented();
-        }));
-
-        // Event channel (pour les màj de téléchargement ET les events ACR)
         EventChannel eventChannel = new EventChannel(flutterEngine.getDartExecutor().getBinaryMessenger(), EVENT_CHANNEL);
-        eventChannel.setStreamHandler((new EventChannel.StreamHandler() {
+        eventChannel.setStreamHandler(new EventChannel.StreamHandler() {
             @Override
             public void onListen(Object arguments, EventChannel.EventSink events) {
                 Log.i(TAG, "Event Sink Listening");
                 eventSink = events;
-                // Request current state from services when Flutter starts listening
-                // sendMessageToDownloadService(DownloadService.SERVICE_GET_CURRENT_STATE, null); // If implemented
-                 sendMessageToAcrService(AcrCloudHandler.MSG_ACR_STATE, null); // Request ACR state
+                sendMessageToAcrService(AcrCloudHandler.MSG_ACR_STATE, null);
             }
 
             @Override
@@ -277,150 +148,235 @@ public class MainActivity extends AudioServiceActivity {
                 Log.i(TAG, "Event Sink Cancelled");
                 eventSink = null;
             }
-        }));
+        });
     }
 
-    // Connexion au DownloadService
-    private void connectDownloadService() {
-        if (downloadServiceBound) {
-             Log.d(TAG, "Already bound to DownloadService.");
-             return;
+    // --- Download Service Methods ---
+
+    private void addDownloads(Object arguments, MethodChannel.Result result) {
+        if (!(arguments instanceof ArrayList)) {
+            result.error("INVALID_ARGS", "Downloads list is not an ArrayList", null);
+            return;
         }
-        // Le Messenger est déjà créé dans onCreate
-        Intent intent = new Intent(this, DownloadService.class);
-        intent.putExtra("activityMessenger", activityMessengerForDownload); // Passer le messenger de l'activité
-        // Utiliser startService pour que le service survive même si l'activité est détruite
-        startService(intent);
-        // Binder pour la communication directe
-        bindService(intent, downloadConnection, Context.BIND_AUTO_CREATE);
-        Log.i(TAG, "Attempting to bind DownloadService...");
-    }
-
-    // Connexion au AcrCloudHandler
-    private void connectAcrService() {
-        if (acrServiceBound) {
-             Log.d(TAG, "Already bound to AcrCloudHandler.");
-             return;
+        ArrayList<HashMap<String, Object>> downloads = (ArrayList<HashMap<String, Object>>) arguments;
+        if (downloads.isEmpty()) {
+            result.success(null);
+            return;
         }
-        // Le Messenger est déjà créé dans onCreate
-        Intent intent = new Intent(this, AcrCloudHandler.class);
-        // On n'utilise PAS startService ici, car on veut que le service s'arrête
-        // si l'activité se déconnecte (BIND_AUTO_CREATE s'en charge).
-        // Si on utilisait startService, il faudrait explicitement appeler stopService.
-        // intent.putExtra("activityMessenger", activityMessengerForAcr); // Le messenger est envoyé via msg.replyTo après connexion
-        bindService(intent, acrConnection, Context.BIND_AUTO_CREATE);
-        Log.i(TAG, "Attempting to bind AcrCloudHandler...");
-    }
-
-
-    @Override
-    protected void onStart() {
-        Log.d(TAG, "onStart");
-        super.onStart();
-        // Get DB (and leave open!)
+        db.beginTransaction();
         try {
-            DownloadsDatabase dbHelper = new DownloadsDatabase(getApplicationContext());
-            // S'assurer que la base de données n'est ouverte qu'une seule fois
-            if (db == null || !db.isOpen()) {
-                 db = dbHelper.getWritableDatabase();
-                 Log.i(TAG, "Database opened.");
-            } else {
-                 Log.w(TAG, "Database already open.");
+            for (HashMap<String, Object> download : downloads) {
+                String trackId = (String) download.get("trackId");
+                String path = (String) download.get("path");
+                if (trackId == null || path == null) {
+                    Log.e(TAG, "Invalid download data: trackId or path is null");
+                    continue;
+                }
+                try (Cursor cursor = db.rawQuery("SELECT id, state, quality FROM Downloads WHERE trackId == ? AND path == ?", new String[]{trackId, path})) {
+                    if (cursor.moveToFirst()) {
+                        int state = cursor.getInt(1);
+                        if (state >= 3) {
+                            ContentValues values = new ContentValues();
+                            values.put("state", 0);
+                            values.put("quality", cursor.getInt(2));
+                            db.update("Downloads", values, "id == ?", new String[]{Integer.toString(cursor.getInt(0))});
+                            Log.d(TAG, "Download exists, resetting state to NONE: " + trackId);
+                        } else {
+                            Log.d(TAG, "Download already in progress or queued: " + trackId);
+                        }
+                        continue;
+                    }
+                }
+                ContentValues row = Download.flutterToSQL(download);
+                db.insert("Downloads", null, row);
+                Log.d(TAG, "Inserting new download: " + trackId);
             }
+            db.setTransactionSuccessful();
         } catch (Exception e) {
-             Log.e(TAG, "Error opening database", e);
-             // Handle error appropriately - maybe show a message to the user
-             return; // Stop further execution if DB fails
+            Log.e(TAG, "Error adding downloads", e);
+            result.error("DB_ERROR", "Error adding downloads", e.getMessage());
+        } finally {
+            db.endTransaction();
         }
-
-        // Connect to services
-        connectDownloadService(); // Se connecter au service de téléchargement
-        connectAcrService();      // Se connecter au service ACR
-
-        // Trust all SSL Certs (si nécessaire pour Deezer API ou autre)
-        // ... (le code SSL peut rester ici s'il est utilisé ailleurs)
+        sendMessageToDownloadService(DownloadService.SERVICE_LOAD_DOWNLOADS, null);
+        result.success(null);
     }
 
-    @Override
-    protected void onResume() {
-        Log.d(TAG, "onResume");
-        super.onResume();
-        // Re-binding might happen automatically if needed, or can be forced here
-        // if (downloadServiceMessenger == null) connectDownloadService();
-        // if (acrServiceMessenger == null) connectAcrService();
+    private void getDownloads(MethodChannel.Result result) {
+        List<HashMap<?, ?>> downloadsList = new ArrayList<>();
+        db.beginTransaction();
+        try (Cursor cursor = db.query("Downloads", null, null, null, null, null, null)) {
+            while (cursor.moveToNext()) {
+                Download download = Download.fromSQL(cursor);
+                downloadsList.add(download.toHashMap());
+            }
+            db.setTransactionSuccessful();
+        } catch (Exception e) {
+            Log.e(TAG, "Error getting downloads", e);
+            result.error("DB_ERROR", "Error getting downloads", e.getMessage());
+        } finally {
+            db.endTransaction();
+        }
+        result.success(downloadsList);
     }
 
-    @Override
-    protected void onPause() {
-        Log.d(TAG, "onPause");
-        super.onPause();
+    private void updateSettings(String json, MethodChannel.Result result) {
+        Bundle bundle = new Bundle();
+        bundle.putString("json", json);
+        sendMessageToDownloadService(DownloadService.SERVICE_SETTINGS_UPDATE, bundle);
+        result.success(null);
     }
 
-
-    @Override
-    protected void onStop() {
-        Log.d(TAG, "onStop");
-        super.onStop();
-        // Ne pas fermer la DB ou unbind ici, car l'activité peut revenir (onStart)
-        // La fermeture/unbind se fait dans onDestroy
+    private void loadDownloads(MethodChannel.Result result) {
+        sendMessageToDownloadService(DownloadService.SERVICE_LOAD_DOWNLOADS, null);
+        result.success(null);
     }
 
-    @Override
-    protected void onDestroy() {
-        Log.i(TAG, "onDestroy");
-        super.onDestroy();
-        // Arrêter le serveur de stream
+    private void startDownloads(MethodChannel.Result result) {
+        sendMessageToDownloadService(DownloadService.SERVICE_START_DOWNLOAD, null);
+        result.success(downloadServiceBound);
+    }
+
+    private void stopDownloads(MethodChannel.Result result) {
+        sendMessageToDownloadService(DownloadService.SERVICE_STOP_DOWNLOADS, null);
+        result.success(null);
+    }
+
+    private void removeDownload(int id, MethodChannel.Result result) {
+        Bundle bundle = new Bundle();
+        bundle.putInt("id", id);
+        sendMessageToDownloadService(DownloadService.SERVICE_REMOVE_DOWNLOAD, bundle);
+        result.success(null);
+    }
+
+    private void retryDownloads(MethodChannel.Result result) {
+        sendMessageToDownloadService(DownloadService.SERVICE_RETRY_DOWNLOADS, null);
+        result.success(null);
+    }
+
+    private void removeDownloads(int state, MethodChannel.Result result) {
+        Bundle bundle = new Bundle();
+        bundle.putInt("state", state);
+        sendMessageToDownloadService(DownloadService.SERVICE_REMOVE_DOWNLOADS, bundle);
+        result.success(null);
+    }
+
+    // --- Common/Other Methods ---
+
+    private void getPreloadInfo(MethodChannel.Result result) {
+        result.success(intentPreload);
+        intentPreload = null;
+    }
+
+    private void getArch(MethodChannel.Result result) {
+        result.success(System.getProperty("os.arch"));
+    }
+
+    // --- Stream Server Methods ---
+
+    private void startServer(String arl, MethodChannel.Result result) {
+        if (streamServer == null) {
+            String offlinePath = getExternalFilesDir("offline").getAbsolutePath();
+            streamServer = new StreamServer(arl, offlinePath);
+            streamServer.start();
+        }
+        result.success(null);
+    }
+
+    private void getStreamInfo(String id, MethodChannel.Result result) {
+        if (streamServer == null) {
+            result.success(null);
+            return;
+        }
+        StreamServer.StreamInfo info = streamServer.streams.get(id);
+        result.success(info != null ? info.toJSON() : null);
+    }
+
+    private void killServices(MethodChannel.Result result) {
+        Log.d(TAG, "Kill command received");
+        stopDownloadService();
+        stopAcrService();
+        stopStreamServer();
+        result.success(null);
+    }
+
+    private void stopDownloadService() {
+        Intent dlIntent = new Intent(this, DownloadService.class);
+        stopService(dlIntent);
+    }
+
+    private void stopAcrService() {
+        Intent acrIntent = new Intent(this, AcrCloudHandler.class);
+        stopService(acrIntent);
+    }
+
+    private void stopStreamServer() {
         if (streamServer != null) {
-            Log.i(TAG, "Stopping StreamServer");
             streamServer.stop();
             streamServer = null;
         }
-        // Se déconnecter des services
-        if (downloadServiceBound) {
-            Log.i(TAG, "Unbinding DownloadService");
-            try {
-                // Informer le service que le client part (optionnel mais propre)
-                // sendMessageToDownloadService(DownloadService.SERVICE_UNREGISTER_CLIENT, null);
-                unbindService(downloadConnection);
-            } catch (IllegalArgumentException e) {
-                 Log.w(TAG, "Error unbinding DownloadService (already unbound?): " + e.getMessage());
-            }
-            downloadServiceBound = false;
-            downloadServiceMessenger = null;
+    }
+
+    // --- ACRCloud Service Methods ---
+
+    private void acrConfigure(String host, String key, String secret, MethodChannel.Result result) {
+        if (host == null || key == null || secret == null) {
+            result.error("INVALID_ARGS", "Missing ACR configuration arguments", null);
+            return;
         }
-        if (acrServiceBound) {
-            Log.i(TAG, "Unbinding AcrCloudHandler");
-             try {
-                // Informer le service ACR que le client part
-                sendMessageToAcrService(AcrCloudHandler.MSG_ACR_UNREGISTER_CLIENT, null);
-                unbindService(acrConnection);
-             } catch (IllegalArgumentException e) {
-                 Log.w(TAG, "Error unbinding AcrCloudHandler (already unbound?): " + e.getMessage());
-             }
-            acrServiceBound = false;
-            acrServiceMessenger = null;
-        }
-        // Fermer la base de données
-        if (db != null && db.isOpen()) {
-             Log.i(TAG, "Closing Database");
-             db.close();
-             db = null; // Important to nullify after closing
-        }
+        Bundle bundle = new Bundle();
+        bundle.putString(AcrCloudHandler.KEY_ACR_HOST, host);
+        bundle.putString(AcrCloudHandler.KEY_ACR_ACCESS_KEY, key);
+        bundle.putString(AcrCloudHandler.KEY_ACR_ACCESS_SECRET, secret);
+        sendMessageToAcrService(AcrCloudHandler.MSG_ACR_CONFIGURE, bundle);
+        result.success(true);
+    }
+
+    private void acrStart(MethodChannel.Result result) {
+        sendMessageToAcrService(AcrCloudHandler.MSG_ACR_START, null);
+        result.success(acrServiceBound);
+    }
+
+    private void acrCancel(MethodChannel.Result result) {
+        sendMessageToAcrService(AcrCloudHandler.MSG_ACR_CANCEL, null);
+        result.success(null);
+    }
+
+    private void acrRelease(MethodChannel.Result result) {
+        sendMessageToAcrService(AcrCloudHandler.MSG_ACR_RELEASE, null);
+        result.success(null);
     }
 
     // --- Service Connections ---
 
-    // Connexion pour DownloadService
+    private void connectDownloadService() {
+        if (downloadServiceBound) {
+            Log.d(TAG, "Already bound to DownloadService.");
+            return;
+        }
+        Intent intent = new Intent(this, DownloadService.class);
+        intent.putExtra("activityMessenger", activityMessengerForDownload);
+        startService(intent);
+        bindService(intent, downloadConnection, Context.BIND_AUTO_CREATE);
+        Log.i(TAG, "Attempting to bind DownloadService...");
+    }
+
+    private void connectAcrService() {
+        if (acrServiceBound) {
+            Log.d(TAG, "Already bound to AcrCloudHandler.");
+            return;
+        }
+        Intent intent = new Intent(this, AcrCloudHandler.class);
+        bindService(intent, acrConnection, Context.BIND_AUTO_CREATE);
+        Log.i(TAG, "Attempting to bind AcrCloudHandler...");
+    }
+
     private final ServiceConnection downloadConnection = new ServiceConnection() {
         @Override
         public void onServiceConnected(ComponentName componentName, IBinder iBinder) {
             Log.i(TAG, "DownloadService Bound!");
             downloadServiceMessenger = new Messenger(iBinder);
             downloadServiceBound = true;
-             // Si DownloadService implémente un système d'enregistrement client similaire à ACR:
-             // Message msg = Message.obtain(null, DownloadService.SERVICE_REGISTER_CLIENT);
-             // msg.replyTo = activityMessengerForDownload;
-             // sendMessageToDownloadService(msg); // Utilise une fonction dédiée pour envoyer le message complet
         }
 
         @Override
@@ -428,22 +384,18 @@ public class MainActivity extends AudioServiceActivity {
             Log.w(TAG, "DownloadService Disconnected unexpectedly!");
             downloadServiceMessenger = null;
             downloadServiceBound = false;
-            // Optionnel: Tenter de reconnecter ?
-            // connectDownloadService();
         }
     };
 
-    // Connexion pour AcrCloudHandler
     private final ServiceConnection acrConnection = new ServiceConnection() {
         @Override
         public void onServiceConnected(ComponentName componentName, IBinder iBinder) {
             Log.i(TAG, "AcrCloudHandler Bound!");
             acrServiceMessenger = new Messenger(iBinder);
             acrServiceBound = true;
-            // Enregistrer ce client auprès du service ACR pour qu'il sache à qui répondre
             Message msg = Message.obtain(null, AcrCloudHandler.MSG_ACR_REGISTER_CLIENT);
-            msg.replyTo = activityMessengerForAcr; // Le messenger que le service utilisera pour répondre
-            sendMessageToAcrService(msg); // Utiliser une fonction dédiée pour envoyer le message complet
+            msg.replyTo = activityMessengerForAcr;
+            sendMessageToAcrService(msg);
         }
 
         @Override
@@ -451,17 +403,16 @@ public class MainActivity extends AudioServiceActivity {
             Log.w(TAG, "AcrCloudHandler Disconnected unexpectedly!");
             acrServiceMessenger = null;
             acrServiceBound = false;
-             // Optionnel: Tenter de reconnecter ?
-             // connectAcrService();
         }
     };
 
     // --- Incoming Message Handler (from Services) ---
+
     private static class IncomingHandler extends Handler {
         private final WeakReference<MainActivity> weakReference;
 
         IncomingHandler(MainActivity activity) {
-            super(Looper.getMainLooper()); // Assure l'exécution sur le thread UI
+            super(Looper.getMainLooper());
             this.weakReference = new WeakReference<>(activity);
         }
 
@@ -473,22 +424,20 @@ public class MainActivity extends AudioServiceActivity {
                 return;
             }
             if (activity.eventSink == null) {
-                 // Peut arriver si un message arrive avant que Flutter ne soit prêt à écouter
-                 Log.w(TAG, "IncomingHandler: EventSink is null, cannot forward message: " + msg.what);
-                 return;
+                Log.w(TAG, "IncomingHandler: EventSink is null, cannot forward message: " + msg.what);
+                return;
             }
 
             EventChannel.EventSink eventSink = activity.eventSink;
-            Bundle data = msg.getData(); // Obtenir les données une seule fois
-            HashMap<String, Object> eventData = new HashMap<>(); // Données à envoyer à Flutter
+            Bundle data = msg.getData();
+            HashMap<String, Object> eventData = new HashMap<>();
 
             Log.d(TAG, "IncomingHandler received message: " + msg.what);
 
-            try { // Encapsuler pour attraper les erreurs potentielles de traitement/envoi
+            try {
                 switch (msg.what) {
-                    // --- Messages de DownloadService ---
                     case DownloadService.SERVICE_ON_PROGRESS:
-                        eventData.put("eventType", "downloadProgress"); // Identifier le type d'événement
+                        eventData.put("eventType", "downloadProgress");
                         ArrayList<Bundle> downloads = getParcelableArrayList(data, "downloads", Bundle.class);
                         if (downloads != null && !downloads.isEmpty()) {
                             ArrayList<HashMap<String, Number>> progressData = new ArrayList<>();
@@ -504,28 +453,26 @@ public class MainActivity extends AudioServiceActivity {
                             eventData.put("data", progressData);
                             eventSink.success(eventData);
                         } else {
-                             Log.w(TAG, "Received download progress but no data bundles found.");
+                            Log.w(TAG, "Received download progress but no data bundles found.");
                         }
                         break;
                     case DownloadService.SERVICE_ON_STATE_CHANGE:
-                         eventData.put("eventType", "downloadState");
-                         HashMap<String, Object> stateData = new HashMap<>();
-                         stateData.put("running", data.getBoolean("running"));
-                         stateData.put("queueSize", data.getInt("queueSize"));
-                         eventData.put("data", stateData);
-                         eventSink.success(eventData);
+                        eventData.put("eventType", "downloadState");
+                        HashMap<String, Object> stateData = new HashMap<>();
+                        stateData.put("running", data.getBoolean("running"));
+                        stateData.put("queueSize", data.getInt("queueSize"));
+                        eventData.put("data", stateData);
+                        eventSink.success(eventData);
                         break;
-
-                    // --- Messages de AcrCloudHandler ---
                     case AcrCloudHandler.MSG_ACR_RESULT:
                         eventData.put("eventType", "acrResult");
                         eventData.put("resultJson", data.getString(AcrCloudHandler.KEY_ACR_RESULT_JSON));
                         eventSink.success(eventData);
                         break;
                     case AcrCloudHandler.MSG_ACR_VOLUME:
-                         eventData.put("eventType", "acrVolume");
-                         eventData.put("volume", data.getDouble(AcrCloudHandler.KEY_ACR_VOLUME));
-                         eventSink.success(eventData);
+                        eventData.put("eventType", "acrVolume");
+                        eventData.put("volume", data.getDouble(AcrCloudHandler.KEY_ACR_VOLUME));
+                        eventSink.success(eventData);
                         break;
                     case AcrCloudHandler.MSG_ACR_ERROR:
                         eventData.put("eventType", "acrError");
@@ -534,124 +481,187 @@ public class MainActivity extends AudioServiceActivity {
                         break;
                     case AcrCloudHandler.MSG_ACR_STATE:
                         eventData.put("eventType", "acrState");
-                         HashMap<String, Object> acrStateData = new HashMap<>();
-                         acrStateData.put("initialized", data.getBoolean(AcrCloudHandler.KEY_ACR_STATE_INITIALIZED));
-                         acrStateData.put("processing", data.getBoolean(AcrCloudHandler.KEY_ACR_STATE_PROCESSING));
-                         eventData.put("data", acrStateData);
-                         eventSink.success(eventData);
+                        HashMap<String, Object> acrStateData = new HashMap<>();
+                        acrStateData.put("initialized", data.getBoolean(AcrCloudHandler.KEY_ACR_STATE_INITIALIZED));
+                        acrStateData.put("processing", data.getBoolean(AcrCloudHandler.KEY_ACR_STATE_PROCESSING));
+                        eventData.put("data", acrStateData);
+                        eventSink.success(eventData);
                         break;
-
                     default:
-                         Log.w(TAG, "IncomingHandler: Unhandled message type: " + msg.what);
-                        super.handleMessage(msg); // Laisser le Handler parent gérer si nécessaire
+                        Log.w(TAG, "IncomingHandler: Unhandled message type: " + msg.what);
+                        super.handleMessage(msg);
                 }
             } catch (Exception e) {
-                 Log.e(TAG, "Error handling message or sending to EventSink: " + msg.what, e);
-                 // Optionnel: Envoyer une erreur à Flutter ?
-                 // HashMap<String, Object> errorEvent = new HashMap<>();
-                 // errorEvent.put("eventType", "nativeError");
-                 // errorEvent.put("message", "Error processing message " + msg.what + ": " + e.getMessage());
-                 // eventSink.error("NATIVE_ERROR", "Error handling message " + msg.what, e.toString());
+                Log.e(TAG, "Error handling message or sending to EventSink: " + msg.what, e);
             }
         }
     }
 
     // --- Send Message Helper Methods ---
 
-    // Envoyer un message au DownloadService
     void sendMessageToDownloadService(int type, Bundle data) {
         if (!downloadServiceBound) {
             Log.w(TAG, "Cannot send message to DownloadService - not bound.");
-            // Optionnel: Tenter de binder à nouveau?
-            // connectDownloadService();
             return;
         }
-         if (downloadServiceMessenger == null) {
+        if (downloadServiceMessenger == null) {
             Log.e(TAG, "Cannot send message to DownloadService - messenger is null despite being bound!");
             return;
         }
 
         Message msg = Message.obtain(null, type);
         if (data != null) {
-             msg.setData(data);
+            msg.setData(data);
         }
-        // msg.replyTo = activityMessengerForDownload; // Généralement pas nécessaire pour les commandes simples
         try {
             Log.d(TAG, "Sending message to DownloadService: " + type);
             downloadServiceMessenger.send(msg);
         } catch (RemoteException e) {
             Log.e(TAG, "Failed to send message to DownloadService", e);
-            // Le service distant est peut-être mort
-            downloadServiceBound = false; // Marquer comme non lié
+            downloadServiceBound = false;
             downloadServiceMessenger = null;
         }
     }
 
-    // Envoyer un message à AcrCloudHandler (avec type et data)
     void sendMessageToAcrService(int type, Bundle data) {
         if (!acrServiceBound) {
-             Log.w(TAG, "Cannot send message to AcrCloudHandler - not bound.");
-             // Optionnel: Tenter de binder à nouveau?
-             // connectAcrService();
-             return;
+            Log.w(TAG, "Cannot send message to AcrCloudHandler - not bound.");
+            return;
         }
         if (acrServiceMessenger == null) {
-             Log.e(TAG, "Cannot send message to AcrCloudHandler - messenger is null despite being bound!");
-             return;
+            Log.e(TAG, "Cannot send message to AcrCloudHandler - messenger is null despite being bound!");
+            return;
         }
 
         Message msg = Message.obtain(null, type);
         if (data != null) {
             msg.setData(data);
         }
-        // Important : Indiquer qui envoie pour que le service puisse enregistrer le client (MSG_ACR_REGISTER_CLIENT)
-        // ou pour qu'il puisse répondre (même si non utilisé pour les réponses simples ici).
         msg.replyTo = activityMessengerForAcr;
-        sendMessageToAcrService(msg); // Appelle la méthode qui gère l'envoi réel
+        sendMessageToAcrService(msg);
     }
 
-     // Envoyer un objet Message complet à AcrCloudHandler (utilisé pour enregistrer le client)
-     void sendMessageToAcrService(Message msg) {
-         if (!acrServiceBound) {
-             Log.w(TAG, "Cannot send message object to AcrCloudHandler - not bound.");
-             return;
-         }
-         if (acrServiceMessenger == null) {
-             Log.e(TAG, "Cannot send message object to AcrCloudHandler - messenger is null despite being bound!");
-             return;
-         }
-         try {
-             Log.d(TAG, "Sending message object to AcrCloudHandler: " + msg.what);
-             acrServiceMessenger.send(msg);
-         } catch (RemoteException e) {
-             Log.e(TAG, "Failed to send message object to AcrCloudHandler", e);
-             // Le service distant est peut-être mort
-             acrServiceBound = false; // Marquer comme non lié
-             acrServiceMessenger = null;
-         }
-     }
+    void sendMessageToAcrService(Message msg) {
+        if (!acrServiceBound) {
+            Log.w(TAG, "Cannot send message object to AcrCloudHandler - not bound.");
+            return;
+        }
+        if (acrServiceMessenger == null) {
+            Log.e(TAG, "Cannot send message object to AcrCloudHandler - messenger is null despite being bound!");
+            return;
+        }
+        try {
+            Log.d(TAG, "Sending message object to AcrCloudHandler: " + msg.what);
+            acrServiceMessenger.send(msg);
+        } catch (RemoteException e) {
+            Log.e(TAG, "Failed to send message object to AcrCloudHandler", e);
+            acrServiceBound = false;
+            acrServiceMessenger = null;
+        }
+    }
+
+    // --- Lifecycle Methods ---
+
+    @Override
+    protected void onStart() {
+        Log.d(TAG, "onStart");
+        super.onStart();
+        try {
+            DownloadsDatabase dbHelper = new DownloadsDatabase(getApplicationContext());
+            if (db == null || !db.isOpen()) {
+                db = dbHelper.getWritableDatabase();
+                Log.i(TAG, "Database opened.");
+            } else {
+                Log.w(TAG, "Database already open.");
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error opening database", e);
+            return;
+        }
+        connectDownloadService();
+        connectAcrService();
+    }
+
+    @Override
+    protected void onResume() {
+        Log.d(TAG, "onResume");
+        super.onResume();
+    }
+
+    @Override
+    protected void onPause() {
+        Log.d(TAG, "onPause");
+        super.onPause();
+    }
+
+    @Override
+    protected void onStop() {
+        Log.d(TAG, "onStop");
+        super.onStop();
+    }
+
+    @Override
+    protected void onDestroy() {
+        Log.i(TAG, "onDestroy");
+        super.onDestroy();
+        stopStreamServer();
+        unbindDownloadService();
+        unbindAcrService();
+        closeDatabase();
+    }
+
+    private void unbindDownloadService() {
+        if (downloadServiceBound) {
+            Log.i(TAG, "Unbinding DownloadService");
+            try {
+                unbindService(downloadConnection);
+            } catch (IllegalArgumentException e) {
+                Log.w(TAG, "Error unbinding DownloadService (already unbound?): " + e.getMessage());
+            }
+            downloadServiceBound = false;
+            downloadServiceMessenger = null;
+        }
+    }
+
+    private void unbindAcrService() {
+        if (acrServiceBound) {
+            Log.i(TAG, "Unbinding AcrCloudHandler");
+            try {
+                sendMessageToAcrService(AcrCloudHandler.MSG_ACR_UNREGISTER_CLIENT, null);
+                unbindService(acrConnection);
+            } catch (IllegalArgumentException e) {
+                Log.w(TAG, "Error unbinding AcrCloudHandler (already unbound?): " + e.getMessage());
+            }
+            acrServiceBound = false;
+            acrServiceMessenger = null;
+        }
+    }
+
+    private void closeDatabase() {
+        if (db != null && db.isOpen()) {
+            Log.i(TAG, "Closing Database");
+            db.close();
+            db = null;
+        }
+    }
 
     // --- Utility Methods ---
 
-    // Fonction utilitaire getParcelableArrayList (inchangée)
     @Nullable
     public static <T extends Parcelable> ArrayList<T> getParcelableArrayList(@Nullable Bundle bundle, @Nullable String key, @NonNull Class<T> clazz) {
-         if (bundle == null || key == null) return null;
-         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-             // La nouvelle méthode est type-safe
-             return bundle.getParcelableArrayList(key, clazz);
-         } else {
-             // L'ancienne méthode nécessite une suppression d'avertissement
-             @SuppressWarnings("deprecation")
-             ArrayList<T> list = bundle.getParcelableArrayList(key);
-             // Vérification manuelle du type (optionnelle mais plus sûre)
-             if (list != null && !list.isEmpty()) {
+        if (bundle == null || key == null) return null;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            return bundle.getParcelableArrayList(key, clazz);
+        } else {
+            @SuppressWarnings("deprecation")
+            ArrayList<T> list = bundle.getParcelableArrayList(key);
+            if (list != null && !list.isEmpty()) {
                 if (!clazz.isInstance(list.get(0))) {
                     Log.e(TAG, "getParcelableArrayList: Type mismatch for key '" + key + "'. Expected " + clazz.getName() + " but got " + list.get(0).getClass().getName());
-                    return new ArrayList<>(); // Retourne une liste vide en cas d'erreur de type
+                    return new ArrayList<>();
                 }
-             }
-             return list;
-         }
+            }
+            return list;
+        }
     }
 }

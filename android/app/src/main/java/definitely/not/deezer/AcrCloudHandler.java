@@ -37,6 +37,7 @@ public class AcrCloudHandler extends Service implements IACRCloudListener {
     public static final int MSG_ACR_CONFIGURE = 3;
     public static final int MSG_ACR_START = 4;
     public static final int MSG_ACR_CANCEL = 5;
+    public static final int MSG_ACR_RELEASE = 6; // New message to release resources
 
     // --- Message Types (Service -> MainActivity) ---
     public static final int MSG_ACR_RESULT = 101;
@@ -139,6 +140,9 @@ public class AcrCloudHandler extends Service implements IACRCloudListener {
                     service.cancelRecognition();
                     // State will be sent from cancelRecognition or its callbacks
                     break;
+                case MSG_ACR_RELEASE:
+                    service.release();
+                    break;
                 default:
                     super.handleMessage(msg);
             }
@@ -204,14 +208,7 @@ public class AcrCloudHandler extends Service implements IACRCloudListener {
     public void onDestroy() {
         super.onDestroy();
         Log.i(TAG, "Service onDestroy");
-        cancelRecognition(); // Ensure recognition stops and resources are freed
-        if (this.mClient != null) {
-            this.mClient.release();
-            this.mClient = null;
-            this.initState = false;
-            Log.i(TAG, "ACRCloudClient released.");
-        }
-        // No need for stopForegroundServiceInternal (Foreground service removed)
+        release();
     }
 
     // --- ACRCloud Configuration and Control ---
@@ -305,6 +302,17 @@ public class AcrCloudHandler extends Service implements IACRCloudListener {
             Log.w(TAG, "Cancel called but not processing or client is null.");
             // No stopForegroundServiceInternal needed
             sendStateMessage(); // Send current state just in case
+        }
+    }
+
+    private void release() {
+        Log.d(TAG, "Attempting to release ACRCloud resources...");
+        cancelRecognition();
+        if (this.mClient != null) {
+            this.mClient.release();
+            this.mClient = null;
+            this.initState = false;
+            Log.i(TAG, "ACRCloudClient released.");
         }
     }
 

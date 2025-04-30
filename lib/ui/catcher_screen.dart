@@ -118,6 +118,7 @@ class _CatcherScreen extends State<CatcherScreen>
     SystemChrome.setPreferredOrientations([]);
     _eventSubscription?.cancel();
     if (_isProcessing) platform.invokeMethod('acrCancel');
+    platform.invokeMethod('acrRelease');
     _controller.dispose();
     _resultsController.dispose();
     _buttonController.dispose();
@@ -290,8 +291,12 @@ class _CatcherScreen extends State<CatcherScreen>
 
   Future<void> _toggleRecognition() async {
     if (!_isConfigured) {
-      _showSnackBar('ACRCloud is not configured');
-      return;
+      try {
+        await _configureAcrCloud();
+      } catch (e) {
+        _showSnackBar('ACRCloud is not configured');
+        return;
+      }
     }
     if (_isProcessing || _isFetchingTrack) {
       _cancelRecognition();
