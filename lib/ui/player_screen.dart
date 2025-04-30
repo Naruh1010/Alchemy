@@ -671,7 +671,8 @@ class _LyricsIconButtonState extends State<LyricsIconButton> {
     super.initState();
 
     setState(() {
-      isEnabled = (track.lyrics?.id ?? '0') != '0';
+      isEnabled = track.lyrics?.syncedLyrics != null ||
+          track.lyrics?.unsyncedLyrics != null;
     });
 
     _loadLyrics();

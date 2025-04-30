@@ -93,6 +93,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) return SplashScreen();
     return Scaffold(
       body: ListView(
         scrollDirection: Axis.vertical,
@@ -123,7 +124,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                       .fullUrl ??
                                   '',
                               circular: true,
-                              width: 60,
+                              width: 56,
                             );
                     },
                   ),
@@ -305,6 +306,7 @@ class _HomePageScreenState extends State<HomePageScreen> {
   @override
   Widget build(BuildContext context) {
     if (_error) return const ErrorScreen();
+    if (_isLoading) return SplashScreen();
     return ValueListenableBuilder<bool>(
       valueListenable: _isHomePageLoadingNotifier,
       builder: (context, isLoading, child) {

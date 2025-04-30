@@ -57,7 +57,7 @@ class Track {
   String? get artistString =>
       artists?.map<String>((art) => art.name ?? '').join(', ');
   String? get durationString =>
-      "${duration?.inMinutes}:${duration?.inSeconds.remainder(60).toString().padLeft(2, '0')}";
+      "${duration.inMinutes}:${duration.inSeconds.remainder(60).toString().padLeft(2, '0')}";
 
   //MediaItem
   MediaItem toMediaItem() => MediaItem(
@@ -173,7 +173,7 @@ class Track {
         'title': title,
         'album': album?.id,
         'artists': artists?.map<String>((dynamic a) => a.id).join(','),
-        'duration': duration?.inSeconds,
+        'duration': duration.inSeconds,
         'albumArt': albumArt?.full,
         'trackNumber': trackNumber,
         'offline': off ? 1 : 0,
@@ -241,8 +241,7 @@ class Album {
       artists?.map<String>((art) => art.name ?? '').join(', ');
   Duration get duration => tracks == null
       ? Duration(seconds: 0)
-      : Duration(
-          seconds: tracks!.fold(0, (v, t) => v += t.duration!.inSeconds));
+      : Duration(seconds: tracks!.fold(0, (v, t) => v += t.duration.inSeconds));
   String get durationString =>
       "${duration.inMinutes}:${duration.inSeconds.remainder(60).toString().padLeft(2, '0')}";
   String? get fansString => NumberFormat.compact().format(fans);

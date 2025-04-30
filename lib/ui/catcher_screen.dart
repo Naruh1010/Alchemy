@@ -8,7 +8,6 @@ import 'package:alchemy/ui/cached_image.dart';
 import 'package:alchemy/ui/elements.dart';
 import 'package:alchemy/ui/menu.dart';
 import 'package:alchemy/ui/player_screen.dart';
-import 'package:alchemy/ui/settings_screen.dart';
 import 'package:alchemy/ui/tiles.dart';
 import 'package:awesome_ripple_animation/awesome_ripple_animation.dart';
 import 'package:flutter/material.dart';

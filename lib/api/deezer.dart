@@ -758,7 +758,7 @@ class DeezerAPI {
 
         if (settings.advancedLRCLib) {
           res = await http.get(Uri.parse(
-              'https://lrclib.net/api/get?artist_name=${(track.artists?[0].name ?? '')}&track_name=${(track.title ?? '')}&duration=${track.duration?.inSeconds.toString()}'));
+              'https://lrclib.net/api/get?artist_name=${(track.artists?[0].name ?? '')}&track_name=${(track.title ?? '')}&duration=${track.duration.inSeconds.toString()}'));
           if (res.statusCode == 404) {
             String isrc = await getTrackIsrc(track.id ?? '');
             Map<String, dynamic> trackData = await deezerAPI
