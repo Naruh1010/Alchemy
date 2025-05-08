@@ -615,7 +615,7 @@ class _BlindTestScreenState extends State<BlindTestScreen>
               artistChoices.add(Artist(
                   id: artistDetails['id'],
                   name: artistDetails['name'],
-                  picture: ImageDetails(
+                  image: ImageDetails(
                       fullUrl: artistDetails['picture']['large'][0],
                       thumbUrl: artistDetails['picture']['small'][0])));
             }
@@ -1361,7 +1361,7 @@ class _BlindTestScreenState extends State<BlindTestScreen>
                                                       url: _currentQuestion
                                                               ?.artistChoices[
                                                                   index]
-                                                              .picture
+                                                              .image
                                                               ?.full ??
                                                           '',
                                                       rounded: true,

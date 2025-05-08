@@ -783,8 +783,7 @@ class _CatcherScreen extends State<CatcherScreen>
                                 crossAxisAlignment: CrossAxisAlignment.center,
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  if (_identifiedTrack?.albumArt?.fullUrl !=
-                                      null)
+                                  if (_identifiedTrack?.image?.fullUrl != null)
                                     Transform(
                                       transform: Matrix4.identity()
                                         ..setEntry(3, 2, 0.001)
@@ -881,7 +880,7 @@ class _CatcherScreen extends State<CatcherScreen>
                       ),
                     ),
                     child: CachedImage(
-                      url: _identifiedTrack?.albumArt?.fullUrl ?? '',
+                      url: _identifiedTrack?.image?.fullUrl ?? '',
                       height: MediaQuery.of(context).size.width * 0.6,
                       width: MediaQuery.of(context).size.width * 0.6,
                     ),

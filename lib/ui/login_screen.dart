@@ -27,7 +27,7 @@ class _LoginWidgetState extends State<LoginWidget> {
 
   //Initialize deezer etc
   Future _init() async {
-    deezerAPI.arl = settings.arl;
+    deezerAPI.keyBag.arl = settings.arl;
     //await GetIt.I<AudioPlayerHandler>().start();
 
     //Pre-cache homepage
@@ -118,7 +118,7 @@ class _LoginWidgetState extends State<LoginWidget> {
 
     //Try logging in
     try {
-      deezerAPI.arl = settings.arl;
+      deezerAPI.keyBag.arl = settings.arl;
       bool resp = await deezerAPI.rawAuthorize(
           onError: (e) => setState(() => _error = e.toString()));
       if (resp == false) {

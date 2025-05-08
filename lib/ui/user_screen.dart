@@ -8,7 +8,6 @@ import 'package:alchemy/ui/elements.dart';
 import 'package:alchemy/ui/library.dart';
 import 'package:alchemy/ui/settings_screen.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 class UserScreen extends StatefulWidget {
   const UserScreen({super.key});

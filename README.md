@@ -66,8 +66,6 @@ Get Alchemy running: Follow [these instructions](./HOWTO.md) to compile it yours
 ## :building_construction: Upcoming Features
 
 *   Move all gateway light API calls to mobile gateway API;
-*   Continue the Search page UI refactor;
-*   Implement notification tile `onTap` redirections;
 *   Create notification settings;
 *   Implement a profile edition screen;
 *   Make a "create playlist from queue" option;

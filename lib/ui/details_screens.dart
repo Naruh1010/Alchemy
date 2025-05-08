@@ -189,8 +189,10 @@ class _AlbumDetailsState extends State<AlbumDetails> {
                                                   Stack(
                                                     children: [
                                                       CachedImage(
-                                                        url: album.art?.full ??
-                                                            album.art?.thumb ??
+                                                        url: album
+                                                                .image?.full ??
+                                                            album
+                                                                .image?.thumb ??
                                                             'assets/cover.jpg',
                                                         width: MediaQuery.of(
                                                                     context)
@@ -640,8 +642,8 @@ class _AlbumDetailsState extends State<AlbumDetails> {
                                   Stack(
                                     children: [
                                       CachedImage(
-                                        url: album.art?.fullUrl ??
-                                            album.art?.thumbUrl ??
+                                        url: album.image?.fullUrl ??
+                                            album.image?.thumbUrl ??
                                             'assets/cover.jpg',
                                         height:
                                             MediaQuery.of(context).size.width,
@@ -1178,7 +1180,7 @@ class _ArtistDetailsState extends State<ArtistDetails> {
                                     height: MediaQuery.of(context).size.height *
                                         0.5,
                                     child: CachedImage(
-                                      url: artist.picture?.full ?? '',
+                                      url: artist.image?.full ?? '',
                                       width:
                                           MediaQuery.of(context).size.height *
                                               0.5,
@@ -1471,7 +1473,7 @@ class _ArtistDetailsState extends State<ArtistDetails> {
                                                       url: artist
                                                               .highlight
                                                               ?.data
-                                                              ?.art
+                                                              ?.image
                                                               ?.full ??
                                                           '',
                                                       height: 150,
@@ -1645,7 +1647,7 @@ class _ArtistDetailsState extends State<ArtistDetails> {
                             Stack(
                               children: [
                                 CachedImage(
-                                  url: artist.picture?.full ?? '',
+                                  url: artist.image?.full ?? '',
                                   height: MediaQuery.of(context).size.width,
                                   width: MediaQuery.of(context).size.width,
                                   fullThumb: true,
@@ -1974,7 +1976,7 @@ class _ArtistDetailsState extends State<ArtistDetails> {
                                               CrossAxisAlignment.start,
                                           children: [
                                             CachedImage(
-                                              url: artist.highlight?.data?.art
+                                              url: artist.highlight?.data?.image
                                                       ?.full ??
                                                   '',
                                               height: 150,
@@ -3816,7 +3818,7 @@ class _ShowScreenState extends State<ShowScreen> {
                                     height: MediaQuery.of(context).size.height *
                                         0.5,
                                     child: CachedImage(
-                                      url: _show.art?.full ?? '',
+                                      url: _show.image?.full ?? '',
                                       width:
                                           MediaQuery.of(context).size.height *
                                               0.5,
@@ -4170,7 +4172,7 @@ class _ShowScreenState extends State<ShowScreen> {
                                               ),
                                             ),
                                             child: CachedImage(
-                                              url: _show.art?.full ?? '',
+                                              url: _show.image?.full ?? '',
                                             ),
                                           ),
                                           title: Text(_show.name ?? ''),
@@ -4199,7 +4201,7 @@ class _ShowScreenState extends State<ShowScreen> {
                             Stack(
                               children: [
                                 CachedImage(
-                                  url: _show.art?.full ?? '',
+                                  url: _show.image?.full ?? '',
                                   height: MediaQuery.of(context).size.width,
                                   width: MediaQuery.of(context).size.width,
                                   fullThumb: true,
@@ -4323,7 +4325,8 @@ class _ShowScreenState extends State<ShowScreen> {
                                                     ),
                                                   ),
                                                   child: CachedImage(
-                                                    url: _show.art?.full ?? '',
+                                                    url:
+                                                        _show.image?.full ?? '',
                                                   ),
                                                 ),
                                                 title: Text(_show.name ?? ''),

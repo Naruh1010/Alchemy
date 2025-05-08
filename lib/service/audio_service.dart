@@ -326,14 +326,14 @@ class AudioPlayerHandler extends BaseAudioHandler
   }
 
   @override
-  Future<void> updateQueue(List<MediaItem> newQueue) async {
+  Future<void> updateQueue(List<MediaItem> queue) async {
     try {
       await _playlist.clear();
     } catch (e) {
       Logger.root.log(Level.WARNING, 'Unable to clear queue.');
     }
-    if (newQueue.isNotEmpty) {
-      await _playlist.addAll(await _itemsToSources(newQueue));
+    if (queue.isNotEmpty) {
+      await _playlist.addAll(await _itemsToSources(queue));
     } else {
       try {
         GetIt.I<AudioHandler>().stop();
@@ -875,13 +875,13 @@ class AudioPlayerHandler extends BaseAudioHandler
   }
 
   //Play episode from show, load whole show as queue
-  Future playShowEpisode(Show show, List<ShowEpisode> episodes,
+  Future playShowEpisode(Show? show, List<ShowEpisode> episodes,
       {int index = 0}) async {
     QueueSource showQueueSource =
-        QueueSource(id: show.id, text: show.name, source: 'show');
+        QueueSource(id: show?.id, text: show?.name, source: 'show');
     //Generate media items
     List<MediaItem> episodeQueue =
-        episodes.map<MediaItem>((e) => e.toMediaItem(show)).toList();
+        episodes.map<MediaItem>((e) => e.toMediaItem(show ?? Show())).toList();
 
     //Load and play
     await _loadQueueAndPlayAtIndex(showQueueSource, episodeQueue, index);

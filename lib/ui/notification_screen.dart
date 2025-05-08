@@ -76,7 +76,11 @@ class _NotificationScreen extends State<NotificationScreen> {
             ? SplashScreen()
             : ListView.builder(
                 itemCount: notifications.length,
-                itemBuilder: (context, int i) =>
-                    NotificationTile(notifications[i])));
+                itemBuilder: (context, int i) => NotificationTile(
+                      notifications[i],
+                      onTap: () {
+                        openScreenByURL(notifications[i].url ?? '');
+                      },
+                    )));
   }
 }

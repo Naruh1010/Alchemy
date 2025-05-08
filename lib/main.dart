@@ -200,7 +200,7 @@ class _LoginMainWrapperState extends State<LoginMainWrapper> {
     super.initState();
     //GetIt.I<AudioPlayerHandler>().start();
     //Load token on background
-    deezerAPI.arl = settings.arl;
+    deezerAPI.keyBag.arl = settings.arl;
     settings.offlineMode = true;
     deezerAPI.authorize().then((b) async {
       if (b) setState(() => settings.offlineMode = false);

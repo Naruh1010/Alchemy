@@ -69,6 +69,9 @@ class Cache {
       fromJson: _searchHistoryFromJson)
   List<SearchHistoryItem>? searchHistory;
 
+  @JsonKey(defaultValue: [])
+  List<HomePageSection> searchSections = [];
+
   //If download threads warning was shown
   @JsonKey(defaultValue: false)
   bool threadsWarning = false;
@@ -179,6 +182,9 @@ class Cache {
       case SearchHistoryItemType.PLAYLIST:
         data = Playlist.fromJson(json['data']);
         break;
+      case SearchHistoryItemType.SHOW:
+        data = Show.fromJson(json['data']);
+        break;
     }
     return SearchHistoryItem(data, type);
   }
@@ -197,6 +203,23 @@ class SearchHistoryItem {
   SearchHistoryItemType type;
 
   SearchHistoryItem(this.data, this.type);
+
+  Map<String, dynamic> toJson() {
+    switch (type) {
+      case SearchHistoryItemType.TRACK:
+        return (data as Track).toJson();
+      case SearchHistoryItemType.ALBUM:
+        return (data as Album).toJson();
+      case SearchHistoryItemType.ARTIST:
+        return (data as Artist).toJson();
+      case SearchHistoryItemType.PLAYLIST:
+        return (data as Playlist).toJson();
+      case SearchHistoryItemType.SHOW:
+        return (data as Show).toJson();
+      default:
+        return {};
+    }
+  }
 }
 
-enum SearchHistoryItemType { TRACK, ALBUM, ARTIST, PLAYLIST }
+enum SearchHistoryItemType { TRACK, ALBUM, ARTIST, PLAYLIST, SHOW }

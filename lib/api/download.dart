@@ -55,15 +55,15 @@ class DownloadManager {
       Batch b = db.batch();
       //Create tables, if doesn't exit
       b.execute('''CREATE TABLE Tracks (
-        id TEXT PRIMARY KEY, title TEXT, album TEXT, artists TEXT, duration INTEGER, albumArt TEXT, trackNumber INTEGER, offline INTEGER, lyrics TEXT, favorite INTEGER, diskNumber INTEGER, explicit INTEGER, fallback INTEGER)''');
+        id TEXT PRIMARY KEY, title TEXT, album TEXT, artists TEXT, duration INTEGER, image TEXT, trackNumber INTEGER, offline INTEGER, lyrics TEXT, favorite INTEGER, diskNumber INTEGER, explicit INTEGER, fallback INTEGER)''');
       b.execute('''CREATE TABLE Albums (
-        id TEXT PRIMARY KEY, title TEXT, artists TEXT, tracks TEXT, art TEXT, fans INTEGER, offline INTEGER, library INTEGER, type INTEGER, releaseDate TEXT)''');
+        id TEXT PRIMARY KEY, title TEXT, artists TEXT, tracks TEXT, image TEXT, fans INTEGER, offline INTEGER, library INTEGER, type INTEGER, releaseDate TEXT)''');
       b.execute('''CREATE TABLE Artists (
         id TEXT PRIMARY KEY, name TEXT, albums TEXT, topTracks TEXT, picture TEXT, fans INTEGER, albumCount INTEGER, offline INTEGER, library INTEGER, radio INTEGER)''');
       b.execute('''CREATE TABLE Playlists (
         id TEXT PRIMARY KEY, title TEXT, tracks TEXT, image TEXT, duration INTEGER, userId TEXT, userName TEXT, fans INTEGER, library INTEGER, description TEXT)''');
       b.execute('''CREATE TABLE Shows (
-        id TEXT PRIMARY KEY, name TEXT, authors TEXT, description TEXT, fans INTEGER, isExplicit INTEGER, isLibrary INTEGER, offline INTEGER, art TEXT)''');
+        id TEXT PRIMARY KEY, name TEXT, authors TEXT, description TEXT, fans INTEGER, isExplicit INTEGER, isLibrary INTEGER, offline INTEGER, image TEXT)''');
       b.execute('''CREATE TABLE Episodes (
         id TEXT PRIMARY KEY, title TEXT, description TEXT, url TEXT, duration INTEGER, publishedDate TEXT, episodeCover TEXT, isExplicit INTEGER, offline INTEGER, showId TEXT)''');
       await b.commit();
@@ -303,8 +303,8 @@ class DownloadManager {
       await b.commit();
 
       //Cache art
-      DefaultCacheManager().getSingleFile(track.albumArt?.thumb ?? '');
-      DefaultCacheManager().getSingleFile(track.albumArt?.full ?? '');
+      DefaultCacheManager().getSingleFile(track.image?.thumb ?? '');
+      DefaultCacheManager().getSingleFile(track.image?.full ?? '');
     }
 
     return true;
@@ -388,8 +388,8 @@ class DownloadManager {
     //Add to DB
     if (private) {
       //Cache art
-      DefaultCacheManager().getSingleFile(album.art?.thumb ?? '');
-      DefaultCacheManager().getSingleFile(album.art?.full ?? '');
+      DefaultCacheManager().getSingleFile(album.image?.thumb ?? '');
+      DefaultCacheManager().getSingleFile(album.image?.full ?? '');
 
       Batch b = db!.batch();
       b.insert('Albums', album.toSQL(off: true),
@@ -440,8 +440,8 @@ class DownloadManager {
       for (Track t in (playlist.tracks ?? [])) {
         b = await _addTrackToDB(b, t, true);
         //Cache art
-        DefaultCacheManager().getSingleFile(t.albumArt?.thumb ?? '');
-        DefaultCacheManager().getSingleFile(t.albumArt?.full ?? '');
+        DefaultCacheManager().getSingleFile(t.image?.thumb ?? '');
+        DefaultCacheManager().getSingleFile(t.image?.full ?? '');
       }
       await b.commit();
     }
@@ -488,8 +488,8 @@ class DownloadManager {
         }
         b = await _addTrackToDB(b, t, true);
         //Cache art
-        DefaultCacheManager().getSingleFile(t.albumArt?.thumb ?? '');
-        DefaultCacheManager().getSingleFile(t.albumArt?.full ?? '');
+        DefaultCacheManager().getSingleFile(t.image?.thumb ?? '');
+        DefaultCacheManager().getSingleFile(t.image?.full ?? '');
       }
       await b.commit();
 
@@ -786,9 +786,9 @@ class DownloadManager {
   }
 
   //Offline search
-  Future<SearchResults> search(String query) async {
-    SearchResults results =
-        SearchResults(tracks: [], albums: [], artists: [], playlists: []);
+  Future<InstantSearchResults> search(String query) async {
+    InstantSearchResults results = InstantSearchResults(
+        tracks: [], albums: [], artists: [], playlists: []);
     //Tracks
     List tracksData = await db!.rawQuery(
         'SELECT * FROM Tracks WHERE offline == 1 AND title like "%$query%"');
@@ -1028,7 +1028,7 @@ class Download {
           : settings.getQualityInt((quality ?? settings.downloadQuality)),
       'title': t.title,
       'path': path,
-      'image': t.albumArt?.thumb,
+      'image': t.image?.thumb,
       'isEpisode': false,
     };
   }

@@ -16,9 +16,9 @@ Track _$TrackFromJson(Map<String, dynamic> json) => Track(
           ? null
           : Album.fromJson(json['album'] as Map<String, dynamic>),
       playbackDetails: json['playbackDetails'] as List<dynamic>?,
-      albumArt: json['albumArt'] == null
+      image: json['image'] == null
           ? null
-          : ImageDetails.fromJson(json['albumArt'] as Map<String, dynamic>),
+          : ImageDetails.fromJson(json['image'] as Map<String, dynamic>),
       artists: (json['artists'] as List<dynamic>?)
           ?.map((e) => Artist.fromJson(e as Map<String, dynamic>))
           .toList(),
@@ -44,7 +44,7 @@ Map<String, dynamic> _$TrackToJson(Track instance) => <String, dynamic>{
       'album': instance.album,
       'artists': instance.artists,
       'duration': instance.duration.inMicroseconds,
-      'albumArt': instance.albumArt,
+      'image': instance.image,
       'trackNumber': instance.trackNumber,
       'offline': instance.offline,
       'lyrics': instance.lyrics,
@@ -60,9 +60,9 @@ Map<String, dynamic> _$TrackToJson(Track instance) => <String, dynamic>{
 Album _$AlbumFromJson(Map<String, dynamic> json) => Album(
       id: json['id'] as String?,
       title: json['title'] as String?,
-      art: json['art'] == null
+      image: json['image'] == null
           ? null
-          : ImageDetails.fromJson(json['art'] as Map<String, dynamic>),
+          : ImageDetails.fromJson(json['image'] as Map<String, dynamic>),
       artists: (json['artists'] as List<dynamic>?)
           ?.map((e) => Artist.fromJson(e as Map<String, dynamic>))
           .toList(),
@@ -82,7 +82,7 @@ Map<String, dynamic> _$AlbumToJson(Album instance) => <String, dynamic>{
       'title': instance.title,
       'artists': instance.artists,
       'tracks': instance.tracks,
-      'art': instance.art,
+      'image': instance.image,
       'fans': instance.fans,
       'offline': instance.offline,
       'library': instance.library,
@@ -127,9 +127,9 @@ Artist _$ArtistFromJson(Map<String, dynamic> json) => Artist(
               ?.map((e) => Track.fromJson(e as Map<String, dynamic>))
               .toList() ??
           const [],
-      picture: json['picture'] == null
+      image: json['image'] == null
           ? null
-          : ImageDetails.fromJson(json['picture'] as Map<String, dynamic>),
+          : ImageDetails.fromJson(json['image'] as Map<String, dynamic>),
       fans: (json['fans'] as num?)?.toInt(),
       offline: json['offline'] as bool?,
       library: json['library'] as bool?,
@@ -146,7 +146,7 @@ Map<String, dynamic> _$ArtistToJson(Artist instance) => <String, dynamic>{
       'albums': instance.albums,
       'albumCount': instance.albumCount,
       'topTracks': instance.topTracks,
-      'picture': instance.picture,
+      'image': instance.image,
       'fans': instance.fans,
       'offline': instance.offline,
       'library': instance.library,
@@ -192,15 +192,15 @@ Map<String, dynamic> _$PlaylistToJson(Playlist instance) => <String, dynamic>{
 User _$UserFromJson(Map<String, dynamic> json) => User(
       id: json['id'] as String?,
       name: json['name'] as String?,
-      picture: json['picture'] == null
+      image: json['image'] == null
           ? null
-          : ImageDetails.fromJson(json['picture'] as Map<String, dynamic>),
+          : ImageDetails.fromJson(json['image'] as Map<String, dynamic>),
     );
 
 Map<String, dynamic> _$UserToJson(User instance) => <String, dynamic>{
       'id': instance.id,
       'name': instance.name,
-      'picture': instance.picture,
+      'image': instance.image,
     };
 
 ImageDetails _$ImageDetailsFromJson(Map<String, dynamic> json) => ImageDetails(
@@ -333,9 +333,9 @@ SmartTrackList _$SmartTrackListFromJson(Map<String, dynamic> json) =>
       tracks: (json['tracks'] as List<dynamic>?)
           ?.map((e) => Track.fromJson(e as Map<String, dynamic>))
           .toList(),
-      cover: json['cover'] == null
+      image: json['image'] == null
           ? null
-          : ImageDetails.fromJson(json['cover'] as Map<String, dynamic>),
+          : ImageDetails.fromJson(json['image'] as Map<String, dynamic>),
       subtitle: json['subtitle'] as String?,
       flowType: json['flowType'] as String?,
     );
@@ -348,7 +348,7 @@ Map<String, dynamic> _$SmartTrackListToJson(SmartTrackList instance) =>
       'description': instance.description,
       'trackCount': instance.trackCount,
       'tracks': instance.tracks,
-      'cover': instance.cover,
+      'image': instance.image,
       'flowType': instance.flowType,
     };
 
@@ -439,9 +439,9 @@ DeezerFlow _$DeezerFlowFromJson(Map<String, dynamic> json) => DeezerFlow(
       id: json['id'] as String?,
       title: json['title'] as String?,
       target: json['target'] as String?,
-      cover: json['cover'] == null
+      image: json['image'] == null
           ? null
-          : ImageDetails.fromJson(json['cover'] as Map<String, dynamic>),
+          : ImageDetails.fromJson(json['image'] as Map<String, dynamic>),
     );
 
 Map<String, dynamic> _$DeezerFlowToJson(DeezerFlow instance) =>
@@ -449,7 +449,7 @@ Map<String, dynamic> _$DeezerFlowToJson(DeezerFlow instance) =>
       'id': instance.id,
       'target': instance.target,
       'title': instance.title,
-      'cover': instance.cover,
+      'image': instance.image,
     };
 
 Sorting _$SortingFromJson(Map<String, dynamic> json) => Sorting(
@@ -492,9 +492,9 @@ Show _$ShowFromJson(Map<String, dynamic> json) => Show(
       name: json['name'] as String?,
       authors: json['authors'] as String?,
       description: json['description'] as String?,
-      art: json['art'] == null
+      image: json['image'] == null
           ? null
-          : ImageDetails.fromJson(json['art'] as Map<String, dynamic>),
+          : ImageDetails.fromJson(json['image'] as Map<String, dynamic>),
       id: json['id'] as String?,
       fans: (json['fans'] as num?)?.toInt(),
       isExplicit: json['isExplicit'] as bool?,
@@ -508,7 +508,7 @@ Map<String, dynamic> _$ShowToJson(Show instance) => <String, dynamic>{
       'name': instance.name,
       'description': instance.description,
       'authors': instance.authors,
-      'art': instance.art,
+      'image': instance.image,
       'id': instance.id,
       'fans': instance.fans,
       'isExplicit': instance.isExplicit,

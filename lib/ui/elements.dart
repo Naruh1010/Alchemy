@@ -2,6 +2,7 @@ import 'dart:math';
 import 'dart:ui';
 
 import 'package:alchemy/fonts/alchemy_icons.dart';
+import 'package:alchemy/translations.i18n.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -520,5 +521,36 @@ class _SoundWavePainter extends CustomPainter {
         oldDelegate.barCount != barCount ||
         oldDelegate.initialBarWidth != initialBarWidth ||
         oldDelegate.initialGap != initialGap;
+  }
+}
+
+class ViewAllButton extends StatelessWidget {
+  final VoidCallback? onTap;
+
+  const ViewAllButton({this.onTap, super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: MediaQuery.of(context).size.width,
+      margin: EdgeInsets.symmetric(vertical: 8.0),
+      padding: EdgeInsets.symmetric(
+          horizontal: MediaQuery.of(context).size.width * 0.05),
+      child: Container(
+        decoration: BoxDecoration(
+          border: Border.all(color: Colors.white.withAlpha(30), width: 2),
+          borderRadius: BorderRadius.circular(10.0),
+        ),
+        child: InkWell(
+          onTap: onTap,
+          child: Padding(
+              padding: EdgeInsets.symmetric(vertical: 4.0, horizontal: 12.0),
+              child: Text(
+                'See more'.i18n,
+                textAlign: TextAlign.center,
+              )),
+        ),
+      ),
+    );
   }
 }

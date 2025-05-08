@@ -152,7 +152,7 @@ class MenuSheet {
                         label: 'Album art'.i18n,
                         image: true,
                         child: CachedImage(
-                          url: track.albumArt?.full ?? '',
+                          url: track.image?.full ?? '',
                           height: 128,
                           width: 128,
                           circular: true,

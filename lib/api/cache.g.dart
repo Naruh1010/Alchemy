@@ -38,6 +38,10 @@ Cache _$CacheFromJson(Map<String, dynamic> json) => Cache(
           []
       ..searchHistory =
           Cache._searchHistoryFromJson(json['searchHistory2'] as List?)
+      ..searchSections = (json['searchSections'] as List<dynamic>?)
+              ?.map((e) => HomePageSection.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          []
       ..threadsWarning = json['threadsWarning'] as bool? ?? false
       ..lastUpdateCheck = (json['lastUpdateCheck'] as num?)?.toInt() ?? 0;
 
@@ -54,6 +58,7 @@ Map<String, dynamic> _$CacheToJson(Cache instance) => <String, dynamic>{
       'history': instance.history,
       'sorts': instance.sorts,
       'searchHistory2': Cache._searchHistoryToJson(instance.searchHistory),
+      'searchSections': instance.searchSections,
       'threadsWarning': instance.threadsWarning,
       'lastUpdateCheck': instance.lastUpdateCheck,
     };
@@ -75,4 +80,5 @@ const _$SearchHistoryItemTypeEnumMap = {
   SearchHistoryItemType.ALBUM: 'ALBUM',
   SearchHistoryItemType.ARTIST: 'ARTIST',
   SearchHistoryItemType.PLAYLIST: 'PLAYLIST',
+  SearchHistoryItemType.SHOW: 'SHOW',
 };

@@ -2,10 +2,15 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
 
+import 'package:alchemy/api/deezer_login.dart';
+import 'package:alchemy/ui/details_screens.dart';
+import 'package:alchemy/ui/menu.dart';
+import 'package:alchemy/utils/navigator_keys.dart';
 import 'package:encrypt/encrypt.dart' as encrypt;
 import 'package:alchemy/utils/env.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:alchemy/api/cache.dart';
+import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:logging/logging.dart';
 import 'package:alchemy/api/download.dart';
@@ -17,28 +22,45 @@ import '../settings.dart';
 
 DeezerAPI deezerAPI = DeezerAPI();
 
+class KeyBag {
+  String? token;
+  String? tokenKey;
+  String? userKey;
+  String? sid;
+  String? arl;
+
+  KeyBag(
+      {String? token,
+      String? tokenKey,
+      String? userKey,
+      String? sid,
+      String? arl}) {
+    token = token;
+    tokenKey = tokenKey;
+    userKey = userKey;
+    sid = sid;
+    arl = arl;
+  }
+}
+
 class DeezerAPI {
-  DeezerAPI({this.arl});
+  DeezerAPI({keyBag});
 
   static const String userAgent =
       'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36';
 
-  String? arl;
   String? token;
   String? licenseToken;
   String? userId;
   String? favoritesPlaylistId;
   String? sid;
-  String? gatewaySID;
-  String? gatewayARL;
+  KeyBag keyBag = KeyBag();
   final String deezerGatewayAPI = Env.deezerGatewayAPI;
   final String deezerMobileKey = Env.deezerMobileKey;
 
   Future? _authorizing;
 
-  Future testFunction() async {
-    Logger.root.info(await getShowNotificationIds());
-  }
+  Future testFunction() async {}
 
   //Get headers
   Map<String, String> get headers => {
@@ -57,7 +79,7 @@ class DeezerAPI {
         //'sec-fetch-mode': 'same-origin',
         //'sec-fetch-dest': 'empty',
         //'referer': 'https://www.deezer.com/',
-        'Cookie': 'arl=$arl' + ((sid == null) ? '' : '; sid=$sid')
+        'Cookie': 'arl=${keyBag.arl}' + ((sid == null) ? '' : '; sid=$sid')
       };
 
   Future<String> getMediaPreview(String trackToken) async {
@@ -162,7 +184,7 @@ class DeezerAPI {
     return body;
   }
 
-  Future<bool> getGatewayAuth() async {
+  Future<bool> getGatewayKeybag() async {
     final initKeyBytes = utf8.encode(deezerMobileKey);
     final encrypt.Key initKey = encrypt.Key(initKeyBytes);
     final initEncrypter = encrypt.Encrypter(
@@ -182,15 +204,33 @@ class DeezerAPI {
     String decrypted =
         initEncrypter.decrypt(encrypt.Encrypted.fromBase16(token));
 
-    String apiToken = decrypted.substring(0, 64);
-    String apiTokenKey = decrypted.substring(64, 80);
+    keyBag.token = decrypted.substring(0, 64);
+    keyBag.tokenKey = decrypted.substring(64, 80);
+    keyBag.userKey = decrypted.substring(80, 96);
+
+    if (keyBag.token != null &&
+        keyBag.tokenKey != null &&
+        keyBag.userKey != null) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  Future<bool> getGatewayAuth() async {
+    if ((keyBag.token == null ||
+            keyBag.tokenKey == null ||
+            keyBag.userKey == null) &&
+        !(await getGatewayKeybag())) {
+      return false;
+    }
 
     final encrypter = encrypt.Encrypter(encrypt.AES(
-        encrypt.Key(utf8.encode(apiTokenKey)),
+        encrypt.Key(utf8.encode(keyBag.tokenKey!)),
         mode: encrypt.AESMode.ecb,
         padding: null));
 
-    String authToken = encrypter.encrypt(apiToken).base16.toString();
+    String authToken = encrypter.encrypt(keyBag.token!).base16.toString();
 
     Uri sidUri = Uri.https('api.deezer.com', '/1.0/gateway.php', {
       'api_key': deezerGatewayAPI,
@@ -205,11 +245,11 @@ class DeezerAPI {
 
     dynamic sidRes = jsonDecode(sidReq.body);
 
-    gatewaySID = sidRes['results'];
+    keyBag.sid = sidRes['results'];
 
     Uri arlUri = Uri.https('api.deezer.com', '/1.0/gateway.php', {
       'api_key': deezerGatewayAPI,
-      'sid': gatewaySID,
+      'sid': keyBag.sid,
       'output': '3',
       'method': 'mobile_userAutolog',
     });
@@ -220,9 +260,9 @@ class DeezerAPI {
 
     dynamic arlRes = jsonDecode(arlReq.body);
 
-    gatewayARL = arlRes['results']['ARL'];
+    keyBag.arl = arlRes['results']['ARL'];
 
-    if (gatewaySID != null && gatewayARL != null) {
+    if (keyBag.sid != null && keyBag.arl != null) {
       return true;
     } else {
       return false;
@@ -235,15 +275,30 @@ class DeezerAPI {
     //Generate URL
     Uri uri = Uri.https('api.deezer.com', '/1.0/gateway.php', {
       'api_key': deezerGatewayAPI,
-      'sid': gatewaySID,
-      'method': 'shownotification_getIds',
+      'sid': keyBag.sid,
+      'method': method,
       'output': '3',
       'input': '3',
-      'arl': arl,
+      'arl': keyBag.arl,
     });
+
+    Map<String, String> gwHeaders = {
+      'User-Agent': '',
+      'Content-Type': 'text/plain;charset=UTF-8',
+      'origin': 'https://www.deezer.com',
+      'Cache-Control': 'max-age=0',
+      'Accept': '*/*',
+      'Accept-Charset': 'utf-8,ISO-8859-1;q=0.7,*;q=0.3',
+      'Connection': 'keep-alive',
+      'sec-fetch-site': 'same-origin',
+      'sec-fetch-mode': 'same-origin',
+      'sec-fetch-dest': 'empty',
+      'referer': 'https://www.deezer.com/',
+    };
+
     //Post
     http.Response res = await http
-        .post(uri, headers: headers, body: jsonEncode({'CHECKSUM': ''}))
+        .post(uri, headers: gwHeaders, body: jsonEncode(params))
         .catchError((e) {
       return http.Response('', 200);
     });
@@ -430,6 +485,112 @@ class DeezerAPI {
     Map<dynamic, dynamic> data = await callGwLightApi('deezer.pageSearch',
         params: {'nb': 128, 'query': query, 'start': 0});
     return SearchResults.fromPrivateJson(data['results'] ?? {});
+  }
+
+  List<SearchHistoryItem> parseRawHistory(List<dynamic> json) {
+    if (json.isEmpty) return [];
+
+    List<SearchHistoryItem> searchHistory = [];
+
+    for (dynamic rawItem in json) {
+      String? rawType = rawItem['node']['__typename'];
+      dynamic item;
+      switch (rawType) {
+        case 'Track':
+          item = SearchHistoryItem(Track.fromGatewayJson(rawItem['node']),
+              SearchHistoryItemType.TRACK);
+          break;
+        case 'Album':
+          item = SearchHistoryItem(Album.fromGatewayJson(rawItem['node']),
+              SearchHistoryItemType.ALBUM);
+          break;
+        case 'Artist':
+          item = SearchHistoryItem(Artist.fromGatewayJson(rawItem['node']),
+              SearchHistoryItemType.ARTIST);
+          break;
+        case 'Playlist':
+          item = SearchHistoryItem(Playlist.fromGatewayJson(rawItem['node']),
+              SearchHistoryItemType.PLAYLIST);
+          break;
+        case 'Podcast':
+          item = SearchHistoryItem(Show.fromGatewayJson(rawItem['node']),
+              SearchHistoryItemType.SHOW);
+          break;
+      }
+      searchHistory.add(item);
+    }
+
+    return searchHistory;
+  }
+
+  Future<List<SearchHistoryItem>> recentlySearched(
+      {int start = 0, int limit = 5}) async {
+    Map<dynamic, dynamic> data =
+        await callGwApi('user_getRecentlySearched', params: {
+      'START': limit,
+      'LIMIT': start,
+    });
+
+    Logger.root.info(data);
+
+    if (data['results']['data'] == null) return [];
+
+    return parseRawHistory(data['results']['data']);
+  }
+
+  Future<List<SearchHistoryItem>> getUserHistory() async {
+    Map<String, dynamic> apiParams = {
+      'operationName': 'GetMySearchHistory',
+      'variables': {'first': 20},
+      'query':
+          'query GetMySearchHistory(\$first: Int, \$after: String) { me { __typename searchHistory { __typename successResults(first: \$first, after: \$after) { __typename pageInfo { __typename ...PageInfoFragment } edges { __typename node { __typename ... on Album { ...AlbumCollectionFragment cover { __typename ...PictureMD5Fragment } albumContributors: contributors(first: 1) { __typename edges { __typename roles node { __typename ... on Artist { ...ArtistMinimalFragment } } } } } ... on Artist { ...ArtistDetailFragment picture { __typename ...PictureMD5Fragment } } ... on Playlist { ...PlaylistCollectionFragment picture { __typename ...PictureFragment } owner { __typename ...UserMinimalFragment } linkedArtist { __typename ...ArtistMinimalFragment } } ... on Track { ...TrackWithoutMediaCollectionFragment album { __typename ...AlbumMinimalFragment cover { __typename ...PictureMD5Fragment } } trackContributors: contributors(first: 1) { __typename edges { __typename roles node { __typename ... on Artist { ...ArtistMinimalFragment } } } } } ... on Podcast { ...PodcastCollectionFragment cover { __typename ...PictureMD5Fragment } } ... on PodcastEpisode { ...PodcastEpisodeCollectionFragment cover { __typename ...PictureMD5Fragment } } ... on Livestream { ...LivestreamCollectionFragment cover { __typename ...PictureMD5Fragment } } } } } } } }  fragment PageInfoFragment on PageInfo { __typename hasNextPage hasPreviousPage startCursor endCursor }  fragment AlbumCollectionFragment on Album { __typename id displayTitle type albumReleaseDate: releaseDate albumIsExplicit: isExplicit albumIsFavorite: isFavorite tracksCount rank }  fragment PictureMD5Fragment on Picture { __typename id md5 explicitStatus }  fragment ArtistMinimalFragment on Artist { __typename id name }  fragment ArtistDetailFragment on Artist { __typename id name fansCount onTour status hasPartialDiscography hasSmartRadio hasTopTracks isDummyArtist isPictureFromReliableSource artistIsFavorite: isFavorite isBannedFromRecommendation isSubscriptionEnabled }  fragment PlaylistCollectionFragment on Playlist { __typename id title playlistIsFavorite: isFavorite isFromFavoriteTracks creationDate lastModificationDate estimatedTracksCount isCharts isPrivate }  fragment PictureFragment on Picture { __typename id small: urls(pictureRequest: { height: 256 width: 256 } ) medium: urls(pictureRequest: { height: 750 width: 750 } ) large: urls(pictureRequest: { height: 1200 width: 1200 } ) copyright explicitStatus }  fragment UserMinimalFragment on User { __typename id name }  fragment TrackWithoutMediaCollectionFragment on Track { __typename id title duration gain bpm popularity trackReleaseDate: releaseDate trackIsExplicit: isExplicit trackIsFavorite: isFavorite isBannedFromRecommendation }  fragment AlbumMinimalFragment on Album { __typename id displayTitle }  fragment PodcastCollectionFragment on Podcast { __typename id displayTitle description podcastIsFavorite: isFavorite podcastIsExplicit: isExplicit }  fragment PodcastEpisodeCollectionFragment on PodcastEpisode { __typename id title duration releaseDate }  fragment LivestreamCollectionFragment on Livestream { __typename id name isOnStream }'
+    };
+
+    Map<dynamic, dynamic> rawHistory = await callPipeApi(params: apiParams);
+
+    Logger.root.info(rawHistory);
+
+    return parseRawHistory(
+        rawHistory['data']['me']['searchHistory']['successResults']['edges']);
+  }
+
+  Future<InstantSearchResults> instantSearch(String query,
+      {bool includeBestResult = false,
+      bool includeTracks = false,
+      bool includeAlbums = false,
+      bool includeArtists = false,
+      bool includePlaylists = false,
+      bool includeUsers = false,
+      bool includeFlowConfigs = false,
+      bool includeLivestreams = false,
+      bool includePodcasts = false,
+      bool includePodcastEpisodes = false,
+      bool includeChannels = false,
+      int count = 2}) async {
+    if (query == '') return InstantSearchResults();
+
+    Map<String, dynamic> searchParams = {
+      'operationName': 'InstantSearchQuery',
+      'variables': {
+        'querySearched': query,
+        'first': count,
+        'includeBestResult': includeBestResult,
+        'includeTracks': includeTracks,
+        'includeAlbums': includeAlbums,
+        'includeArtists': includeArtists,
+        'includePlaylists': includePlaylists,
+        'includeUsers': includeUsers,
+        'includeFlowConfigs': includeFlowConfigs,
+        'includeLivestreams': includeLivestreams,
+        'includePodcasts': includePodcasts,
+        'includePodcastEpisodes': includePodcastEpisodes,
+        'includeChannels': includeChannels
+      },
+      'query':
+          'query InstantSearchQuery(\$querySearched: String!, \$first: Int, \$after: String, \$includeBestResult: Boolean!, \$includeTracks: Boolean!, \$includeAlbums: Boolean!, \$includeArtists: Boolean!, \$includePlaylists: Boolean!, \$includeUsers: Boolean!, \$includeFlowConfigs: Boolean!, \$includeLivestreams: Boolean!, \$includePodcasts: Boolean!, \$includePodcastEpisodes: Boolean!, \$includeChannels: Boolean!) { instantSearch(query: \$querySearched) { __typename bestResult @include(if: \$includeBestResult) { __typename ... on InstantSearchArtistBestResult { artist { __typename ...ArtistDetailFragment picture { __typename ...PictureMD5Fragment } } relatedContent { __typename ... on InstantSearchArtistBestResultRelatedContentTopTracks { tracks(limit: 3) { __typename id } } ... on InstantSearchArtistBestResultRelatedContentNewRelease { album { __typename ...AlbumDetailFragment cover { __typename ...PictureMD5Fragment } albumContributors: contributors(first: 1) { __typename edges { __typename roles node { __typename ... on Artist { ...ArtistMinimalFragment } } } } } } } } ... on InstantSearchAlbumBestResult { album { __typename ...AlbumCollectionFragment cover { __typename ...PictureMD5Fragment } albumContributors: contributors(first: 1) { __typename edges { __typename roles node { __typename ... on Artist { ...ArtistMinimalFragment } } } } } } ... on InstantSearchPlaylistBestResult { playlist { __typename ...PlaylistCollectionFragment picture { __typename ...PictureFragment } owner { __typename ...UserMinimalFragment } linkedArtist { __typename ...ArtistMinimalFragment } } } ... on InstantSearchTrackBestResult { track { __typename ...TrackWithoutMediaCollectionFragment album { __typename ...AlbumMinimalFragment cover { __typename ...PictureMD5Fragment } } trackContributors: contributors(first: 1) { __typename edges { __typename roles node { __typename ... on Artist { ...ArtistMinimalFragment } } } } } } ... on InstantSearchPodcastBestResult { podcast { __typename ...PodcastCollectionFragment cover { __typename ...PictureMD5Fragment } } } ... on InstantSearchPodcastEpisodeBestResult { podcastEpisode { __typename ...PodcastEpisodeCollectionFragment cover { __typename ...PictureMD5Fragment } podcast { __typename displayTitle } } } ... on InstantSearchLivestreamBestResult { livestream { __typename ...LivestreamCollectionFragment cover { __typename ...PictureMD5Fragment } } } } results { __typename tracks(first: \$first, after: \$after) @include(if: \$includeTracks) { __typename priority pageInfo { __typename ...PageInfoFragment } edges { __typename node { __typename ...TrackWithoutMediaCollectionFragment album { __typename ...AlbumMinimalFragment cover { __typename ...PictureMD5Fragment } } contributors(first: 1) { __typename edges { __typename roles node { __typename ...ArtistMinimalFragment } } } } } } albums(first: \$first, after: \$after) @include(if: \$includeAlbums) { __typename priority pageInfo { __typename ...PageInfoFragment } edges { __typename node { __typename ...AlbumCollectionFragment cover { __typename ...PictureMD5Fragment } contributors(first: 1) { __typename edges { __typename roles node { __typename ...ArtistMinimalFragment } } } } } } artists(first: \$first, after: \$after) @include(if: \$includeArtists) { __typename priority pageInfo { __typename ...PageInfoFragment } edges { __typename node { __typename ...ArtistDetailFragment picture { __typename ...PictureMD5Fragment } } } } playlists(first: \$first, after: \$after) @include(if: \$includePlaylists) { __typename pageInfo { __typename ...PageInfoFragment } priority edges { __typename node { __typename ...PlaylistCollectionFragment picture { __typename ...PictureFragment } owner { __typename ...UserMinimalFragment } linkedArtist { __typename ...ArtistMinimalFragment } } } } users(first: \$first, after: \$after) @include(if: \$includeUsers) { __typename priority pageInfo { __typename ...PageInfoFragment } edges { __typename node { __typename ...UserMinimalFragment picture { __typename ...PictureMD5Fragment } } } } flowConfigs(first: \$first, after: \$after) @include(if: \$includeFlowConfigs) { __typename priority pageInfo { __typename ...PageInfoFragment } edges { __typename node { __typename ...FlowConfigMinimalFragment visuals { __typename dynamicPageIcon { __typename ...UIAssetFragment } } } } } livestreams(first: \$first, after: \$after) @include(if: \$includeLivestreams) { __typename priority pageInfo { __typename ...PageInfoFragment } edges { __typename node { __typename ...LivestreamCollectionFragment cover { __typename ...PictureMD5Fragment } } } } podcasts(first: \$first, after: \$after) @include(if: \$includePodcasts) { __typename priority pageInfo { __typename ...PageInfoFragment } edges { __typename node { __typename ...PodcastCollectionFragment cover { __typename ...PictureMD5Fragment } } } } podcastEpisodes(first: \$first, after: \$after) @include(if: \$includePodcastEpisodes) { __typename priority pageInfo { __typename ...PageInfoFragment } edges { __typename node { __typename ...PodcastEpisodeCollectionFragment cover { __typename ...PictureMD5Fragment } } } } channels(first: \$first, after: \$after) @include(if: \$includeChannels) { __typename priority pageInfo { __typename ...PageInfoFragment } edges { __typename node { __typename ...ChannelCollectionFragment logo { __typename ...PictureMD5Fragment } picture { __typename ...PictureFragment } } } } } } }  fragment ArtistDetailFragment on Artist { __typename id name fansCount onTour status hasPartialDiscography hasSmartRadio hasTopTracks isDummyArtist isPictureFromReliableSource artistIsFavorite: isFavorite isBannedFromRecommendation isSubscriptionEnabled }  fragment PictureMD5Fragment on Picture { __typename id md5 explicitStatus }  fragment AlbumDetailFragment on Album { __typename id displayTitle type label producerLine duration releaseDate fansCount isExplicit isTakenDown isFavorite discsCount tracksCount }  fragment ArtistMinimalFragment on Artist { __typename id name }  fragment AlbumCollectionFragment on Album { __typename id displayTitle type albumReleaseDate: releaseDate albumIsExplicit: isExplicit albumIsFavorite: isFavorite tracksCount rank }  fragment PlaylistCollectionFragment on Playlist { __typename id title playlistIsFavorite: isFavorite isFromFavoriteTracks creationDate lastModificationDate estimatedTracksCount isCharts isPrivate }  fragment PictureFragment on Picture { __typename id small: urls(pictureRequest: { height: 256 width: 256 } ) medium: urls(pictureRequest: { height: 750 width: 750 } ) large: urls(pictureRequest: { height: 1200 width: 1200 } ) copyright explicitStatus }  fragment UserMinimalFragment on User { __typename id name }  fragment TrackWithoutMediaCollectionFragment on Track { __typename id title duration gain bpm popularity trackReleaseDate: releaseDate trackIsExplicit: isExplicit trackIsFavorite: isFavorite isBannedFromRecommendation }  fragment AlbumMinimalFragment on Album { __typename id displayTitle }  fragment PodcastCollectionFragment on Podcast { __typename id displayTitle description podcastIsFavorite: isFavorite podcastIsExplicit: isExplicit }  fragment PodcastEpisodeCollectionFragment on PodcastEpisode { __typename id title duration releaseDate }  fragment LivestreamCollectionFragment on Livestream { __typename id name isOnStream }  fragment PageInfoFragment on PageInfo { __typename hasNextPage hasPreviousPage startCursor endCursor }  fragment FlowConfigMinimalFragment on FlowConfig { __typename id title }  fragment UIAssetFragment on UIAsset { __typename id small: urls(uiAssetRequest: { height: 256 width: 256 } ) medium: urls(uiAssetRequest: { height: 750 width: 750 } ) large: urls(uiAssetRequest: { height: 1200 width: 1200 } ) }  fragment ChannelCollectionFragment on Channel { __typename id name backgroundColor slug }'
+    };
+    Map<dynamic, dynamic> data = await callPipeApi(params: searchParams);
+    return InstantSearchResults.fromGatewayJson(data['data']['instantSearch']);
   }
 
   Future<Track> track(String id) async {
@@ -661,7 +822,7 @@ class DeezerAPI {
   Future<List<Playlist>> getMusicQuizzes() async {
     Map data = await callGwLightApi('deezer.pageProfile',
         params: {'nb': 100, 'tab': 'playlists', 'user_id': '5207298602'});
-    if (data['results'] == null) return [];
+    if (data['results']?['TAB']?['playlists']?['data'] == null) return [];
     return data['results']['TAB']['playlists']['data']
         .map<Playlist>((json) => Playlist.fromPrivateJson(json, library: true))
         .toList();
@@ -671,7 +832,7 @@ class DeezerAPI {
   Future<List<Playlist>> getPlaylists() async {
     Map data = await callGwLightApi('deezer.pageProfile',
         params: {'nb': 100, 'tab': 'playlists', 'user_id': userId});
-    return data['results']['TAB']['playlists']['data']
+    return (data['results']?['TAB']?['playlists']?['data'] ?? [])
         .map<Playlist>((json) => Playlist.fromPrivateJson(json, library: true))
         .toList();
   }
@@ -692,7 +853,7 @@ class DeezerAPI {
   Future<List<Album>> getAlbums() async {
     Map data = await callGwLightApi('deezer.pageProfile',
         params: {'nb': 50, 'tab': 'albums', 'user_id': userId});
-    List albumList = data['results']['TAB']['albums']['data'];
+    List albumList = data['results']?['TAB']?['albums']?['data'] ?? [];
     List<Album> albums = albumList
         .map<Album>((json) => Album.fromPrivateJson(json, library: true))
         .toList();
@@ -727,7 +888,7 @@ class DeezerAPI {
   Future<List<Artist>> getArtists() async {
     Map data = await callGwLightApi('deezer.pageProfile',
         params: {'nb': 40, 'tab': 'artists', 'user_id': userId});
-    return data['results']['TAB']['artists']['data']
+    return (data['results']?['TAB']?['artists']?['data'] ?? [])
         .map<Artist>((json) => Artist.fromPrivateJson(json, library: true))
         .toList();
   }
@@ -1224,37 +1385,40 @@ class DeezerAPI {
     return false;
   }
 
-  Future<List<String>> getShowNotificationIds() async {
-    if (gatewaySID == null || gatewayARL == null) {
-      await getGatewayAuth();
-    }
-
-    //Generate URL
-    Uri uri = Uri.https('api.deezer.com', '/1.0/gateway.php', {
-      'api_key': deezerGatewayAPI,
-      'sid': gatewaySID,
-      'method': 'shownotification_getIds',
-      'output': '3',
-      'input': '3',
-      'arl': gatewayARL,
-    });
-    //Post
-    http.Response res = await http
-        .post(uri, headers: headers, body: jsonEncode({'CHECKSUM': ''}))
-        .catchError((e) {
-      return http.Response('', 200);
-    });
-
-    dynamic body = jsonDecode(res.body);
-
-    // Check if the data list exists and is not null
-    if (body['results'] == null ||
-        body['results']['data'] == null ||
-        body['results']['data'] is! List) {
+  Future<List<HomePageSection>> getUserSearchPage() async {
+    Map<String, dynamic> data = await callGwApi('search_getSearchHomeChannels');
+    if (data['results'] == null ||
+        data['results']['data'] == null ||
+        data['results']['data'] is! List) {
       return [];
     }
 
-    List<dynamic> dataList = body['results']['data'];
+    List<dynamic> rawSections = (data['results']['data'] as List<dynamic>)
+        .where((dynamic candidate) => candidate['data']?.isNotEmpty)
+        .toList();
+
+    List<HomePageSection> sections = List.generate(
+        rawSections.length,
+        (int index) => HomePageSection(
+            title: rawSections[index]?['title'],
+            type: HomePageSectionType.OTHER,
+            items: List.generate(
+                rawSections[index]['data'].length,
+                (int jndex) => HomePageItem.fromPrivateJson(
+                    rawSections[index]['data'][jndex]))));
+
+    return sections;
+  }
+
+  Future<List<String>> getShowNotificationIds() async {
+    Map<String, dynamic> data = await callGwApi('shownotification_getIds');
+    if (data['results'] == null ||
+        data['results']['data'] == null ||
+        data['results']['data'] is! List) {
+      return [];
+    }
+
+    List<dynamic> dataList = data['results']['data'];
 
     return dataList
         .map<String>((item) {
@@ -1307,10 +1471,41 @@ class DeezerAPI {
       'nb': 10000,
     });
 
-    if (data['results']['TAB']['shows']['data'] == null) return [];
+    if (data['results']?['TAB']?['shows']?['data'] == null) return [];
 
-    return data['results']['TAB']['shows']['data']
+    return data['results']?['TAB']?['shows']?['data']
         .map<Show>((e) => Show.fromPrivateJson(e))
         .toList();
+  }
+}
+
+openScreenByURL(String url) async {
+  DeezerLinkResponse? res = await deezerAPI.parseLink(url);
+
+  if (res == null || res.type == null) return;
+
+  switch (res.type!) {
+    case DeezerLinkType.TRACK:
+      Track t = await deezerAPI.track(res.id!);
+      MenuSheet()
+          .defaultTrackMenu(t, context: mainNavigatorKey.currentContext!);
+      break;
+    case DeezerLinkType.ALBUM:
+      Album a = await deezerAPI.album(res.id!);
+      mainNavigatorKey.currentState
+          ?.push(MaterialPageRoute(builder: (context) => AlbumDetails(a)));
+      break;
+    case DeezerLinkType.ARTIST:
+      Artist a = await deezerAPI.artist(res.id!);
+      mainNavigatorKey.currentState
+          ?.push(MaterialPageRoute(builder: (context) => ArtistDetails(a)));
+      break;
+    case DeezerLinkType.PLAYLIST:
+      Playlist p = await deezerAPI.playlist(res.id!);
+      mainNavigatorKey.currentState
+          ?.push(MaterialPageRoute(builder: (context) => PlaylistDetails(p)));
+      break;
+    case DeezerLinkType.GAME:
+      return;
   }
 }

@@ -50,7 +50,7 @@ class AndroidAuto {
           displayTitle: a.title,
           displaySubtitle: a.artistString,
           playable: true,
-          artUri: Uri.tryParse(a.art?.thumb ?? ''),
+          artUri: Uri.tryParse(a.image?.thumb ?? ''),
         );
       }).toList();
       return out;
@@ -67,7 +67,7 @@ class AndroidAuto {
           album: '',
           displayTitle: a.name,
           playable: false,
-          artUri: Uri.tryParse(a.picture?.thumb ?? ''),
+          artUri: Uri.tryParse(a.image?.thumb ?? ''),
         );
       }).toList();
       return out;
@@ -86,7 +86,7 @@ class AndroidAuto {
           displayTitle: a.title,
           displaySubtitle: a.artistString,
           playable: true,
-          artUri: Uri.tryParse(a.art?.thumb ?? ''),
+          artUri: Uri.tryParse(a.image?.thumb ?? ''),
         );
       }).toList();
       return out;
@@ -124,7 +124,7 @@ class AndroidAuto {
                   displayTitle: data.title,
                   displaySubtitle: data.artistString,
                   playable: true,
-                  artUri: Uri.tryParse(data.art.thumb),
+                  artUri: Uri.tryParse(data.image.thumb),
                 ));
                 break;
 
@@ -135,7 +135,7 @@ class AndroidAuto {
                   album: '',
                   displayTitle: data.name,
                   playable: false,
-                  artUri: Uri.tryParse(data.picture.thumb),
+                  artUri: Uri.tryParse(data.image.thumb),
                 ));
                 break;
 
@@ -147,7 +147,7 @@ class AndroidAuto {
                   displayTitle: data.title,
                   displaySubtitle: data.subtitle,
                   playable: true,
-                  artUri: Uri.tryParse(data.cover.thumb),
+                  artUri: Uri.tryParse(data.image.thumb),
                 ));
                 break;
 

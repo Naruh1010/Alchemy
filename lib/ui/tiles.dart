@@ -25,9 +25,10 @@ class TrackTile extends StatefulWidget {
   final VoidCallback? onTap;
   final VoidCallback? onHold;
   final Widget? trailing;
+  final EdgeInsetsGeometry? padding;
 
   const TrackTile(this.track,
-      {this.onTap, this.onHold, this.trailing, super.key});
+      {this.onTap, this.onHold, this.trailing, this.padding, super.key});
 
   @override
   _TrackTileState createState() => _TrackTileState();
@@ -133,7 +134,8 @@ class _TrackTileState extends State<TrackTile> {
   Widget build(BuildContext context) {
     return Column(children: [
       ListTile(
-        dense: true,
+        contentPadding: widget.padding,
+        //dense: true,
         title: Text(
           widget.track.title ?? '',
           maxLines: 1,
@@ -159,7 +161,7 @@ class _TrackTileState extends State<TrackTile> {
                 ),
               ),
               child: CachedImage(
-                url: widget.track.albumArt?.thumb ?? '',
+                url: widget.track.image?.thumb ?? '',
                 width: 48,
               ),
             ),
@@ -237,8 +239,9 @@ class _TrackTileState extends State<TrackTile> {
 
 class NotificationTile extends StatelessWidget {
   final DeezerNotification notification;
+  final VoidCallback? onTap;
 
-  const NotificationTile(this.notification, {super.key});
+  const NotificationTile(this.notification, {this.onTap, super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -247,6 +250,7 @@ class NotificationTile extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         ListTile(
+          onTap: onTap,
           leading: Container(
             clipBehavior: Clip.hardEdge,
             decoration: ShapeDecoration(
@@ -258,7 +262,7 @@ class NotificationTile extends StatelessWidget {
               ),
             ),
             child: CachedImage(
-              url: notification.picture?.thumb ?? '',
+              url: notification.image?.thumb ?? '',
               width: 48,
             ),
           ),
@@ -322,7 +326,7 @@ class SimpleTrackTile extends StatelessWidget {
           ),
         ),
         child: CachedImage(
-          url: track.albumArt?.full ?? '',
+          url: track.image?.full ?? '',
         ),
       ),
       title: Text(track.title ?? '',
@@ -353,13 +357,15 @@ class AlbumTile extends StatelessWidget {
   final VoidCallback? onTap;
   final VoidCallback? onHold;
   final Widget? trailing;
+  final EdgeInsetsGeometry? padding;
 
   const AlbumTile(this.album,
-      {super.key, this.onTap, this.onHold, this.trailing});
+      {super.key, this.onTap, this.onHold, this.trailing, this.padding});
 
   @override
   Widget build(BuildContext context) {
     return ListTile(
+      contentPadding: padding,
       title: Text(
         album.title ?? '',
         maxLines: 1,
@@ -379,7 +385,7 @@ class AlbumTile extends StatelessWidget {
           ),
         ),
         child: CachedImage(
-          url: album.art?.thumb ?? '',
+          url: album.image?.thumb ?? '',
           width: 48,
         ),
       ),
@@ -394,13 +400,15 @@ class ArtistTile extends StatelessWidget {
   final Artist artist;
   final VoidCallback? onTap;
   final VoidCallback? onHold;
+  final double? size;
 
-  const ArtistTile(this.artist, {super.key, this.onTap, this.onHold});
+  const ArtistTile(this.artist,
+      {super.key, this.onTap, this.onHold, this.size});
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-        width: 140,
+        width: size ?? 140,
         child: InkWell(
           borderRadius: BorderRadius.circular(25),
           onTap: onTap,
@@ -420,9 +428,9 @@ class ArtistTile extends StatelessWidget {
                     ),
                   ),
                   child: CachedImage(
-                    url: artist.picture?.thumb ?? '',
+                    url: artist.image?.thumb ?? '',
                     circular: true,
-                    width: 128,
+                    width: size,
                   ),
                 ),
               ),
@@ -447,9 +455,10 @@ class PlaylistTile extends StatelessWidget {
   final VoidCallback? onTap;
   final VoidCallback? onHold;
   final Widget? trailing;
+  final EdgeInsetsGeometry? padding;
 
   const PlaylistTile(this.playlist,
-      {super.key, this.onHold, this.onTap, this.trailing});
+      {super.key, this.onHold, this.onTap, this.trailing, this.padding});
 
   String get subtitle {
     if (playlist.user?.name == '' || playlist.user?.id == deezerAPI.userId) {
@@ -462,6 +471,7 @@ class PlaylistTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListTile(
+      contentPadding: padding,
       title: Text(
         playlist.title ?? '',
         maxLines: 1,
@@ -497,22 +507,25 @@ class ArtistHorizontalTile extends StatelessWidget {
   final VoidCallback? onTap;
   final VoidCallback? onHold;
   final Widget? trailing;
+  final EdgeInsetsGeometry? padding;
 
   const ArtistHorizontalTile(this.artist,
-      {super.key, this.onHold, this.onTap, this.trailing});
+      {super.key, this.onHold, this.onTap, this.trailing, this.padding});
 
   @override
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 2.0),
       child: ListTile(
+        contentPadding: padding,
         title: Text(
           artist.name ?? '',
           maxLines: 1,
         ),
         leading: CachedImage(
-          url: artist.picture?.thumb ?? '',
+          url: artist.image?.thumb ?? '',
           circular: true,
+          width: 48,
         ),
         onTap: onTap,
         onLongPress: onHold,
@@ -606,7 +619,7 @@ class SmartTrackListTile extends StatelessWidget {
                     child: Stack(
                       children: [
                         CachedImage(
-                          url: smartTrackList.cover?.full ?? '',
+                          url: smartTrackList.image?.full ?? '',
                           width: 130,
                           height: 130,
                           rounded: true,
@@ -672,7 +685,7 @@ class FlowTrackListTile extends StatelessWidget {
                 height: 4,
               ),
               CachedImage(
-                url: deezerFlow.cover?.full ?? '',
+                url: deezerFlow.image?.full ?? '',
                 circular: true,
                 width: 95,
               ),
@@ -725,7 +738,7 @@ class AlbumCard extends StatelessWidget {
                     ),
                   ),
                   child: CachedImage(
-                    url: album.art?.thumb ?? '',
+                    url: album.image?.thumb ?? '',
                     width: 130,
                     height: 130,
                     rounded: true,
@@ -871,7 +884,7 @@ class ShowCard extends StatelessWidget {
                     ),
                   ),
                   child: CachedImage(
-                    url: show.art?.thumb ?? '',
+                    url: show.image?.thumb ?? '',
                     width: 130,
                     height: 130,
                     rounded: true,
@@ -898,12 +911,16 @@ class ShowTile extends StatelessWidget {
   final Show show;
   final VoidCallback? onTap;
   final VoidCallback? onHold;
+  final EdgeInsetsGeometry? padding;
+  final Widget? trailing;
 
-  const ShowTile(this.show, {super.key, this.onTap, this.onHold});
+  const ShowTile(this.show,
+      {super.key, this.onTap, this.onHold, this.padding, this.trailing});
 
   @override
   Widget build(BuildContext context) {
     return ListTile(
+      contentPadding: padding,
       title: Text(
         show.name ?? '',
         maxLines: 1,
@@ -927,10 +944,11 @@ class ShowTile extends StatelessWidget {
           ),
         ),
         child: CachedImage(
-          url: show.art?.thumb ?? '',
+          url: show.image?.thumb ?? '',
           width: 48,
         ),
       ),
+      trailing: trailing,
     );
   }
 }
@@ -941,9 +959,15 @@ class ShowEpisodeTile extends StatefulWidget {
   final VoidCallback? onHold;
   final Widget? trailing;
   final Show? show;
+  final EdgeInsetsGeometry? padding;
 
   const ShowEpisodeTile(this.episode,
-      {super.key, this.onTap, this.onHold, this.trailing, this.show});
+      {super.key,
+      this.onTap,
+      this.onHold,
+      this.trailing,
+      this.show,
+      this.padding});
 
   @override
   _ShowEpisodeTileState createState() => _ShowEpisodeTileState();
@@ -1056,202 +1080,214 @@ class _ShowEpisodeTileState extends State<ShowEpisodeTile> {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onLongPress: widget.onHold,
-      onTap: widget.onTap,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          ListTile(
-            dense: true,
-            title: Text(
-              widget.episode.title ?? '',
-              maxLines: 2,
-              overflow: TextOverflow.clip,
-              style: TextStyle(
-                  fontWeight:
-                      nowPlaying != PlayingState.NONE ? FontWeight.bold : null),
-            ),
-            leading: Stack(
-              children: [
-                CachedImage(
-                  url: widget.episode.episodeCover?.full ?? '',
-                  width: 48,
-                  rounded: true,
+    return Column(
+      children: [
+        InkWell(
+          onLongPress: widget.onHold,
+          onTap: widget.onTap,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                contentPadding: widget.padding,
+                dense: true,
+                title: Text(
+                  widget.episode.title ?? '',
+                  maxLines: 2,
+                  overflow: TextOverflow.clip,
+                  style: TextStyle(
+                      fontWeight: nowPlaying != PlayingState.NONE
+                          ? FontWeight.bold
+                          : null),
                 ),
-                if (nowPlaying == PlayingState.PLAYING)
-                  Container(
-                    width: 48,
-                    height: 48,
-                    color: Colors.black.withAlpha(30),
-                    child: Center(
-                        child: Lottie.asset(
-                            'assets/animations/playing_wave.json',
-                            repeat: true,
-                            frameRate: FrameRate(60),
-                            fit: BoxFit.cover,
-                            width: 40,
-                            height: 40)),
-                  ),
-                if (nowPlaying == PlayingState.PAUSED)
-                  Container(
-                    width: 48,
-                    height: 48,
-                    color: Colors.black.withAlpha(30),
-                    child: Center(
-                        child: Lottie.asset(
-                            'assets/animations/pausing_wave.json',
-                            repeat: false,
-                            frameRate: FrameRate(60),
-                            fit: BoxFit.cover,
-                            width: 40,
-                            height: 40)),
-                  ),
-              ],
-            ),
-            onTap: widget.onTap,
-            onLongPress: widget.onHold,
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (_isOffline)
-                  IconButton(
-                      onPressed: () {}, icon: Icon(AlchemyIcons.download_fill)),
-                if (!_isOffline)
-                  IconButton(
-                      onPressed: () {
-                        downloadManager.addOfflineEpisode(widget.episode);
-                      },
-                      icon: Icon(AlchemyIcons.download)),
-                if (widget.episode.isExplicit ?? false)
-                  const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 2.0),
-                    child: Icon(AlchemyIcons.explicit),
-                  ),
-                widget.trailing ??
-                    IconButton(
-                        onPressed: () => showModalBottomSheet(
-                              backgroundColor: Colors.transparent,
-                              useRootNavigator: true,
-                              isScrollControlled: true,
-                              context: context,
-                              builder: (BuildContext context) {
-                                return DraggableScrollableSheet(
-                                  initialChildSize: 0.3,
-                                  minChildSize: 0.3,
-                                  maxChildSize: 0.9,
-                                  expand: false,
-                                  builder: (context,
-                                      ScrollController scrollController) {
-                                    return Container(
-                                      padding:
-                                          EdgeInsets.symmetric(vertical: 12.0),
-                                      clipBehavior: Clip.hardEdge,
-                                      decoration: BoxDecoration(
-                                        color: Theme.of(context)
-                                            .scaffoldBackgroundColor,
-                                        border: Border.all(
-                                            color: Colors.transparent),
-                                        borderRadius: BorderRadius.only(
-                                          topLeft: Radius.circular(18),
-                                          topRight: Radius.circular(18),
-                                        ),
-                                      ),
-                                      // Use ListView instead of SingleChildScrollView for scrollable content
-                                      child: ListView(
-                                        controller:
-                                            scrollController, // Important: Connect ScrollController
-                                        children: [
-                                          ListTile(
-                                            leading: Container(
-                                              clipBehavior: Clip.hardEdge,
-                                              decoration: ShapeDecoration(
-                                                shape: SmoothRectangleBorder(
-                                                  borderRadius:
-                                                      SmoothBorderRadius(
-                                                    cornerRadius: 10,
-                                                    cornerSmoothing: 0.6,
+                leading: Stack(
+                  children: [
+                    CachedImage(
+                      url: widget.episode.episodeCover?.full ?? '',
+                      width: 48,
+                      rounded: true,
+                    ),
+                    if (nowPlaying == PlayingState.PLAYING)
+                      Container(
+                        width: 48,
+                        height: 48,
+                        color: Colors.black.withAlpha(30),
+                        child: Center(
+                            child: Lottie.asset(
+                                'assets/animations/playing_wave.json',
+                                repeat: true,
+                                frameRate: FrameRate(60),
+                                fit: BoxFit.cover,
+                                width: 40,
+                                height: 40)),
+                      ),
+                    if (nowPlaying == PlayingState.PAUSED)
+                      Container(
+                        width: 48,
+                        height: 48,
+                        color: Colors.black.withAlpha(30),
+                        child: Center(
+                            child: Lottie.asset(
+                                'assets/animations/pausing_wave.json',
+                                repeat: false,
+                                frameRate: FrameRate(60),
+                                fit: BoxFit.cover,
+                                width: 40,
+                                height: 40)),
+                      ),
+                  ],
+                ),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (_isOffline)
+                      IconButton(
+                          onPressed: () {},
+                          icon: Icon(AlchemyIcons.download_fill)),
+                    if (!_isOffline)
+                      IconButton(
+                          onPressed: () {
+                            downloadManager.addOfflineEpisode(widget.episode);
+                          },
+                          icon: Icon(AlchemyIcons.download)),
+                    if (widget.episode.isExplicit ?? false)
+                      const Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 2.0),
+                        child: Icon(AlchemyIcons.explicit),
+                      ),
+                    widget.trailing ??
+                        IconButton(
+                            onPressed: () => showModalBottomSheet(
+                                  backgroundColor: Colors.transparent,
+                                  useRootNavigator: true,
+                                  isScrollControlled: true,
+                                  context: context,
+                                  builder: (BuildContext context) {
+                                    return DraggableScrollableSheet(
+                                      initialChildSize: 0.3,
+                                      minChildSize: 0.3,
+                                      maxChildSize: 0.9,
+                                      expand: false,
+                                      builder: (context,
+                                          ScrollController scrollController) {
+                                        return Container(
+                                          padding: EdgeInsets.symmetric(
+                                              vertical: 12.0),
+                                          clipBehavior: Clip.hardEdge,
+                                          decoration: BoxDecoration(
+                                            color: Theme.of(context)
+                                                .scaffoldBackgroundColor,
+                                            border: Border.all(
+                                                color: Colors.transparent),
+                                            borderRadius: BorderRadius.only(
+                                              topLeft: Radius.circular(18),
+                                              topRight: Radius.circular(18),
+                                            ),
+                                          ),
+                                          // Use ListView instead of SingleChildScrollView for scrollable content
+                                          child: ListView(
+                                            controller:
+                                                scrollController, // Important: Connect ScrollController
+                                            children: [
+                                              ListTile(
+                                                leading: Container(
+                                                  clipBehavior: Clip.hardEdge,
+                                                  decoration: ShapeDecoration(
+                                                    shape:
+                                                        SmoothRectangleBorder(
+                                                      borderRadius:
+                                                          SmoothBorderRadius(
+                                                        cornerRadius: 10,
+                                                        cornerSmoothing: 0.6,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                  child: CachedImage(
+                                                    url: widget
+                                                            .episode
+                                                            .episodeCover
+                                                            ?.full ??
+                                                        '',
                                                   ),
                                                 ),
+                                                title: Text(
+                                                    widget.episode.title ?? ''),
+                                                subtitle: Text(widget.episode
+                                                        .durationString +
+                                                    ' | ' +
+                                                    (widget.episode
+                                                            .publishedDate ??
+                                                        '')),
                                               ),
-                                              child: CachedImage(
-                                                url: widget.episode.episodeCover
-                                                        ?.full ??
-                                                    '',
-                                              ),
-                                            ),
-                                            title: Text(
-                                                widget.episode.title ?? ''),
-                                            subtitle: Text(widget
-                                                    .episode.durationString +
-                                                ' | ' +
-                                                (widget.episode.publishedDate ??
-                                                    '')),
-                                          ),
-                                          Padding(
-                                            padding: EdgeInsets.all(16.0),
-                                            child: Text(
-                                                widget.episode.description ??
+                                              Padding(
+                                                padding: EdgeInsets.all(16.0),
+                                                child: Text(widget
+                                                        .episode.description ??
                                                     ''),
+                                              ),
+                                              ListTile(
+                                                title: Text('Share'.i18n),
+                                                leading:
+                                                    const Icon(Icons.share),
+                                                onTap: () async {
+                                                  Share.share(
+                                                      'https://deezer.com/episode/${widget.episode.id}');
+                                                },
+                                              ),
+                                            ],
                                           ),
-                                          ListTile(
-                                            title: Text('Share'.i18n),
-                                            leading: const Icon(Icons.share),
-                                            onTap: () async {
-                                              Share.share(
-                                                  'https://deezer.com/episode/${widget.episode.id}');
-                                            },
-                                          ),
-                                        ],
-                                      ),
+                                        );
+                                      },
                                     );
                                   },
-                                );
-                              },
-                            ),
-                        icon: Icon(AlchemyIcons.more_vert)),
-              ],
-            ),
-          ),
-          Padding(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
-            child: Text(
-              widget.episode.description ?? '',
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              textAlign: TextAlign.justify,
-              style: TextStyle(
-                  color: Theme.of(context)
-                      .textTheme
-                      .titleMedium
-                      ?.color
-                      ?.withAlpha(230)),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 0, 0),
-            child: Row(
-              mainAxisSize: MainAxisSize.max,
-              children: [
-                Text(
-                  '${widget.episode.publishedDate} ● ${widget.episode.durationString}',
-                  textAlign: TextAlign.left,
-                  style: TextStyle(
-                      fontSize: 12.0,
-                      fontWeight: FontWeight.bold,
-                      color: Theme.of(context)
-                          .textTheme
-                          .titleMedium
-                          ?.color
-                          ?.withAlpha(150)),
+                                ),
+                            icon: Icon(AlchemyIcons.more_vert)),
+                  ],
                 ),
-              ],
-            ),
+              ),
+              if (widget.episode.description != null)
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 16.0, vertical: 12.0),
+                  child: Text(
+                    widget.episode.description ?? '',
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.justify,
+                    style: TextStyle(
+                        color: Theme.of(context)
+                            .textTheme
+                            .titleMedium
+                            ?.color
+                            ?.withAlpha(230)),
+                  ),
+                ),
+              Padding(
+                padding:
+                    widget.padding ?? const EdgeInsets.fromLTRB(16, 4, 0, 0),
+                child: Row(
+                  mainAxisSize: MainAxisSize.max,
+                  children: [
+                    Text(
+                      '${widget.episode.publishedDate} ● ${widget.episode.durationString}',
+                      textAlign: TextAlign.left,
+                      style: TextStyle(
+                          fontSize: 12.0,
+                          fontWeight: FontWeight.bold,
+                          color: Theme.of(context)
+                              .textTheme
+                              .titleMedium
+                              ?.color
+                              ?.withAlpha(150)),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-          const Divider(),
-        ],
-      ),
+        ),
+        const Divider(),
+      ],
     );
   }
 }
@@ -1340,7 +1376,7 @@ class LargeAlbumTile extends StatelessWidget {
                     border: Border.all(color: Colors.transparent),
                     borderRadius: BorderRadius.circular(10)),
                 child: CachedImage(
-                  url: album.art?.fullUrl ?? '',
+                  url: album.image?.fullUrl ?? '',
                   height: 180,
                   width: 180,
                 ),
