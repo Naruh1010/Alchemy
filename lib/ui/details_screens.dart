@@ -4100,17 +4100,17 @@ class _ShowScreenState extends State<ShowScreen> {
                                       ),
                                     ),
                                   ListenableBuilder(
-                                      listenable: playerBarState,
-                                      builder: (BuildContext context,
-                                          Widget? child) {
-                                        return AnimatedPadding(
-                                          duration: Duration(milliseconds: 200),
-                                          padding: EdgeInsets.only(
-                                              bottom: playerBarState.state
-                                                  ? 80
-                                                  : 0),
-                                        );
-                                      }),
+                                    listenable: playerBarState,
+                                    builder:
+                                        (BuildContext context, Widget? child) {
+                                      return AnimatedPadding(
+                                        duration: Duration(milliseconds: 200),
+                                        padding: EdgeInsets.only(
+                                            bottom:
+                                                playerBarState.state ? 80 : 0),
+                                      );
+                                    },
+                                  ),
                                 ],
                               ),
                             ),

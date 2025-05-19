@@ -1247,8 +1247,8 @@ class _ShowEpisodeTileState extends State<ShowEpisodeTile> {
               ),
               if (widget.episode.description != null)
                 Padding(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 16.0, vertical: 12.0),
+                  padding: widget.padding ??
+                      EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
                   child: Text(
                     widget.episode.description ?? '',
                     maxLines: 2,

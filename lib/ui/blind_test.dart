@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math';
 
+import 'package:alchemy/utils/connectivity.dart';
 import 'package:audio_service/audio_service.dart';
 import 'package:alchemy/api/cache.dart';
 import 'package:alchemy/api/deezer.dart';
@@ -57,6 +58,7 @@ class _BlindTestChoiceScreen extends State<BlindTestChoiceScreen> {
 
   Future<void> _rank() async {
     if (settings.blindTestType == BlindTestType.DEEZER) {
+      if (!(await isConnected())) return;
       Map<String, dynamic> apiBoard = await deezerAPI.callPipeApi(params: {
         'operationName': 'Leaderboard',
         'query':
@@ -83,8 +85,7 @@ class _BlindTestChoiceScreen extends State<BlindTestChoiceScreen> {
     GetIt.I<AudioPlayerHandler>().stop();
     super.initState();
     SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
-        systemNavigationBarColor:
-            Theme.of(context).primaryColor.withAlpha(70)));
+        systemNavigationBarColor: settings.primaryColor.withAlpha(70)));
     _score();
     _rank();
   }
@@ -387,9 +388,11 @@ class _BlindTestChoiceScreen extends State<BlindTestChoiceScreen> {
                       speed: 1.5,
                     ),
                     Column(
+                      mainAxisSize: MainAxisSize.max,
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Padding(
-                          padding: EdgeInsets.only(top: 32),
+                          padding: EdgeInsets.only(top: 24, bottom: 8),
                           child: Text(
                             'Choose your game'.i18n,
                             style: TextStyle(
@@ -400,7 +403,7 @@ class _BlindTestChoiceScreen extends State<BlindTestChoiceScreen> {
                           ),
                         ),
                         Padding(
-                          padding: EdgeInsets.fromLTRB(8, 34, 8, 0),
+                          padding: EdgeInsets.fromLTRB(8, 0, 8, 0),
                           child: Container(
                             decoration: BoxDecoration(boxShadow: [
                               BoxShadow(
@@ -798,8 +801,7 @@ class _BlindTestScreenState extends State<BlindTestScreen>
     WidgetsBinding.instance.addObserver(this);
     _loadBlindTest();
     SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
-        systemNavigationBarColor:
-            Theme.of(context).primaryColor.withAlpha(70)));
+        systemNavigationBarColor: settings.primaryColor.withAlpha(70)));
     super.initState();
   }
 
@@ -1259,19 +1261,26 @@ class _BlindTestScreenState extends State<BlindTestScreen>
                                                     '');
                                               },
                                               style: ElevatedButton.styleFrom(
-                                                  backgroundColor: _currentQuestion
-                                                              ?.trackChoices[
-                                                                  index]
-                                                              .id ==
-                                                          _goodAnswer
-                                                      ? Colors.green.shade400
-                                                      : _currentQuestion
-                                                                  ?.trackChoices[
-                                                                      index]
-                                                                  .id ==
-                                                              _badAnswer
-                                                          ? Colors.red.shade400
-                                                          : Colors.white,
+                                                  backgroundColor:
+                                                      !_submitAvailable
+                                                          ? Colors.white
+                                                              .withAlpha(210)
+                                                          : _currentQuestion
+                                                                      ?.trackChoices[
+                                                                          index]
+                                                                      .id ==
+                                                                  _goodAnswer
+                                                              ? Colors.green
+                                                                  .shade400
+                                                              : _currentQuestion
+                                                                          ?.trackChoices[
+                                                                              index]
+                                                                          .id ==
+                                                                      _badAnswer
+                                                                  ? Colors.red
+                                                                      .shade400
+                                                                  : Colors
+                                                                      .white,
                                                   shape: RoundedRectangleBorder(
                                                       borderRadius:
                                                           BorderRadius.circular(
@@ -1330,19 +1339,26 @@ class _BlindTestScreenState extends State<BlindTestScreen>
                                                     '');
                                               },
                                               style: ElevatedButton.styleFrom(
-                                                  backgroundColor: _currentQuestion
-                                                              ?.trackChoices[
-                                                                  index]
-                                                              .id ==
-                                                          _goodAnswer
-                                                      ? Colors.green.shade400
-                                                      : _currentQuestion
-                                                                  ?.trackChoices[
-                                                                      index]
-                                                                  .id ==
-                                                              _badAnswer
-                                                          ? Colors.red.shade400
-                                                          : Colors.white,
+                                                  backgroundColor:
+                                                      !_submitAvailable
+                                                          ? Colors.white
+                                                              .withAlpha(210)
+                                                          : _currentQuestion
+                                                                      ?.trackChoices[
+                                                                          index]
+                                                                      .id ==
+                                                                  _goodAnswer
+                                                              ? Colors.green
+                                                                  .shade400
+                                                              : _currentQuestion
+                                                                          ?.trackChoices[
+                                                                              index]
+                                                                          .id ==
+                                                                      _badAnswer
+                                                                  ? Colors.red
+                                                                      .shade400
+                                                                  : Colors
+                                                                      .white,
                                                   shape: RoundedRectangleBorder(
                                                       borderRadius:
                                                           BorderRadius.circular(
@@ -1421,6 +1437,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
   bool _isLoadingLeaderboard = false;
 
   Future<void> _score() async {
+    if (!(await isConnected())) return;
     if (settings.blindTestType == BlindTestType.DEEZER) {
       //Save score
       await deezerAPI.callPipeApi(params: {
@@ -1459,6 +1476,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
     }
 
     if (settings.blindTestType == BlindTestType.DEEZER) {
+      if (!(await isConnected())) return;
       for (int i = 0; i < widget.blindTest.questions.length; i++) {
         trackList.add(await deezerAPI
             .track(widget.blindTest.questions[i].track?.id ?? ''));
@@ -1488,6 +1506,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
   }
 
   Future<void> _leaderBoard() async {
+    if (!(await isConnected())) return;
     if (mounted) {
       setState(() {
         _isLoadingLeaderboard = true;
@@ -1543,8 +1562,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
   void initState() {
     _load();
     SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
-        systemNavigationBarColor:
-            Theme.of(context).primaryColor.withAlpha(70)));
+        systemNavigationBarColor: settings.primaryColor.withAlpha(70)));
     super.initState();
   }
 

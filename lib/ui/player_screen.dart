@@ -1330,6 +1330,19 @@ class _QueueScreenState extends State<QueueScreen> with WidgetsBindingObserver {
             child: IconButton(
               icon: Icon(
                 //cons.shuffle,
+                AlchemyIcons.plus,
+                semanticLabel: 'Create playlist'.i18n,
+              ),
+              onPressed: () async {
+                await audioHandler.toggleShuffle();
+              },
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(0, 4, 0, 0),
+            child: IconButton(
+              icon: Icon(
+                //cons.shuffle,
                 shuffleModeEnabled
                     ? AlchemyIcons.shuffle_active_small
                     : AlchemyIcons.shuffle,

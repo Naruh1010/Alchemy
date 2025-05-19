@@ -221,8 +221,12 @@ class Settings {
     String path = await getPath();
     File f = File(path);
     if (await f.exists()) {
-      String data = await f.readAsString();
-      return Settings.fromJson(jsonDecode(data));
+      try {
+        String data = await f.readAsString();
+        return Settings.fromJson(jsonDecode(data));
+      } catch (e) {
+        return Settings.fromJson({});
+      }
     }
     Settings s = Settings.fromJson({});
     //Set default path, because async

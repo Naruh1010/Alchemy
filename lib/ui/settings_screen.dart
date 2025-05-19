@@ -119,8 +119,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        appBar: FreezerAppBar('Settings'.i18n),
-        body: ListView(children: <Widget>[
+      appBar: FreezerAppBar('Settings'.i18n),
+      body: ListView(
+        children: <Widget>[
           Padding(
             padding: EdgeInsets.fromLTRB(
               16,
@@ -1097,7 +1098,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       EdgeInsets.only(bottom: playerBarState.state ? 80 : 0),
                 );
               }),
-        ]));
+        ],
+      ),
+    );
   }
 }
 
@@ -2433,7 +2436,7 @@ class _CreditsScreenState extends State<CreditsScreen> {
           ListTile(
             title: Text('Crowdin'.i18n),
             subtitle: Text('Help translating this app on Crowdin!'.i18n),
-            leading: const Icon(AlchemyIcons.open_new,
+            leading: const Icon(AlchemyIcons.arrow_diagonal,
                 color: Color(0xffbdc1c6), size: 36.0),
             onTap: () {
               launchUrlString('https://crowdin.com/project/refreezer');

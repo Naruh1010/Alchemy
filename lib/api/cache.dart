@@ -185,6 +185,8 @@ class Cache {
       case SearchHistoryItemType.SHOW:
         data = Show.fromJson(json['data']);
         break;
+      case SearchHistoryItemType.EPISODE:
+        data = ShowEpisode.fromJson(json['data']);
     }
     return SearchHistoryItem(data, type);
   }
@@ -216,10 +218,10 @@ class SearchHistoryItem {
         return (data as Playlist).toJson();
       case SearchHistoryItemType.SHOW:
         return (data as Show).toJson();
-      default:
-        return {};
+      case SearchHistoryItemType.EPISODE:
+        return (data as ShowEpisode).toJson();
     }
   }
 }
 
-enum SearchHistoryItemType { TRACK, ALBUM, ARTIST, PLAYLIST, SHOW }
+enum SearchHistoryItemType { TRACK, ALBUM, ARTIST, PLAYLIST, SHOW, EPISODE }

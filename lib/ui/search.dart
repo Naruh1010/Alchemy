@@ -41,7 +41,6 @@ class _SearchScreenState extends State<SearchScreen> {
   final FocusNode _keyboardListenerFocusNode = FocusNode();
   final FocusNode _textFieldFocusNode = FocusNode();
   InstantSearchResults? _searchResults;
-  bool _cancel = false;
   bool _showCards = true;
   bool _hasFocus = false;
   Timer? _debounce;
@@ -60,7 +59,6 @@ class _SearchScreenState extends State<SearchScreen> {
     if (await isConnected()) {
       List<SearchHistoryItem> recentlySearched =
           await deezerAPI.getUserHistory();
-      Logger.root.info(recentlySearched);
       if (mounted) {
         setState(() {
           _recentlySearched = recentlySearched;
@@ -111,8 +109,6 @@ class _SearchScreenState extends State<SearchScreen> {
 
   @override
   void initState() {
-    _cancel = false;
-
     _load();
     _loadUserRecentlySearched();
 
@@ -121,7 +117,6 @@ class _SearchScreenState extends State<SearchScreen> {
 
   @override
   void dispose() {
-    _cancel = true;
     _textFieldFocusNode.dispose();
     _keyboardListenerFocusNode.dispose();
     _controller.dispose();
@@ -129,6 +124,11 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 
   void _search(String query) async {
+    if (mounted) {
+      setState(() {
+        _query = query;
+      });
+    }
     if (!_online && mounted) {
       InstantSearchResults instantSearchResults =
           await downloadManager.search(query);
@@ -442,8 +442,8 @@ class _SearchScreenState extends State<SearchScreen> {
               //History
               if (!_showCards &&
                   _recentlySearched.isNotEmpty &&
-                  (_query ?? '').length < 2 &&
-                  (_searchResults?.empty ?? true)) ...[
+                  ((_query ?? '').length < 2 &&
+                      ((_searchResults?.empty ?? true) || _query == ''))) ...[
                 ListTile(
                   contentPadding: EdgeInsets.symmetric(
                       horizontal: MediaQuery.of(context).size.width * 0.05),
@@ -581,6 +581,25 @@ class _SearchScreenState extends State<SearchScreen> {
                             },
                           ),
                         );
+                      case SearchHistoryItemType.EPISODE:
+                        return Padding(
+                          padding: EdgeInsets.symmetric(
+                              horizontal:
+                                  MediaQuery.of(context).size.width * 0.05),
+                          child: ShowEpisodeTile(
+                            data,
+                            padding: EdgeInsets.zero,
+                            onTap: () {
+                              Navigator.of(context).push(MaterialPageRoute(
+                                  builder: (context) => ShowScreen(data)));
+                            },
+                            onHold: () {
+                              MenuSheet m = MenuSheet();
+                              m.defaultShowEpisodeMenu(data, data?.episodes?[0],
+                                  context: context);
+                            },
+                          ),
+                        );
                     }
                   },
                 ),
@@ -597,8 +616,7 @@ class _SearchScreenState extends State<SearchScreen> {
                   )
               ],
 
-              //Suggestions
-              if (!_showCards || !(_searchResults?.empty ?? true))
+              if ((_query != '') && !_showCards)
                 Builder(
                   key: Key(_query ?? ''),
                   builder: (BuildContext context) {
@@ -611,15 +629,77 @@ class _SearchScreenState extends State<SearchScreen> {
 
                     if (results.empty && _query != '') {
                       return Center(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: <Widget>[
-                            const Icon(
-                              Icons.warning,
-                              size: 64,
-                            ),
-                            Text('No results!'.i18n)
-                          ],
+                        child: Padding(
+                          padding: EdgeInsets.all(24),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.max,
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              Icon(
+                                AlchemyIcons.warning,
+                                size: 30,
+                                color: Theme.of(context)
+                                    .textTheme
+                                    .titleMedium
+                                    ?.color
+                                    ?.withAlpha(150),
+                              ),
+                              Text(
+                                'Empty results.'.i18n,
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                    color: Theme.of(context)
+                                        .textTheme
+                                        .titleMedium
+                                        ?.color
+                                        ?.withAlpha(150),
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.bold),
+                              ),
+                              Text(
+                                "Oops, looks like we couldn't find what you are looking for."
+                                    .i18n,
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  color: Theme.of(context)
+                                      .textTheme
+                                      .titleMedium
+                                      ?.color
+                                      ?.withAlpha(150),
+                                  fontSize: 12,
+                                ),
+                              ),
+                              if (_online)
+                                Text(
+                                  'This could be due to a technical error or poor internet connection. Check your connection and reload the page.'
+                                      .i18n,
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    color: Theme.of(context)
+                                        .textTheme
+                                        .titleMedium
+                                        ?.color
+                                        ?.withAlpha(150),
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              if (!_online)
+                                Text(
+                                  'Offline searches are only performed against your downloaded content.'
+                                      .i18n,
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    color: Theme.of(context)
+                                        .textTheme
+                                        .titleMedium
+                                        ?.color
+                                        ?.withAlpha(150),
+                                    fontSize: 12,
+                                  ),
+                                ),
+                            ],
+                          ),
                         ),
                       );
                     }
@@ -632,7 +712,7 @@ class _SearchScreenState extends State<SearchScreen> {
                           padding: EdgeInsets.symmetric(
                               horizontal:
                                   MediaQuery.of(context).size.width * 0.05,
-                              vertical: 16.0),
+                              vertical: 20.0),
                           child: Text(
                             'Tracks'.i18n,
                             textAlign: TextAlign.left,
@@ -704,7 +784,7 @@ class _SearchScreenState extends State<SearchScreen> {
                           padding: EdgeInsets.symmetric(
                               horizontal:
                                   MediaQuery.of(context).size.width * 0.05,
-                              vertical: 16.0),
+                              vertical: 20),
                           child: Text(
                             'Albums'.i18n,
                             textAlign: TextAlign.left,
@@ -766,7 +846,7 @@ class _SearchScreenState extends State<SearchScreen> {
                       artists = [
                         Padding(
                           padding: EdgeInsets.symmetric(
-                              vertical: 16.0,
+                              vertical: 20,
                               horizontal:
                                   MediaQuery.of(context).size.width * 0.05),
                           child: Text(
@@ -817,7 +897,7 @@ class _SearchScreenState extends State<SearchScreen> {
                       playlists = [
                         Padding(
                           padding: EdgeInsets.symmetric(
-                              vertical: 16.0,
+                              vertical: 20,
                               horizontal:
                                   MediaQuery.of(context).size.width * 0.05),
                           child: Text(
@@ -879,7 +959,7 @@ class _SearchScreenState extends State<SearchScreen> {
                       shows = [
                         Padding(
                           padding: EdgeInsets.symmetric(
-                              vertical: 16.0,
+                              vertical: 20,
                               horizontal:
                                   MediaQuery.of(context).size.width * 0.05),
                           child: Text(
@@ -937,7 +1017,7 @@ class _SearchScreenState extends State<SearchScreen> {
                       episodes = [
                         Padding(
                           padding: EdgeInsets.symmetric(
-                              vertical: 16.0,
+                              vertical: 20,
                               horizontal:
                                   MediaQuery.of(context).size.width * 0.05),
                           child: Text(
@@ -1206,39 +1286,12 @@ class _SearchScreenState extends State<SearchScreen> {
                               ),
                             ],
                           ),
-                        Container(
-                          height: 8.0,
-                        ),
                         ...tracks,
-                        Container(
-                          height: 8.0,
-                        ),
                         ...albums,
-                        Container(
-                          height: 8.0,
-                        ),
                         ...artists,
-                        Container(
-                          height: 8.0,
-                        ),
                         ...playlists,
-                        Container(
-                          height: 8.0,
-                        ),
                         ...shows,
-                        Container(
-                          height: 8.0,
-                        ),
                         ...episodes,
-                        ListenableBuilder(
-                            listenable: playerBarState,
-                            builder: (BuildContext context, Widget? child) {
-                              return AnimatedPadding(
-                                duration: Duration(milliseconds: 200),
-                                padding: EdgeInsets.only(
-                                    bottom: playerBarState.state ? 80 : 0),
-                              );
-                            }),
                       ],
                     );
                   },

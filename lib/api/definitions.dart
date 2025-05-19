@@ -427,7 +427,7 @@ class Artist {
       this.favoriteDate,
       this.highlight});
 
-  String get fansString => NumberFormat.decimalPattern().format(fans);
+  String get fansString => NumberFormat.decimalPattern().format(fans ?? 0);
 
   //JSON
   factory Artist.fromPrivateJson(Map<dynamic, dynamic> json,

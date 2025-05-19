@@ -294,13 +294,6 @@ class _MainScreenState extends State<MainScreen>
     Future.delayed(const Duration(seconds: 5), () {
       compute<void, void>((_) async => DeezerLatest.checkUpdate(), null);
     });
-
-    GetIt.I<AudioPlayerHandler>().playbackState.listen((event) {
-      playerBarState.setPlayerBarState(
-          GetIt.I<AudioPlayerHandler>().playbackState.value.processingState !=
-                  AudioProcessingState.idle &&
-              GetIt.I<AudioPlayerHandler>().mediaItem.value != null);
-    });
   }
 
   Future<void> _setDisplayMode() async {
@@ -338,6 +331,13 @@ class _MainScreenState extends State<MainScreen>
     await setupServiceLocator();
     // Wait for the player to be initialized
     await GetIt.I<AudioPlayerHandler>().waitForPlayerInitialization();
+    // Initialize the player bar padding listener :
+    GetIt.I<AudioPlayerHandler>().playbackState.listen((event) {
+      playerBarState.setPlayerBarState(
+          GetIt.I<AudioPlayerHandler>().playbackState.value.processingState !=
+                  AudioProcessingState.idle &&
+              GetIt.I<AudioPlayerHandler>().mediaItem.value != null);
+    });
   }
 
   void _prepareQuickActions() {

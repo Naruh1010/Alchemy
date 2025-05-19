@@ -655,6 +655,16 @@ class DownloadManager {
     return out;
   }
 
+  Future<ShowEpisode?> getOfflineEpisode(String episodeId) async {
+    List rawEp =
+        await db!.query('Episodes', where: 'id == ?', whereArgs: [episodeId]);
+
+    if (rawEp.isEmpty) return null;
+    ShowEpisode ep = ShowEpisode.fromSQL(rawEp[0]);
+
+    return ep;
+  }
+
   Future<List<ShowEpisode>> getAllOfflineEpisodes() async {
     List rawEps = await db!.query('Episodes');
     List<ShowEpisode> out = [];
@@ -788,7 +798,21 @@ class DownloadManager {
   //Offline search
   Future<InstantSearchResults> search(String query) async {
     InstantSearchResults results = InstantSearchResults(
-        tracks: [], albums: [], artists: [], playlists: []);
+        tracks: [],
+        albums: [],
+        artists: [],
+        playlists: [],
+        shows: [],
+        episodes: []);
+
+    //Artists
+    List artistData =
+        await db!.rawQuery('SELECT * FROM Artists WHERE name like "%$query%"');
+    for (Map rawArtist in artistData) {
+      var offlineArtist = await getOfflineArtist(rawArtist['id']);
+      if (offlineArtist != null) results.artists!.add(offlineArtist);
+    }
+
     //Tracks
     List tracksData = await db!.rawQuery(
         'SELECT * FROM Tracks WHERE offline == 1 AND title like "%$query%"');
@@ -796,6 +820,17 @@ class DownloadManager {
       var offlineTrack = await getOfflineTrack(trackData['id']);
       if (offlineTrack != null) results.tracks!.add(offlineTrack);
     }
+
+    //Tracks from artists
+    for (Artist artist in (results.artists ?? [])) {
+      List tracksData = await db!.rawQuery(
+          'SELECT * FROM Tracks WHERE offline == 1 AND artists like "%${artist.id}%"');
+      for (Map trackData in tracksData) {
+        var offlineTrack = await getOfflineTrack(trackData['id']);
+        if (offlineTrack != null) results.tracks!.add(offlineTrack);
+      }
+    }
+
     //Albums
     List albumsData = await db!.rawQuery(
         'SELECT (id) FROM Albums WHERE offline == 1 AND title like "%$query%"');
@@ -803,6 +838,17 @@ class DownloadManager {
       var offlineAlbum = await getOfflineAlbum(rawAlbum['id']);
       if (offlineAlbum != null) results.albums!.add(offlineAlbum);
     }
+
+    //Albums from artists
+    for (Artist artist in (results.artists ?? [])) {
+      List albumsData = await db!.rawQuery(
+          'SELECT (id) FROM Albums WHERE offline == 1 AND artists like "%${artist.id}%"');
+      for (Map rawAlbum in albumsData) {
+        var offlineAlbum = await getOfflineAlbum(rawAlbum['id']);
+        if (offlineAlbum != null) results.albums!.add(offlineAlbum);
+      }
+    }
+
     //Playlists
     List playlists = await db!
         .rawQuery('SELECT * FROM Playlists WHERE title like "%$query%"');
@@ -810,6 +856,30 @@ class DownloadManager {
       var offlinePlaylist = await getOfflinePlaylist(playlist['id']);
       if (offlinePlaylist != null) results.playlists!.add(offlinePlaylist);
     }
+
+    List showData =
+        await db!.rawQuery('SELECT * FROM Shows WHERE name like "%$query%"');
+    for (Map show in showData) {
+      var offlineShow = await getOfflineShow(show['id']);
+      if (offlineShow != null) results.shows?.add(offlineShow);
+    }
+
+    for (Show s in (results.shows ?? [])) {
+      List showEpisodeData = await db!
+          .rawQuery('SELECT * FROM Episodes WHERE showId like "${s.id}"');
+      for (Map episode in showEpisodeData) {
+        var offlineEpisode = await getOfflineEpisode(episode['id']);
+        if (offlineEpisode != null) results.episodes?.add(offlineEpisode);
+      }
+    }
+
+    List episodeData = await db!
+        .rawQuery('SELECT * FROM Episodes WHERE title like "%$query%"');
+    for (Map episode in episodeData) {
+      var offlineEpisode = await getOfflineEpisode(episode['id']);
+      if (offlineEpisode != null) results.episodes?.add(offlineEpisode);
+    }
+
     return results;
   }
 

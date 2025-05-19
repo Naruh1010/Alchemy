@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
 
-import 'package:alchemy/api/deezer_login.dart';
 import 'package:alchemy/ui/details_screens.dart';
 import 'package:alchemy/ui/menu.dart';
 import 'package:alchemy/utils/navigator_keys.dart';
@@ -159,29 +158,35 @@ class DeezerAPI {
       if (gatewayInput != null) 'gateway_input': gatewayInput
     });
     //Post
-    http.Response res = await http
-        .post(uri, headers: headers, body: jsonEncode(params))
-        .catchError((e) {
-      return http.Response('', 200);
-    });
-    if (res.body == '') return {};
-    dynamic body = jsonDecode(res.body);
-    //Grab SID
-    if (method == 'deezer.getUserData' && res.headers['set-cookie'] != null) {
-      for (String cookieHeader in res.headers['set-cookie']!.split(';')) {
-        if (cookieHeader.startsWith('sid=')) {
-          sid = cookieHeader.split('=')[1];
+    try {
+      http.Response res = await http
+          .post(uri, headers: headers, body: jsonEncode(params))
+          .catchError((e) {
+        return http.Response('', 200);
+      });
+      if (res.body == '') return {};
+      dynamic body = jsonDecode(res.body);
+      //Grab SID
+      if (method == 'deezer.getUserData' && res.headers['set-cookie'] != null) {
+        for (String cookieHeader in res.headers['set-cookie']!.split(';')) {
+          if (cookieHeader.startsWith('sid=')) {
+            sid = cookieHeader.split('=')[1];
+          }
         }
       }
+      // In case of error "Invalid CSRF token" retrieve new one and retry the same call
+      // Except for "deezer.getUserData" method, which would cause infinite loop
+      if (body['error'].isNotEmpty &&
+          body['error'].containsKey('VALID_TOKEN_REQUIRED') &&
+          (method != 'deezer.getUserData' && await rawAuthorize())) {
+        return callGwLightApi(method,
+            params: params, gatewayInput: gatewayInput);
+      }
+      return body;
+    } catch (e) {
+      Logger.root.info('Failed to call GW-light API.');
+      return {};
     }
-    // In case of error "Invalid CSRF token" retrieve new one and retry the same call
-    // Except for "deezer.getUserData" method, which would cause infinite loop
-    if (body['error'].isNotEmpty &&
-        body['error'].containsKey('VALID_TOKEN_REQUIRED') &&
-        (method != 'deezer.getUserData' && await rawAuthorize())) {
-      return callGwLightApi(method, params: params, gatewayInput: gatewayInput);
-    }
-    return body;
   }
 
   Future<bool> getGatewayKeybag() async {
@@ -332,14 +337,18 @@ class DeezerAPI {
   Future<String> getJsonWebToken() async {
     //Generate URL
     //Uri uri = Uri.parse('https://auth.deezer.com/login/arl?jo=p&rto=c&i=c');
-    Uri uri = Uri.https(
-        'auth.deezer.com', '/login/arl', {'jo': 'p', 'rto': 'c', 'i': 'c'});
-    //Post
-    http.Response res = await http.post(uri, headers: headers);
-    dynamic body = jsonDecode(res.body);
-    //Grab jwt token
-    if (body['jwt']?.isNotEmpty) {
-      return body['jwt'];
+    try {
+      Uri uri = Uri.https(
+          'auth.deezer.com', '/login/arl', {'jo': 'p', 'rto': 'c', 'i': 'c'});
+      //Post
+      http.Response res = await http.post(uri, headers: headers);
+      dynamic body = jsonDecode(res.body);
+      //Grab jwt token
+      if (body['jwt']?.isNotEmpty) {
+        return body['jwt'];
+      }
+    } catch (e) {
+      return '';
     }
     return '';
   }

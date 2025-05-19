@@ -67,9 +67,8 @@ Get Alchemy running: Follow [these instructions](./HOWTO.md) to compile it yours
 
 *   Move all gateway light API calls to mobile gateway API;
 *   Create notification settings;
+*   Remove the See All / View More button when it is not required;
 *   Implement a profile edition screen;
-*   Make a "create playlist from queue" option;
-*   Implement a visual pressed indicator for blind test choices;
 *   Prefetch lyrics for tracks in the queue;
 *   Add lyrics to the downloaded tracks.
 

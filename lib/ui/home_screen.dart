@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:alchemy/api/cache.dart';
+import 'package:alchemy/main.dart';
 import 'package:alchemy/ui/blind_test.dart';
 import 'package:alchemy/ui/cached_image.dart';
 import 'package:alchemy/ui/card_carousel.dart';
@@ -426,7 +427,16 @@ class _HomePageScreenState extends State<HomePageScreen> {
                     return HomepageRowSection(_homePage!.sections[i]);
                 }
               },
-            )
+            ),
+            ListenableBuilder(
+                listenable: playerBarState,
+                builder: (BuildContext context, Widget? child) {
+                  return AnimatedPadding(
+                    duration: const Duration(milliseconds: 200),
+                    padding:
+                        EdgeInsets.only(bottom: playerBarState.state ? 80 : 0),
+                  );
+                }),
           ],
         );
       },
@@ -754,6 +764,15 @@ class _GamePageScreenState extends State<GamePageScreen> {
               ),
             ),
           ),
+          ListenableBuilder(
+              listenable: playerBarState,
+              builder: (BuildContext context, Widget? child) {
+                return AnimatedPadding(
+                  duration: const Duration(milliseconds: 200),
+                  padding:
+                      EdgeInsets.only(bottom: playerBarState.state ? 80 : 0),
+                );
+              }),
         ],
       ),
     );
