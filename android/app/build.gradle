@@ -30,7 +30,7 @@ if (flutterVersionName == null) {
 
 android {
     namespace 'definitely.not.deezer'
-    compileSdk 34
+    compileSdk 35
     //ndkVersion flutter.ndkVersion
     ndkVersion "26.1.10909125"
     buildFeatures.buildConfig = true
@@ -52,7 +52,7 @@ android {
         // For more information, see: https://docs.flutter.dev/deployment/android#reviewing-the-gradle-build-configuration.
         applicationId "definitely.not.deezer"
         minSdk 21
-        targetSdk 34
+        targetSdk 35
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
     }
@@ -101,7 +101,7 @@ dependencies {
     implementation group: 'net.jthink', name: 'jaudiotagger', version: '2.2.5'
     implementation group: 'org.nanohttpd', name: 'nanohttpd', version: '2.3.1'
     implementation 'androidx.documentfile:documentfile:1.0.1'
-    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.0.4'
+    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.5'
 }
 
 flutter {

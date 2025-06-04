@@ -4,9 +4,10 @@ import 'dart:io';
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:http/http.dart' as http;
+import 'package:markdown_widget/markdown_widget.dart';
+import 'package:markdown_widget/widget/all.dart';
 import 'package:open_filex/open_filex.dart';
 import 'package:logging/logging.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -58,10 +59,12 @@ class _UpdaterScreenState extends State<UpdaterScreen> {
     String versionString = info.version;
 
     // Parse the version string
-    setState(() {
-      _currentVersion =
-          Version.tryParse(versionString) ?? Version.parse('0.0.0');
-    });
+    if (mounted) {
+      setState(() {
+        _currentVersion =
+            Version.tryParse(versionString) ?? Version.parse('0.0.0');
+      });
+    }
 
     //Get architecture
     _arch = await DownloadManager.platform.invokeMethod('arch');
@@ -69,10 +72,12 @@ class _UpdaterScreenState extends State<UpdaterScreen> {
     //Load from website
     try {
       DeezerLatest latestRelease = await DeezerLatest.fetch();
-      setState(() {
-        _latestRelease = latestRelease;
-        _loading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _latestRelease = latestRelease;
+          _loading = false;
+        });
+      }
     } catch (e, st) {
       Logger.root.severe('Failed to load latest release', e, st);
       _error = true;
@@ -93,10 +98,12 @@ class _UpdaterScreenState extends State<UpdaterScreen> {
           msg: 'Permission denied, download canceled!'.i18n,
           toastLength: Toast.LENGTH_LONG,
           gravity: ToastGravity.BOTTOM);
-      setState(() {
-        _progress = 0.0;
-        _buttonEnabled = true;
-      });
+      if (mounted) {
+        setState(() {
+          _progress = 0.0;
+          _buttonEnabled = true;
+        });
+      }
       return;
     }
 
@@ -118,7 +125,7 @@ class _UpdaterScreenState extends State<UpdaterScreen> {
       //Update progress
       Future.doWhile(() async {
         int received = await file.length();
-        setState(() => _progress = received / size!.toInt());
+        if (mounted) setState(() => _progress = received / size!.toInt());
         return received != size;
       });
       //Pipe
@@ -127,20 +134,24 @@ class _UpdaterScreenState extends State<UpdaterScreen> {
 
       OpenFilex.open(path);
 
-      setState(() {
-        _buttonEnabled = true;
-        _progress = 0.0;
-      });
+      if (mounted) {
+        setState(() {
+          _buttonEnabled = true;
+          _progress = 0.0;
+        });
+      }
     } catch (e) {
       Logger.root.severe('Failed to download latest release file', e);
       Fluttertoast.showToast(
           msg: 'Download failed!'.i18n,
           toastLength: Toast.LENGTH_LONG,
           gravity: ToastGravity.BOTTOM);
-      setState(() {
-        _progress = 0.0;
-        _buttonEnabled = true;
-      });
+      if (mounted) {
+        setState(() {
+          _progress = 0.0;
+          _buttonEnabled = true;
+        });
+      }
     }
   }
 
@@ -188,10 +199,11 @@ class _UpdaterScreenState extends State<UpdaterScreen> {
               leading: Icon(AlchemyIcons.release_notes),
               title: Text('See changelog'),
               children: [
-                Markdown(
-                  controller: scrollController,
-                  data: _latestRelease?.changelog ?? '',
+                MarkdownWidget(
+                  padding: EdgeInsets.symmetric(horizontal: 16),
                   shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  data: _latestRelease?.changelog ?? '',
                 ),
               ],
             ),
@@ -199,8 +211,7 @@ class _UpdaterScreenState extends State<UpdaterScreen> {
               !_loading &&
               (_latestRelease?.version ?? Version(0, 0, 0)) > _currentVersion)
             Column(
-              mainAxisSize: MainAxisSize.max,
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Padding(
                   padding: const EdgeInsets.all(8.0),
@@ -230,13 +241,13 @@ class _UpdaterScreenState extends State<UpdaterScreen> {
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
                   child: Column(
-                    mainAxisSize: MainAxisSize.max,
+                    mainAxisSize: MainAxisSize.min, // Changed from max
                     children: [
-                      Markdown(
-                        controller: scrollController,
-                        data: _latestRelease?.changelog ?? '',
+                      MarkdownWidget(
                         shrinkWrap: true,
-                      )
+                        physics: const NeverScrollableScrollPhysics(),
+                        data: _latestRelease?.changelog ?? '',
+                      ),
                     ],
                   ),
                 ),
@@ -251,7 +262,9 @@ class _UpdaterScreenState extends State<UpdaterScreen> {
                         ),
                         onPressed: _buttonEnabled
                             ? () {
-                                setState(() => _buttonEnabled = false);
+                                if (mounted) {
+                                  setState(() => _buttonEnabled = false);
+                                }
                                 _download();
                               }
                             : null,

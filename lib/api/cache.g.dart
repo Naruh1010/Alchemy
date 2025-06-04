@@ -81,4 +81,5 @@ const _$SearchHistoryItemTypeEnumMap = {
   SearchHistoryItemType.ARTIST: 'ARTIST',
   SearchHistoryItemType.PLAYLIST: 'PLAYLIST',
   SearchHistoryItemType.SHOW: 'SHOW',
+  SearchHistoryItemType.EPISODE: 'EPISODE',
 };

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:palette_generator/palette_generator.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:photo_view/photo_view.dart';
 import '../translations.i18n.dart';
@@ -15,20 +14,19 @@ class ImagesDatabase {
     CachedNetworkImageProvider(url);
   }
 
-  Future<PaletteGenerator> getPaletteGenerator(String url) {
-    return PaletteGenerator.fromImageProvider(CachedNetworkImageProvider(url));
+  Future<ColorScheme> getPaletteGenerator(String url) {
+    return ColorScheme.fromImageProvider(
+        provider: CachedNetworkImageProvider(url));
   }
 
   Future<Color> getPrimaryColor(String url) async {
-    PaletteGenerator paletteGenerator = await getPaletteGenerator(url);
-    return paletteGenerator.colors.first;
+    ColorScheme paletteGenerator = await getPaletteGenerator(url);
+    return paletteGenerator.primary;
   }
 
   Future<bool> isDark(String url) async {
-    PaletteGenerator paletteGenerator = await getPaletteGenerator(url);
-    return paletteGenerator.colors.first.computeLuminance() > 0.5
-        ? false
-        : true;
+    ColorScheme paletteGenerator = await getPaletteGenerator(url);
+    return paletteGenerator.primary.computeLuminance() > 0.5 ? false : true;
   }
 }
 

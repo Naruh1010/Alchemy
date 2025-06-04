@@ -13,7 +13,6 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:logging/logging.dart';
 import 'package:alchemy/api/download.dart';
-import 'package:palette_generator/palette_generator.dart';
 
 import '../api/definitions.dart';
 import '../api/spotify.dart';
@@ -418,11 +417,10 @@ class DeezerAPI {
                 type: 'user')
             .toJson();
         cache.userEmail = data['results']['USER']['EMAIL'];
-        cache.userColor = (await PaletteGenerator.fromImageProvider(
-                CachedNetworkImageProvider(
+        cache.userColor = (await ColorScheme.fromImageProvider(
+                provider: CachedNetworkImageProvider(
                     ImageDetails.fromJson(cache.userPicture).fullUrl ?? '')))
-            .dominantColor
-            ?.color
+            .primary
             .toARGB32();
         cache.save();
 
@@ -539,8 +537,6 @@ class DeezerAPI {
       'START': limit,
       'LIMIT': start,
     });
-
-    Logger.root.info(data);
 
     if (data['results']['data'] == null) return [];
 

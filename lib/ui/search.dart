@@ -12,7 +12,6 @@ import 'package:get_it/get_it.dart';
 import 'package:alchemy/fonts/alchemy_icons.dart';
 import 'package:alchemy/main.dart';
 import 'package:figma_squircle/figma_squircle.dart';
-import 'package:logging/logging.dart';
 
 import '../api/cache.dart';
 import '../api/deezer.dart';

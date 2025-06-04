@@ -15,7 +15,6 @@ import 'package:get_it/get_it.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:logging/logging.dart';
 import 'package:marquee/marquee.dart';
-import 'package:palette_generator/palette_generator.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:visibility_detector/visibility_detector.dart';
@@ -71,36 +70,29 @@ class _PlayerScreenState extends State<PlayerScreen> {
     }
 
     //Run in isolate
-    PaletteGenerator palette = await PaletteGenerator.fromImageProvider(
-        CachedNetworkImageProvider(
+    ColorScheme palette = await ColorScheme.fromImageProvider(
+        provider: CachedNetworkImageProvider(
             audioHandler.mediaItem.value?.extras?['thumb'] ??
                 audioHandler.mediaItem.value?.artUri));
 
     //Update notification
     if (settings.blurPlayerBackground) {
       SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
-          statusBarColor: palette.dominantColor!.color.withAlpha(65),
+          statusBarColor: palette.primary.withAlpha(65),
           systemNavigationBarColor: Color.alphaBlend(
-              palette.dominantColor!.color.withAlpha(65),
-              scaffoldBackgroundColor)));
+              palette.primary.withAlpha(65), scaffoldBackgroundColor)));
     }
 
     //Color gradient
     if (!settings.blurPlayerBackground) {
       SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
-        statusBarColor: palette.dominantColor!.color.withAlpha(180),
+        statusBarColor: palette.primary.withAlpha(180),
       ));
       setState(() => _bgGradient = LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [
-                palette.dominantColor!.color.withAlpha(180),
-                scaffoldBackgroundColor
-              ],
-              stops: const [
-                0.0,
-                0.6
-              ]));
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [palette.primary.withAlpha(180), scaffoldBackgroundColor],
+          stops: const [0.0, 0.6]));
     }
   }
 

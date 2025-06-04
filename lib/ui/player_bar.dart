@@ -5,7 +5,6 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get_it/get_it.dart';
-import 'package:palette_generator/palette_generator.dart';
 import 'package:alchemy/fonts/alchemy_icons.dart';
 import 'package:figma_squircle/figma_squircle.dart';
 
@@ -36,14 +35,14 @@ class _PlayerBarState extends State<PlayerBar> {
   Future _updateColor() async {
     if (audioHandler.mediaItem.value == null) return;
     try {
-      PaletteGenerator palette = await PaletteGenerator.fromImageProvider(
-          CachedNetworkImageProvider(
+      ColorScheme palette = await ColorScheme.fromImageProvider(
+          provider: CachedNetworkImageProvider(
               audioHandler.mediaItem.value?.extras?['thumb'] ??
                   audioHandler.mediaItem.value?.artUri));
 
       if (mounted) {
         setState(() {
-          _bgColor = palette.dominantColor?.color;
+          _bgColor = palette.primary;
         });
       }
     } catch (e) {

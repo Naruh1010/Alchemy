@@ -5,8 +5,8 @@
 [![Latest commit](https://img.shields.io/github/last-commit/PetitPrinc3/Alchemy)](../../commit/master)
 [![License](https://img.shields.io/github/license/PetitPrinc3/Deezer?flat)](./LICENSE)
 
-[![Flutter](https://img.shields.io/badge/Flutter-v3.29.3-blue?logo=flutter)](https://flutter.dev/)
-[![Dart](https://img.shields.io/badge/Dart-v3.7.2-blue?logo=dart)](https://dart.dev/)
+[![Flutter](https://img.shields.io/badge/Flutter-v3.32.2-blue?logo=flutter)](https://flutter.dev/)
+[![Dart](https://img.shields.io/badge/Dart-v3.8.1-blue?logo=dart)](https://dart.dev/)
 [![Android API](https://img.shields.io/badge/Android%20API-35-green?logo=android)](https://developer.android.com/about/versions/14)
 [![Java JDK](https://img.shields.io/badge/Java%20JDK-17-blue?logo=openjdk)](https://openjdk.java.net/projects/jdk/17/)
 
@@ -35,26 +35,10 @@ Get Alchemy running: Follow [these instructions](./HOWTO.md) to compile it yours
 ## :camera_flash: Screenshots
 
 <p align="center">
-    <img src="./assets/screenshots/login.png" width=100>
-    <img src="./assets/screenshots/home.png" width=100>
-    <img src="./assets/screenshots/player.png" width=100>
-    <img src="./assets/screenshots/search.png" width=100>
-    <img src="./assets/screenshots/favorites.png" width=100>
-    <img src="./assets/screenshots/playlists.png" width=100>
-    <img src="./assets/screenshots/artists.png" width=100>
-    <img src="./assets/screenshots/menu.png" width=100>
+    <img src="./assets/screenshots/Screens.png" width=80%>
 </p>
 <p align="center">
-    <img src="./assets/screenshots/chooseBlindTest.png" width=100>
-    <img src="./assets/screenshots/blindTrackTest.png" width=100>
-    <img src="./assets/screenshots/blindArtistTest.png" width=100>
-    <img src="./assets/screenshots/blindResults.png" width=100>
-    <img src="./assets/screenshots/song_catcher.png" width=100>
-    <img src="./assets/screenshots/song_catcher_results.png" width=100>
-</p>
-<p align="center">
-    <img src="./assets/screenshots/artist_landscape.png" height=150>
-    <img src="./assets/screenshots/playlist_landscape.png" height=150>
+    <img src="./assets/screenshots/Features.png" width=80%>
 </p>
 
 ## :star2: Credits
@@ -74,6 +58,7 @@ Get Alchemy running: Follow [these instructions](./HOWTO.md) to compile it yours
 
 ## :lady_beetle: Bugs
 
+*   Song recognition result animation is triggered again while being played if the screen is pressed on dismissal;
 *   Downloads that are stopped and restarted will not be saved in the database and therefore not be available;
 *   Skipping tracks on the player screen is not as fluid as it used to be and can be choppy;
 *   Some home tiles are not and will not be implemented (Concerts, Did you know, Original videos, ...);
