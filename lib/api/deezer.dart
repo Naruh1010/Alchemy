@@ -553,8 +553,6 @@ class DeezerAPI {
 
     Map<dynamic, dynamic> rawHistory = await callPipeApi(params: apiParams);
 
-    Logger.root.info(rawHistory);
-
     return parseRawHistory(
         rawHistory['data']['me']['searchHistory']['successResults']['edges']);
   }
@@ -856,9 +854,9 @@ class DeezerAPI {
 
   //Get favorite albums
   Future<List<Album>> getAlbums() async {
-    Map data = await callGwLightApi('deezer.pageProfile',
-        params: {'nb': 50, 'tab': 'albums', 'user_id': userId});
-    List albumList = data['results']?['TAB']?['albums']?['data'] ?? [];
+    Map data = await callGwApi('album.getFavorites',
+        params: {'user_id': userId, 'start': 0, 'nb': 50});
+    List albumList = data['results']?['data'] ?? [];
     List<Album> albums = albumList
         .map<Album>((json) => Album.fromPrivateJson(json, library: true))
         .toList();
@@ -891,9 +889,9 @@ class DeezerAPI {
 
   //Get favorite artists
   Future<List<Artist>> getArtists() async {
-    Map data = await callGwLightApi('deezer.pageProfile',
-        params: {'nb': 40, 'tab': 'artists', 'user_id': userId});
-    return (data['results']?['TAB']?['artists']?['data'] ?? [])
+    Map data = await callGwApi('artist.getFavorites',
+        params: {'user_id': userId, 'start': 0, 'nb': 40});
+    return (data['results']?['data'] ?? [])
         .map<Artist>((json) => Artist.fromPrivateJson(json, library: true))
         .toList();
   }
@@ -1303,9 +1301,16 @@ class DeezerAPI {
 
   //Get smart radio for artist id
   Future<List<Track>> smartRadio(String artistId) async {
-    Map data = await callGwLightApi('smart.getSmartRadio',
-        params: {'art_id': int.parse(artistId)});
-    return data['results']['data']
+    Map data = await callGwApi('radio_getChannel', params: {
+      'context': 'artist_smartradio',
+      'context_id': artistId,
+      'sng_id': '',
+      'NB': '6'
+    });
+
+    if (data['results']?['data'] == null) return [];
+
+    return data['results']?['data']
         .map<Track>((t) => Track.fromPrivateJson(t))
         .toList();
   }
@@ -1469,16 +1474,15 @@ class DeezerAPI {
   }
 
   Future<List<Show>> getUserShows() async {
-    Map<String, dynamic> data =
-        await callGwLightApi('deezer.pageProfile', params: {
-      'user_id': userId,
-      'tab': 'podcasts',
-      'nb': 10000,
+    Map<String, dynamic> data = await callGwApi('show.getFavorites', params: {
+      'USER_ID': userId,
+      'START': 0,
+      'NB': 10000,
     });
 
-    if (data['results']?['TAB']?['shows']?['data'] == null) return [];
+    if (data['results']?['data'] == null) return [];
 
-    return data['results']?['TAB']?['shows']?['data']
+    return data['results']?['data']
         .map<Show>((e) => Show.fromPrivateJson(e))
         .toList();
   }

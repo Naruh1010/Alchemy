@@ -129,6 +129,7 @@ class _CatcherScreen extends State<CatcherScreen>
   }
 
   void reverseAnimation() async {
+    if (_resultsController.isAnimating) return;
     await _resultsController.reverse(from: 1.0);
     if (mounted) {
       setState(() {

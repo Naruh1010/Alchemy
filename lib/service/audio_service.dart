@@ -85,7 +85,7 @@ class AudioPlayerHandler extends BaseAudioHandler
     _player.sequenceStateStream
         .map((state) {
           try {
-            return state?.effectiveSequence
+            return state.effectiveSequence
                 .map((source) => source.tag as MediaItem)
                 .toList();
           } catch (e) {
@@ -355,7 +355,7 @@ class AudioPlayerHandler extends BaseAudioHandler
 
     if (_player.shuffleModeEnabled) {
       // Get the shuffled index of the media item
-      final shuffledIndex = _player.shuffleIndices![index];
+      final shuffledIndex = _player.shuffleIndices[index];
 
       await _playlist.removeAt(shuffledIndex);
     } else {
@@ -393,8 +393,7 @@ class AudioPlayerHandler extends BaseAudioHandler
 
     _player.seek(
       Duration.zero,
-      index:
-          _player.shuffleModeEnabled ? _player.shuffleIndices![index] : index,
+      index: _player.shuffleModeEnabled ? _player.shuffleIndices[index] : index,
     );
   }
 

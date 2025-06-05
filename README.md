@@ -35,10 +35,7 @@ Get Alchemy running: Follow [these instructions](./HOWTO.md) to compile it yours
 ## :camera_flash: Screenshots
 
 <p align="center">
-    <img src="./assets/screenshots/Screens.png" width=80%>
-</p>
-<p align="center">
-    <img src="./assets/screenshots/Features.png" width=80%>
+    <img src="./assets/screenshots/Readme.png" width=80%>
 </p>
 
 ## :star2: Credits
@@ -58,7 +55,6 @@ Get Alchemy running: Follow [these instructions](./HOWTO.md) to compile it yours
 
 ## :lady_beetle: Bugs
 
-*   Song recognition result animation is triggered again while being played if the screen is pressed on dismissal;
 *   Downloads that are stopped and restarted will not be saved in the database and therefore not be available;
 *   Skipping tracks on the player screen is not as fluid as it used to be and can be choppy;
 *   Some home tiles are not and will not be implemented (Concerts, Did you know, Original videos, ...);

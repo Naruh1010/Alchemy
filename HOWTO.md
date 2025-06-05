@@ -23,8 +23,8 @@
 
 Before you begin, ensure you have the following installed:
 
-*   Flutter: v3.7.2 ([Flutter SDK](https://docs.flutter.dev/tools/sdk))
-*   Dart: v3.29.2 ([Dart SDK](https://dart.dev/get-dart))
+*   Flutter: v3.32.2 ([Flutter SDK](https://docs.flutter.dev/tools/sdk))
+*   Dart: v3.8.1 ([Dart SDK](https://dart.dev/get-dart))
 
 Alchemy relies on several custom Git submodules. Clone these repositories and their dependencies:
 

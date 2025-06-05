@@ -713,29 +713,6 @@ class _LibraryArtistsState extends State<LibraryArtists> {
   bool _error = false;
   final ScrollController _scrollController = ScrollController();
 
-  List<Artist> get _sorted {
-    List<Artist> artists = List.from(_artists);
-    if (artists.isNotEmpty) {
-      artists.sort((a, b) => a.favoriteDate!.compareTo(b.favoriteDate!));
-      switch (_sort.type) {
-        case SortType.DEFAULT:
-          break;
-        case SortType.POPULARITY:
-          artists.sort((a, b) => b.fans! - a.fans!);
-          break;
-        case SortType.ALPHABETIC:
-          artists.sort(
-              (a, b) => a.name!.toLowerCase().compareTo(b.name!.toLowerCase()));
-          break;
-        default:
-          break;
-      }
-    }
-    //Reverse
-    if (_sort.reverse) return artists.reversed.toList();
-    return artists;
-  }
-
   //Load data
   Future _load() async {
     if (mounted) setState(() => _loading = true);
@@ -851,7 +828,7 @@ class _LibraryArtistsState extends State<LibraryArtists> {
               if (_error) const Center(child: ErrorScreen()),
               if (!_loading && !_error)
                 ...List.generate(_artists.length, (i) {
-                  Artist a = _sorted[i];
+                  Artist a = _artists[i];
                   return ArtistHorizontalTile(
                     a,
                     onTap: () {
