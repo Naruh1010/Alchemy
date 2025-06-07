@@ -124,6 +124,7 @@ class _LoginWidgetState extends State<LoginWidget> {
       if (resp == false) {
         //false, not null
         int arlLength = (settings.arl ?? '').length;
+        Logger.root.info(arlLength);
         if (arlLength != 175 && arlLength != 192) {
           _error = '${(_error ?? '')}Invalid ARL length!';
         }
@@ -399,10 +400,12 @@ class _EmailLoginState extends State<EmailLogin> {
   Future _login() async {
     setState(() => _loading = true);
     //Try logging in
-    String? arl;
+    KeyBag? kb;
     String? exception;
     try {
-      arl = await DeezerLogin.getArlByEmailAndPassword(_email!, _password!);
+      kb = await DeezerLogin.signInWithEmail(_email!, _password!);
+      settings.arl = kb?.arl ?? '';
+      await settings.save();
     } on DeezerLoginException catch (dle) {
       exception = dle.toString();
     } catch (e, st) {
@@ -413,7 +416,6 @@ class _EmailLoginState extends State<EmailLogin> {
       }
     }
     setState(() => _loading = false);
-    settings.arl = arl;
     if (mounted) Navigator.of(context).pop();
 
     if (exception == null) {

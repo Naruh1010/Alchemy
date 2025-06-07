@@ -21,6 +21,7 @@ class _NotificationScreen extends State<NotificationScreen> {
   List<DeezerNotification> notifications = [];
   bool _isLoading = false;
   bool _online = true;
+  ScrollController _scrollController = ScrollController();
 
   void _load() async {
     if (mounted) {
@@ -50,17 +51,18 @@ class _NotificationScreen extends State<NotificationScreen> {
   }
 
   void _readAll() async {
-    List<String?> notificationId = List.generate(
-            widget.notifications.length,
-            (int i) => (widget.notifications[i].read ?? true)
-                ? null
-                : widget.notifications[i].id)
-        .where((String? s) => s != null)
-        .toList();
+    await deezerAPI.callGwApi(
+      'appnotif_markAllAsRead',
+    );
+  }
 
-    if (notificationId.isNotEmpty) {
-      await deezerAPI.callGwLightApi('notification.markAsRead',
-          params: {'notif_ids': notificationId});
+  void _loadMore() async {
+    List<DeezerNotification> nextNotifications =
+        await deezerAPI.getNotifications(lastId: notifications.last.id);
+    if (mounted) {
+      setState(() {
+        notifications.addAll(nextNotifications);
+      });
     }
   }
 
@@ -74,6 +76,14 @@ class _NotificationScreen extends State<NotificationScreen> {
     } else {
       _load();
     }
+
+    _scrollController.addListener(() {
+      double off = _scrollController.position.maxScrollExtent * 0.90;
+      if (_scrollController.position.pixels > off) {
+        _loadMore();
+      }
+    });
+
     super.initState();
   }
 
@@ -88,6 +98,7 @@ class _NotificationScreen extends State<NotificationScreen> {
           ? _isLoading
               ? SplashScreen()
               : ListView.builder(
+                  controller: _scrollController,
                   itemCount: notifications.length,
                   itemBuilder: (context, int i) => NotificationTile(
                         notifications[i],

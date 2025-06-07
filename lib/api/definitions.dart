@@ -129,7 +129,7 @@ class Track {
         playbackDetailsFallback: playbackDetailsFallback);
   }
 
-  factory Track.fromGatewayJson(Map<dynamic, dynamic> json, {bool? favorite}) {
+  factory Track.fromPipeJson(Map<dynamic, dynamic> json, {bool? favorite}) {
     return Track(
       id: json['id'],
       title: json['title'],
@@ -291,7 +291,7 @@ class Album {
     return Album(
         id: json['ALB_ID'].toString(),
         title: json['ALB_TITLE'],
-        image: ImageDetails.fromPrivateString(json['ALB_PICTURE']),
+        image: ImageDetails.fromPrivateString(json['ALB_PICTURE'] ?? ''),
         artists: artists,
         tracks: (songsJson['data'] ?? [])
             .map<Track>((dynamic track) => Track.fromPrivateJson(track))
@@ -304,14 +304,14 @@ class Album {
         favoriteDate: json['DATE_FAVORITE']);
   }
 
-  factory Album.fromGatewayJson(Map<dynamic, dynamic> json,
+  factory Album.fromPipeJson(Map<dynamic, dynamic> json,
       {Map<dynamic, dynamic> songsJson = const {}, bool? library}) {
     AlbumType type = AlbumType.ALBUM;
     if (json['TYPE'] != null && json['TYPE'].toString() == '0') {
       type = AlbumType.SINGLE;
     }
     List<Artist> artists = (json['contributors']?['edges'] ?? [])
-        .map<Artist>((dynamic art) => Artist.fromGatewayJson(art['node'] ?? {}))
+        .map<Artist>((dynamic art) => Artist.fromPipeJson(art['node'] ?? {}))
         .toList();
 
     return Album(
@@ -399,12 +399,28 @@ class ArtistHighlight {
 }
 
 @JsonSerializable()
+class Bio {
+  String? summary;
+  String? full;
+  String? source;
+
+  Bio({this.summary, this.full, this.source});
+
+  //JSON
+  factory Bio.fromJson(Map<String, dynamic> json) => _$BioFromJson(json);
+  Map<String, dynamic> toJson() => _$BioToJson(this);
+}
+
+@JsonSerializable()
 class Artist {
   String? id;
   String? name;
   List<Album> albums;
-  int? albumCount;
   List<Track> topTracks;
+  List<Album>? featuredIn;
+  List<Playlist>? playlists;
+  List<Artist>? relatedArtists;
+  Bio? biography;
   ImageDetails? image;
   int? fans;
   bool? offline;
@@ -412,22 +428,78 @@ class Artist {
   bool? radio;
   String? favoriteDate;
   ArtistHighlight? highlight;
+  bool? hasNextPage;
 
   Artist(
       {this.id,
       this.name,
       this.albums = const [],
-      this.albumCount,
       this.topTracks = const [],
       this.image,
       this.fans,
       this.offline,
       this.library,
       this.radio,
+      this.featuredIn,
+      this.relatedArtists,
+      this.playlists,
+      this.biography,
       this.favoriteDate,
+      this.hasNextPage,
       this.highlight});
 
   String get fansString => NumberFormat.decimalPattern().format(fans ?? 0);
+
+  factory Artist.fromGwJson(Map<dynamic, dynamic> gwJson,
+      {Map<dynamic, dynamic>? pipeJson}) {
+    Map<dynamic, dynamic>? artistData = gwJson['MASTHEAD']?['data'];
+    Map<dynamic, dynamic>? albumsData = pipeJson?['ALBUM']?['albums'];
+    List<dynamic> playlistData = gwJson['PLAYLISTS']?['data'];
+
+    Logger.root.info(playlistData);
+
+    return Artist(
+      id: artistData?['ART_ID'].toString(),
+      name: artistData?['ART_NAME'],
+      fans: artistData?['NB_FAN'],
+      image: artistData?['ART_PICTURE'] == null
+          ? null
+          : ImageDetails.fromPrivateString(artistData?['ART_PICTURE'],
+              type: 'artist'),
+      hasNextPage: false,
+      albums: (albumsData?['edges'] ?? [])
+          .map<Album>((dynamic data) => Album.fromPipeJson(data['node']))
+          .toList(),
+      playlists: playlistData
+          .map<Playlist>((dynamic data) => Playlist.fromPrivateJson(data))
+          .toList(),
+      topTracks: (gwJson['TOP_TRACKS']?['data'] ?? [])
+          .map<Track>((dynamic data) => Track.fromPrivateJson(data))
+          .toList(),
+      library: gwJson['MASTHEAD']?['FAVORITE_STATUS'] ?? false,
+      radio: artistData?['DATA']?['SMARTRADIO'],
+      favoriteDate: artistData?['DATE_FAVORITE'],
+      biography: Bio(
+          summary: pipeJson?['artist']?['bio']?['summary'] ??
+              gwJson['MASTHEAD']?['BIOGRAPHY']?['SUMMARY'],
+          full: pipeJson?['artist']?['bio']?['full'] ??
+              gwJson['MASTHEAD']?['BIOGRAPHY']?['URL'],
+          source: pipeJson?['artist']['bio']['source'] ??
+              gwJson['MASTHEAD']?['BIOGRAPHY']?['SOURCE']),
+      highlight: ArtistHighlight.fromPrivateJson(gwJson['HIGHLIGHT']),
+      relatedArtists:
+          (pipeJson?['relatedArtists']?['relatedArtist']?['edges'] ?? [])
+              .map<Artist>(
+                (dynamic data) => Artist.fromPipeJson(data['node']),
+              )
+              .toList(),
+      featuredIn: (gwJson['FEATURED_IN']?['data'] ?? [])
+          .map<Album>(
+            (dynamic data) => Album.fromPrivateJson(data),
+          )
+          .toList(),
+    );
+  }
 
   //JSON
   factory Artist.fromPrivateJson(Map<dynamic, dynamic> json,
@@ -447,7 +519,6 @@ class Artist {
             ? null
             : ImageDetails.fromPrivateString(json['ART_PICTURE'],
                 type: 'artist'),
-        albumCount: albumsJson['total'],
         albums: (albumsJson['data'] ?? [])
             .map<Album>((dynamic data) => Album.fromPrivateJson(data))
             .toList(),
@@ -460,7 +531,7 @@ class Artist {
         highlight: ArtistHighlight.fromPrivateJson(highlight));
   }
 
-  factory Artist.fromGatewayJson(Map<dynamic, dynamic> json,
+  factory Artist.fromPipeJson(Map<dynamic, dynamic> json,
       {Map<dynamic, dynamic> albumsJson = const {},
       Map<dynamic, dynamic> topJson = const {},
       Map<dynamic, dynamic> highlight = const {},
@@ -479,7 +550,6 @@ class Artist {
             ? null
             : ImageDetails.fromPrivateString(json['picture']['md5'],
                 type: 'artist'),
-        albumCount: albumsJson['total'],
         albums: (albumsJson['data'] ?? [])
             .map<Album>((dynamic data) => Album.fromPrivateJson(data))
             .toList(),
@@ -498,7 +568,7 @@ class Artist {
         'topTracks': topTracks.map<String>((dynamic t) => t.id).join(','),
         'image': image?.full ?? '',
         'fans': fans,
-        'albumCount': albumCount ?? albums.length,
+        'hasNextPage': (hasNextPage ?? true) ? 1 : 0,
         'offline': off ? 1 : 0,
         'library': (library ?? false) ? 1 : 0,
         'radio': (radio ?? false) ? 1 : 0,
@@ -511,7 +581,7 @@ class Artist {
             (i) => Track(id: data['topTracks'].split(',')[i])),
         albums: List<Album>.generate(data['albums'].split(',').length,
             (i) => Album(id: data['albums'].split(',')[i], title: '')),
-        albumCount: data['albumCount'],
+        hasNextPage: (data['hasNextPage'] == 1) ? true : false,
         image: ImageDetails(fullUrl: data['image']),
         fans: data['fans'],
         offline: (data['offline'] == 1) ? true : false,
@@ -584,7 +654,7 @@ class Playlist {
               .toList(),
           library: library);
 
-  factory Playlist.fromGatewayJson(Map<dynamic, dynamic> json,
+  factory Playlist.fromPipeJson(Map<dynamic, dynamic> json,
           {Map<dynamic, dynamic> songsJson = const {}, bool library = false}) =>
       Playlist(
           id: json['id'].toString(),
@@ -594,8 +664,8 @@ class Playlist {
             fullUrl: json['picture']?['large']?[0],
           ),
           user: User(
-            id: json['owner']['id'],
-            name: json['owner']['name'] ?? '',
+            id: json['owner']?['id'] ?? '',
+            name: json['owner']?['name'] ?? '',
           ),
           tracks: (songsJson['data'] ?? [])
               .map<Track>((dynamic data) => Track.fromPrivateJson(data))
@@ -822,28 +892,28 @@ class InstantSearchResults {
         (episodes == null || episodes!.isEmpty));
   }
 
-  factory InstantSearchResults.fromGatewayJson(Map<dynamic, dynamic> json) {
+  factory InstantSearchResults.fromPipeJson(Map<dynamic, dynamic> json) {
     dynamic bestResult;
 
     if (json['bestResult'] != null) {
       if (json['bestResult']['track'] != null) {
-        bestResult = Track.fromGatewayJson(json['bestResult']['track']);
+        bestResult = Track.fromPipeJson(json['bestResult']['track']);
       }
       if (json['bestResult']['album'] != null) {
-        bestResult = Album.fromGatewayJson(json['bestResult']['album']);
+        bestResult = Album.fromPipeJson(json['bestResult']['album']);
       }
       if (json['bestResult']['artist'] != null) {
-        bestResult = Artist.fromGatewayJson(json['bestResult']['artist']);
+        bestResult = Artist.fromPipeJson(json['bestResult']['artist']);
       }
       if (json['bestResult']['playlist'] != null) {
-        bestResult = Playlist.fromGatewayJson(json['bestResult']['playlist']);
+        bestResult = Playlist.fromPipeJson(json['bestResult']['playlist']);
       }
       if (json['bestResult']['podcast'] != null) {
-        bestResult = Show.fromGatewayJson(json['bestResult']['podcast']);
+        bestResult = Show.fromPipeJson(json['bestResult']['podcast']);
       }
       if (json['bestResult']['podcastEpisode'] != null) {
         bestResult =
-            ShowEpisode.fromGatewayJson(json['bestResult']['podcastEpisode']);
+            ShowEpisode.fromPipeJson(json['bestResult']['podcastEpisode']);
       }
 
       Logger.root.info(bestResult.runtimeType);
@@ -852,24 +922,23 @@ class InstantSearchResults {
     return InstantSearchResults(
       bestResult: bestResult,
       tracks: json['results']['tracks']['edges']
-          .map<Track>((dynamic data) => Track.fromGatewayJson(data['node']))
+          .map<Track>((dynamic data) => Track.fromPipeJson(data['node']))
           .toList(),
       albums: json['results']['albums']['edges']
-          .map<Album>((dynamic data) => Album.fromGatewayJson(data['node']))
+          .map<Album>((dynamic data) => Album.fromPipeJson(data['node']))
           .toList(),
       artists: json['results']['artists']['edges']
-          .map<Artist>((dynamic data) => Artist.fromGatewayJson(data['node']))
+          .map<Artist>((dynamic data) => Artist.fromPipeJson(data['node']))
           .toList(),
       playlists: json['results']['playlists']['edges']
-          .map<Playlist>(
-              (dynamic data) => Playlist.fromGatewayJson(data['node']))
+          .map<Playlist>((dynamic data) => Playlist.fromPipeJson(data['node']))
           .toList(),
       shows: json['results']['podcasts']['edges']
-          .map<Show>((dynamic data) => Show.fromGatewayJson(data['node']))
+          .map<Show>((dynamic data) => Show.fromPipeJson(data['node']))
           .toList(),
       episodes: json['results']['podcastEpisodes']['edges']
           .map<ShowEpisode>(
-              (dynamic data) => ShowEpisode.fromGatewayJson(data['node']))
+              (dynamic data) => ShowEpisode.fromPipeJson(data['node']))
           .toList(),
     );
   }
@@ -1537,7 +1606,7 @@ class Show {
               .map<ShowEpisode>((e) => ShowEpisode.fromPrivateJson(e))
               .toList());
 
-  factory Show.fromGatewayJson(Map<dynamic, dynamic> json,
+  factory Show.fromPipeJson(Map<dynamic, dynamic> json,
           {Map<dynamic, dynamic>? epsJson}) =>
       Show(
           id: json['id'],
@@ -1690,8 +1759,7 @@ class ShowEpisode {
           isExplicit: json['SHOW_IS_EXPLICIT'] == '0' ? false : true,
           show: Show(id: json['SHOW_ID']));
 
-  factory ShowEpisode.fromGatewayJson(Map<dynamic, dynamic> json,
-          {Show? show}) =>
+  factory ShowEpisode.fromPipeJson(Map<dynamic, dynamic> json, {Show? show}) =>
       ShowEpisode(
         id: json['id'],
         title: json['title'],

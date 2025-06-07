@@ -167,7 +167,7 @@ class _AlchemyAppState extends State<AlchemyApp> {
         onPopInvokedWithResult: (bool didPop, Object? result) async {
           // When at least 1 layer inside a custom navigator screen,
           // let the back button move back down the custom navigator stack
-          if (customNavigatorKey.currentState!.canPop()) {
+          if (customNavigatorKey.currentState?.canPop() ?? false) {
             await customNavigatorKey.currentState!.maybePop();
             return;
           }

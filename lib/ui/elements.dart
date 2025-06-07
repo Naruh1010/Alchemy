@@ -526,16 +526,18 @@ class _SoundWavePainter extends CustomPainter {
 
 class ViewAllButton extends StatelessWidget {
   final VoidCallback? onTap;
+  final EdgeInsetsGeometry? padding;
 
-  const ViewAllButton({this.onTap, super.key});
+  const ViewAllButton({this.onTap, this.padding, super.key});
 
   @override
   Widget build(BuildContext context) {
     return Container(
       width: MediaQuery.of(context).size.width,
       margin: EdgeInsets.symmetric(vertical: 8.0),
-      padding: EdgeInsets.symmetric(
-          horizontal: MediaQuery.of(context).size.width * 0.05),
+      padding: padding ??
+          EdgeInsets.symmetric(
+              horizontal: MediaQuery.of(context).size.width * 0.05),
       child: Container(
         decoration: BoxDecoration(
           border: Border.all(color: Colors.white.withAlpha(30), width: 2),

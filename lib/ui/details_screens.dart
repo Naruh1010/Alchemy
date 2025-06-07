@@ -1129,7 +1129,6 @@ class _ArtistDetailsState extends State<ArtistDetails> {
                 : OrientationBuilder(builder: (context, orientation) {
                     //Responsive
                     ScreenUtil.init(context, minTextAdapt: true);
-                    Logger.root.info(orientation);
                     //Landscape
                     if (orientation == Orientation.landscape) {
                       // ignore: prefer_const_constructors
@@ -1869,9 +1868,6 @@ class _ArtistDetailsState extends State<ArtistDetails> {
                             ),
                           ),
                         ),
-                        SliverToBoxAdapter(
-                          child: Container(height: 4.0),
-                        ),
                         SliverList(
                           delegate: SliverChildBuilderDelegate(
                             (BuildContext context, int index) {
@@ -1895,33 +1891,18 @@ class _ArtistDetailsState extends State<ArtistDetails> {
                           ),
                         ),
                         SliverToBoxAdapter(
-                          child: Container(
-                            margin: EdgeInsets.symmetric(
-                                vertical: 8.0, horizontal: 12.0),
-                            decoration: BoxDecoration(
-                              border: Border.all(
-                                  color: Colors.white.withAlpha(30),
-                                  width: 1.5),
-                              borderRadius: BorderRadius.circular(10.0),
-                            ),
-                            child: InkWell(
-                              onTap: () {
-                                Navigator.of(context).push(MaterialPageRoute(
-                                    builder: (context) => TrackListScreen(
-                                        artist.topTracks,
-                                        QueueSource(
-                                            id: artist.id,
-                                            text: 'Top'.i18n + '${artist.name}',
-                                            source: 'topTracks'))));
-                              },
-                              child: Padding(
-                                  padding: EdgeInsets.symmetric(
-                                      vertical: 8.0, horizontal: 12.0),
-                                  child: Text(
-                                    'View all'.i18n,
-                                    textAlign: TextAlign.center,
-                                  )),
-                            ),
+                          child: ViewAllButton(
+                            padding: EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 4),
+                            onTap: () {
+                              Navigator.of(context).push(MaterialPageRoute(
+                                  builder: (context) => TrackListScreen(
+                                      artist.topTracks,
+                                      QueueSource(
+                                          id: artist.id,
+                                          text: 'Top'.i18n + '${artist.name}',
+                                          source: 'topTracks'))));
+                            },
                           ),
                         ),
                         //Highlight
@@ -2040,15 +2021,10 @@ class _ArtistDetailsState extends State<ArtistDetails> {
                               ],
                             ),
                           ),
-                        //Albums
-                        SliverToBoxAdapter(
-                          child: Container(
-                            height: 8.0,
-                          ),
-                        ),
+                        //Discography
                         SliverToBoxAdapter(
                           child: SizedBox(
-                            height: 320,
+                            height: 290,
                             child: Column(children: [
                               Padding(
                                 padding: const EdgeInsets.symmetric(
@@ -2110,6 +2086,236 @@ class _ArtistDetailsState extends State<ArtistDetails> {
                             ]),
                           ),
                         ),
+
+                        if (artist.biography?.summary != null)
+                          SliverToBoxAdapter(
+                            child: Padding(
+                                padding: const EdgeInsets.all(16.0),
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.start,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Container(
+                                      height: 8.0,
+                                    ),
+                                    Text(
+                                      'Biography',
+                                      overflow: TextOverflow.ellipsis,
+                                      maxLines: 1,
+                                      textAlign: TextAlign.left,
+                                      style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 20.0),
+                                    ),
+                                    Container(
+                                      height: 16,
+                                    ),
+                                    Text(
+                                      artist.biography?.summary ?? '',
+                                      maxLines: 10,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                          color: Settings.secondaryText),
+                                    ),
+                                    ViewAllButton(
+                                      padding: EdgeInsets.only(top: 4),
+                                      onTap: () {},
+                                    ),
+                                  ],
+                                )),
+                          ),
+
+                        //Similar artists
+                        SliverToBoxAdapter(
+                          child: SizedBox(
+                            height: 260,
+                            child: Column(children: [
+                              Padding(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 12.0, vertical: 4.0),
+                                child: InkWell(
+                                    onTap: () {
+                                      //TODO
+                                    },
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.max,
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.center,
+                                      children: [
+                                        Padding(
+                                          padding: EdgeInsets.symmetric(
+                                              vertical: 12.0, horizontal: 4.0),
+                                          child: Text(
+                                            'Similar Artists'.i18n,
+                                            textAlign: TextAlign.left,
+                                            style: const TextStyle(
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 20.0),
+                                          ),
+                                        ),
+                                        Icon(
+                                          Icons.chevron_right,
+                                        )
+                                      ],
+                                    )),
+                              ),
+                              Container(height: 4.0),
+                              Padding(
+                                  padding:
+                                      EdgeInsets.fromLTRB(12.0, 8.0, 1.0, 8.0),
+                                  child: SingleChildScrollView(
+                                    scrollDirection: Axis.horizontal,
+                                    physics: ClampingScrollPhysics(),
+                                    child: Row(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.start,
+                                        children: List.generate(
+                                            (artist.relatedArtists?.length ??
+                                                        0) >
+                                                    10
+                                                ? 10
+                                                : (artist.relatedArtists
+                                                        ?.length ??
+                                                    0), (i) {
+                                          //Top albums
+                                          Artist? a = artist.relatedArtists?[i];
+                                          return ArtistTile(a ?? Artist());
+                                        })),
+                                  ))
+                            ]),
+                          ),
+                        ),
+
+                        //Playlists
+                        SliverToBoxAdapter(
+                          child: SizedBox(
+                            height: 270,
+                            child: Column(children: [
+                              Padding(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 12.0, vertical: 4.0),
+                                child: InkWell(
+                                    onTap: () {
+                                      //TODO
+                                    },
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.max,
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.center,
+                                      children: [
+                                        Padding(
+                                          padding: EdgeInsets.symmetric(
+                                              vertical: 12.0, horizontal: 4.0),
+                                          child: Text(
+                                            'Playlists'.i18n,
+                                            textAlign: TextAlign.left,
+                                            style: const TextStyle(
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 20.0),
+                                          ),
+                                        ),
+                                        Icon(
+                                          Icons.chevron_right,
+                                        )
+                                      ],
+                                    )),
+                              ),
+                              Container(height: 4.0),
+                              Padding(
+                                  padding:
+                                      EdgeInsets.fromLTRB(12.0, 8.0, 1.0, 8.0),
+                                  child: SingleChildScrollView(
+                                    scrollDirection: Axis.horizontal,
+                                    physics: ClampingScrollPhysics(),
+                                    child: Row(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.start,
+                                        children: List.generate(
+                                            (artist.playlists?.length ?? 0) > 10
+                                                ? 10
+                                                : (artist.playlists?.length ??
+                                                    0), (i) {
+                                          //Top albums
+                                          Playlist? a = artist.playlists?[i];
+                                          return LargePlaylistTile(
+                                              a ?? Playlist());
+                                        })),
+                                  ))
+                            ]),
+                          ),
+                        ),
+
+                        //Featured in
+                        SliverToBoxAdapter(
+                          child: SizedBox(
+                            height: 320,
+                            child: Column(children: [
+                              Padding(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 12.0, vertical: 4.0),
+                                child: InkWell(
+                                    onTap: () {
+                                      //TODO
+                                    },
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.max,
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.center,
+                                      children: [
+                                        Padding(
+                                          padding: EdgeInsets.symmetric(
+                                              vertical: 12.0, horizontal: 4.0),
+                                          child: Text(
+                                            'Featured in'.i18n,
+                                            textAlign: TextAlign.left,
+                                            style: const TextStyle(
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 20.0),
+                                          ),
+                                        ),
+                                        Icon(
+                                          Icons.chevron_right,
+                                        )
+                                      ],
+                                    )),
+                              ),
+                              Container(height: 4.0),
+                              Padding(
+                                  padding:
+                                      EdgeInsets.fromLTRB(12.0, 8.0, 1.0, 8.0),
+                                  child: SingleChildScrollView(
+                                    scrollDirection: Axis.horizontal,
+                                    physics: ClampingScrollPhysics(),
+                                    child: Row(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.start,
+                                        children: List.generate(
+                                            (artist.featuredIn?.length ?? 0) >
+                                                    10
+                                                ? 10
+                                                : (artist.featuredIn?.length ??
+                                                    0), (i) {
+                                          //Top albums
+                                          Album? a = artist.featuredIn?[i];
+                                          return LargeAlbumTile(a ?? Album());
+                                        })),
+                                  ))
+                            ]),
+                          ),
+                        ),
+
                         SliverToBoxAdapter(
                           child: ListenableBuilder(
                               listenable: playerBarState,
@@ -2146,7 +2352,7 @@ class _DiscographyScreenState extends State<DiscographyScreen> {
   ];
 
   Future _load() async {
-    if (artist.albums.length >= (artist.albumCount ?? 0) || _isLoading) return;
+    if (artist.hasNextPage ?? false || _isLoading) return;
     setState(() => _isLoading = true);
 
     //Fetch data
@@ -2163,10 +2369,12 @@ class _DiscographyScreenState extends State<DiscographyScreen> {
     }
 
     //Save
-    setState(() {
-      artist.albums.addAll(data);
-      _isLoading = false;
-    });
+    if (mounted) {
+      setState(() {
+        artist.albums.addAll(data);
+        _isLoading = false;
+      });
+    }
   }
 
   //Get album tile

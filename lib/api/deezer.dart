@@ -27,22 +27,27 @@ class KeyBag {
   String? sid;
   String? arl;
 
-  KeyBag(
-      {String? token,
-      String? tokenKey,
-      String? userKey,
-      String? sid,
-      String? arl}) {
-    token = token;
-    tokenKey = tokenKey;
-    userKey = userKey;
-    sid = sid;
-    arl = arl;
+  KeyBag({
+    this.token,
+    this.tokenKey,
+    this.userKey,
+    this.sid,
+    this.arl,
+  });
+
+  Map<String, String?> toJson() {
+    return {
+      'token': token,
+      'tokenKey': tokenKey,
+      'userKey': userKey,
+      'sid': sid,
+      'arl': arl,
+    };
   }
 }
 
 class DeezerAPI {
-  DeezerAPI({keyBag});
+  DeezerAPI({KeyBag? keyBag});
 
   static const String userAgent =
       'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36';
@@ -373,9 +378,15 @@ class DeezerAPI {
     return body;
   }
 
-  Future<List<DeezerNotification>> getNotifications() async {
+  Future<List<DeezerNotification>> getNotifications({
+    int nb = 20,
+    String? lastId,
+  }) async {
     Map<dynamic, dynamic> data =
-        await deezerAPI.callGwLightApi('notification.list');
+        await deezerAPI.callGwApi('appnotif_getUserNotifications', params: {
+      'NB': nb,
+      'LAST_NOTIFICATION_ID': lastId,
+    });
     if (data['results']?['data'] == null) {
       return [];
     } else {
@@ -504,24 +515,24 @@ class DeezerAPI {
       dynamic item;
       switch (rawType) {
         case 'Track':
-          item = SearchHistoryItem(Track.fromGatewayJson(rawItem['node']),
-              SearchHistoryItemType.TRACK);
+          item = SearchHistoryItem(
+              Track.fromPipeJson(rawItem['node']), SearchHistoryItemType.TRACK);
           break;
         case 'Album':
-          item = SearchHistoryItem(Album.fromGatewayJson(rawItem['node']),
-              SearchHistoryItemType.ALBUM);
+          item = SearchHistoryItem(
+              Album.fromPipeJson(rawItem['node']), SearchHistoryItemType.ALBUM);
           break;
         case 'Artist':
-          item = SearchHistoryItem(Artist.fromGatewayJson(rawItem['node']),
+          item = SearchHistoryItem(Artist.fromPipeJson(rawItem['node']),
               SearchHistoryItemType.ARTIST);
           break;
         case 'Playlist':
-          item = SearchHistoryItem(Playlist.fromGatewayJson(rawItem['node']),
+          item = SearchHistoryItem(Playlist.fromPipeJson(rawItem['node']),
               SearchHistoryItemType.PLAYLIST);
           break;
         case 'Podcast':
-          item = SearchHistoryItem(Show.fromGatewayJson(rawItem['node']),
-              SearchHistoryItemType.SHOW);
+          item = SearchHistoryItem(
+              Show.fromPipeJson(rawItem['node']), SearchHistoryItemType.SHOW);
           break;
       }
       searchHistory.add(item);
@@ -593,7 +604,7 @@ class DeezerAPI {
           'query InstantSearchQuery(\$querySearched: String!, \$first: Int, \$after: String, \$includeBestResult: Boolean!, \$includeTracks: Boolean!, \$includeAlbums: Boolean!, \$includeArtists: Boolean!, \$includePlaylists: Boolean!, \$includeUsers: Boolean!, \$includeFlowConfigs: Boolean!, \$includeLivestreams: Boolean!, \$includePodcasts: Boolean!, \$includePodcastEpisodes: Boolean!, \$includeChannels: Boolean!) { instantSearch(query: \$querySearched) { __typename bestResult @include(if: \$includeBestResult) { __typename ... on InstantSearchArtistBestResult { artist { __typename ...ArtistDetailFragment picture { __typename ...PictureMD5Fragment } } relatedContent { __typename ... on InstantSearchArtistBestResultRelatedContentTopTracks { tracks(limit: 3) { __typename id } } ... on InstantSearchArtistBestResultRelatedContentNewRelease { album { __typename ...AlbumDetailFragment cover { __typename ...PictureMD5Fragment } albumContributors: contributors(first: 1) { __typename edges { __typename roles node { __typename ... on Artist { ...ArtistMinimalFragment } } } } } } } } ... on InstantSearchAlbumBestResult { album { __typename ...AlbumCollectionFragment cover { __typename ...PictureMD5Fragment } albumContributors: contributors(first: 1) { __typename edges { __typename roles node { __typename ... on Artist { ...ArtistMinimalFragment } } } } } } ... on InstantSearchPlaylistBestResult { playlist { __typename ...PlaylistCollectionFragment picture { __typename ...PictureFragment } owner { __typename ...UserMinimalFragment } linkedArtist { __typename ...ArtistMinimalFragment } } } ... on InstantSearchTrackBestResult { track { __typename ...TrackWithoutMediaCollectionFragment album { __typename ...AlbumMinimalFragment cover { __typename ...PictureMD5Fragment } } trackContributors: contributors(first: 1) { __typename edges { __typename roles node { __typename ... on Artist { ...ArtistMinimalFragment } } } } } } ... on InstantSearchPodcastBestResult { podcast { __typename ...PodcastCollectionFragment cover { __typename ...PictureMD5Fragment } } } ... on InstantSearchPodcastEpisodeBestResult { podcastEpisode { __typename ...PodcastEpisodeCollectionFragment cover { __typename ...PictureMD5Fragment } podcast { __typename displayTitle } } } ... on InstantSearchLivestreamBestResult { livestream { __typename ...LivestreamCollectionFragment cover { __typename ...PictureMD5Fragment } } } } results { __typename tracks(first: \$first, after: \$after) @include(if: \$includeTracks) { __typename priority pageInfo { __typename ...PageInfoFragment } edges { __typename node { __typename ...TrackWithoutMediaCollectionFragment album { __typename ...AlbumMinimalFragment cover { __typename ...PictureMD5Fragment } } contributors(first: 1) { __typename edges { __typename roles node { __typename ...ArtistMinimalFragment } } } } } } albums(first: \$first, after: \$after) @include(if: \$includeAlbums) { __typename priority pageInfo { __typename ...PageInfoFragment } edges { __typename node { __typename ...AlbumCollectionFragment cover { __typename ...PictureMD5Fragment } contributors(first: 1) { __typename edges { __typename roles node { __typename ...ArtistMinimalFragment } } } } } } artists(first: \$first, after: \$after) @include(if: \$includeArtists) { __typename priority pageInfo { __typename ...PageInfoFragment } edges { __typename node { __typename ...ArtistDetailFragment picture { __typename ...PictureMD5Fragment } } } } playlists(first: \$first, after: \$after) @include(if: \$includePlaylists) { __typename pageInfo { __typename ...PageInfoFragment } priority edges { __typename node { __typename ...PlaylistCollectionFragment picture { __typename ...PictureFragment } owner { __typename ...UserMinimalFragment } linkedArtist { __typename ...ArtistMinimalFragment } } } } users(first: \$first, after: \$after) @include(if: \$includeUsers) { __typename priority pageInfo { __typename ...PageInfoFragment } edges { __typename node { __typename ...UserMinimalFragment picture { __typename ...PictureMD5Fragment } } } } flowConfigs(first: \$first, after: \$after) @include(if: \$includeFlowConfigs) { __typename priority pageInfo { __typename ...PageInfoFragment } edges { __typename node { __typename ...FlowConfigMinimalFragment visuals { __typename dynamicPageIcon { __typename ...UIAssetFragment } } } } } livestreams(first: \$first, after: \$after) @include(if: \$includeLivestreams) { __typename priority pageInfo { __typename ...PageInfoFragment } edges { __typename node { __typename ...LivestreamCollectionFragment cover { __typename ...PictureMD5Fragment } } } } podcasts(first: \$first, after: \$after) @include(if: \$includePodcasts) { __typename priority pageInfo { __typename ...PageInfoFragment } edges { __typename node { __typename ...PodcastCollectionFragment cover { __typename ...PictureMD5Fragment } } } } podcastEpisodes(first: \$first, after: \$after) @include(if: \$includePodcastEpisodes) { __typename priority pageInfo { __typename ...PageInfoFragment } edges { __typename node { __typename ...PodcastEpisodeCollectionFragment cover { __typename ...PictureMD5Fragment } } } } channels(first: \$first, after: \$after) @include(if: \$includeChannels) { __typename priority pageInfo { __typename ...PageInfoFragment } edges { __typename node { __typename ...ChannelCollectionFragment logo { __typename ...PictureMD5Fragment } picture { __typename ...PictureFragment } } } } } } }  fragment ArtistDetailFragment on Artist { __typename id name fansCount onTour status hasPartialDiscography hasSmartRadio hasTopTracks isDummyArtist isPictureFromReliableSource artistIsFavorite: isFavorite isBannedFromRecommendation isSubscriptionEnabled }  fragment PictureMD5Fragment on Picture { __typename id md5 explicitStatus }  fragment AlbumDetailFragment on Album { __typename id displayTitle type label producerLine duration releaseDate fansCount isExplicit isTakenDown isFavorite discsCount tracksCount }  fragment ArtistMinimalFragment on Artist { __typename id name }  fragment AlbumCollectionFragment on Album { __typename id displayTitle type albumReleaseDate: releaseDate albumIsExplicit: isExplicit albumIsFavorite: isFavorite tracksCount rank }  fragment PlaylistCollectionFragment on Playlist { __typename id title playlistIsFavorite: isFavorite isFromFavoriteTracks creationDate lastModificationDate estimatedTracksCount isCharts isPrivate }  fragment PictureFragment on Picture { __typename id small: urls(pictureRequest: { height: 256 width: 256 } ) medium: urls(pictureRequest: { height: 750 width: 750 } ) large: urls(pictureRequest: { height: 1200 width: 1200 } ) copyright explicitStatus }  fragment UserMinimalFragment on User { __typename id name }  fragment TrackWithoutMediaCollectionFragment on Track { __typename id title duration gain bpm popularity trackReleaseDate: releaseDate trackIsExplicit: isExplicit trackIsFavorite: isFavorite isBannedFromRecommendation }  fragment AlbumMinimalFragment on Album { __typename id displayTitle }  fragment PodcastCollectionFragment on Podcast { __typename id displayTitle description podcastIsFavorite: isFavorite podcastIsExplicit: isExplicit }  fragment PodcastEpisodeCollectionFragment on PodcastEpisode { __typename id title duration releaseDate }  fragment LivestreamCollectionFragment on Livestream { __typename id name isOnStream }  fragment PageInfoFragment on PageInfo { __typename hasNextPage hasPreviousPage startCursor endCursor }  fragment FlowConfigMinimalFragment on FlowConfig { __typename id title }  fragment UIAssetFragment on UIAsset { __typename id small: urls(uiAssetRequest: { height: 256 width: 256 } ) medium: urls(uiAssetRequest: { height: 750 width: 750 } ) large: urls(uiAssetRequest: { height: 1200 width: 1200 } ) }  fragment ChannelCollectionFragment on Channel { __typename id name backgroundColor slug }'
     };
     Map<dynamic, dynamic> data = await callPipeApi(params: searchParams);
-    return InstantSearchResults.fromGatewayJson(data['data']['instantSearch']);
+    return InstantSearchResults.fromPipeJson(data['data']['instantSearch']);
   }
 
   Future<Track> track(String id) async {
@@ -628,15 +639,32 @@ class DeezerAPI {
   //Get artist details
   Future<Artist> artist(String id) async {
     Map<dynamic, dynamic> data =
-        await callGwLightApi('deezer.pageArtist', params: {
-      'art_id': id,
-      'lang': settings.deezerLanguage,
+        await callGwApi('mobile.pageArtistSections', params: {
+      'USER_ID': userId,
+      'ART_ID': id,
+      'SECTIONS': [
+        {
+          'TOP_TRACKS': {'count': 4, 'start': 0},
+          'HIGHLIGHT': {},
+          'MASTHEAD': {'smartradio': true, 'bio_url': true},
+          'ESSENTIALS': {'count': 6, 'start': 0},
+          'FEATURED_IN': {'count': 13, 'start': 0},
+          'PLAYLISTS': {'count': 13, 'start': 0}
+        }
+      ],
+      'LANG': settings.deezerLanguage,
+    });
+
+    Map<dynamic, dynamic> complementaryData = await callPipeApi(params: {
+      'query':
+          'query artistPage {\n  artist(artistId: \"$id\") {\n    id\n    name\n    isDummyArtist\n    hasSmartRadio\n    fansCount\n    picture {\n      md5\n      explicitStatus\n    }\n    isPictureFromReliableSource\n    status\n    isSubscriptionEnabled\n    bio {\n      summary\n      full\n      source\n    }\n  }\n  ALBUM:artist(artistId: "$id") {\n    albums(types: [ALBUM], order: RELEASE_DATE, mode: OFFICIAL, roles: [MAIN], first: 13) {\n      pageInfo {\n        hasNextPage\n      }\n      edges {\n        node {\n          id\n          isFavorite\n          label\n          type\n          displayTitle\n          cover {\n            md5\n            explicitStatus\n          }\n          releaseDate\n          windowing {\n            releaseDateFree\n            releaseDateSub\n          }\n          contributors(first: 10) {\n            edges {\n              node {\n                ... on Artist {\n                  __typename\n                  id\n                  name\n                  isDummyArtist\n                  picture {\n                    md5\n                    explicitStatus\n                  }\n                }\n              }\n              roles\n            }\n          }\n        }\n      }\n    }\n  }\n  EP:artist(artistId: "$id") {\n    albums(types: [EP], order: RELEASE_DATE, mode: OFFICIAL, roles: [MAIN], first: 13) {\n      pageInfo {\n        hasNextPage\n      }\n      edges {\n        node {\n          id\n          isFavorite\n          label\n          type\n          displayTitle\n          cover {\n            md5\n            explicitStatus\n          }\n          releaseDate\n          windowing {\n            releaseDateFree\n            releaseDateSub\n          }\n          contributors(first: 10) {\n            edges {\n              node {\n                ... on Artist {\n                  __typename\n                  id\n                  name\n                  isDummyArtist\n                  picture {\n                    md5\n                    explicitStatus\n                  }\n                }\n              }\n              roles\n            }\n          }\n        }\n      }\n    }\n  }\n  SINGLES:artist(artistId: "$id") {\n    albums(types: [SINGLES], order: RELEASE_DATE, mode: OFFICIAL, roles: [MAIN], first: 13) {\n      pageInfo {\n        hasNextPage\n      }\n      edges {\n        node {\n          id\n          isFavorite\n          label\n          type\n          displayTitle\n          cover {\n            md5\n            explicitStatus\n          }\n          releaseDate\n          windowing {\n            releaseDateFree\n            releaseDateSub\n          }\n          contributors(first: 10) {\n            edges {\n              node {\n                ... on Artist {\n                  __typename\n                  id\n                  name\n                  isDummyArtist\n                  picture {\n                    md5\n                    explicitStatus\n                  }\n                }\n              }\n              roles\n            }\n          }\n        }\n      }\n    }\n  }\n  relatedArtists:artist(artistId: "$id") {\n    relatedArtist(first: 13) {\n      pageInfo {\n        hasNextPage\n        endCursor\n      }\n      edges {\n        cursor\n        node {\n          id\n          hasSmartRadio\n          isDummyArtist\n          fansCount\n          name\n          picture {\n            md5\n            explicitStatus\n          }\n        }\n      }\n    }\n  }\n  liveEventsByProximity:artist(artistId: "$id") {\n    liveEventsByProximity(first: 1) {\n      edges {\n        node {\n          id\n          name\n          description\n          startDate\n          status\n          venue\n          cityName\n          duration\n          hasSubscribedToNotification\n          countryCode\n          sources {\n            defaultUrl\n          }\n          types {\n            isConcert\n            isFestival\n            isLivestreamConcert\n            isLivestreamFestival\n          }\n          assets {\n            eventCardImageMobile {\n              md5\n              urls(pictureRequest: {height: 256, width: 256})\n            }\n          }\n          contributors {\n            pageInfo {\n              hasNextPage\n              endCursor\n            }\n            edges {\n              cursor\n              concertContributorMetadata {\n                roles {\n                  isMain\n                  isSupport\n                }\n                performanceOrder\n              }\n              node {\n                ... on Artist {\n                  __typename\n                  id\n                  name\n                  picture {\n                    urls(pictureRequest: {height: 750, width: 750})\n                  }\n                  fansCount\n                  isFavorite\n                }\n              }\n            }\n          }\n          live {\n            id\n            externalUrl {\n              url\n            }\n          }\n        }\n      }\n    }\n  }\n}'
     });
     if (data['results'] == null) return Artist();
-    return Artist.fromPrivateJson(data['results']['DATA'],
-        topJson: data['results']['TOP'],
-        albumsJson: data['results']['ALBUMS'],
-        highlight: data['results']['HIGHLIGHT']);
+
+    Artist a = Artist.fromGwJson(data['results'].first,
+        pipeJson: complementaryData['data']);
+
+    return a;
   }
 
   //Get playlist tracks at offset

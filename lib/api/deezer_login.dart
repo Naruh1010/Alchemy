@@ -137,19 +137,23 @@ class DeezerLogin {
     String? arl = authResponse['results']['ARL'];
     String? userToken = authResponse['results']['USER_TOKEN'];
 
-    return KeyBag(
+    KeyBag k = KeyBag(
       token: userToken,
       tokenKey: keyBagTokenKey,
       userKey: keyBagUserKey,
       sid: sid,
       arl: arl,
     );
+
+    return k;
   }
 
   //Login with email
   static Future<String?> getArlByEmailAndPassword(
       String email, String password) async {
     cookieManager.reset();
+    await signInWithEmail(email, password);
+    return '';
     // Get initial cookies (sid) from empty getUser call
     String url =
         'https://www.deezer.com/ajax/gw-light.php?method=deezer.getUserData&input=3&api_version=1.0&api_token=null';

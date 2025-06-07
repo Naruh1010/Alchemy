@@ -115,6 +115,18 @@ const _$ArtistHighlightTypeEnumMap = {
   ArtistHighlightType.ALBUM: 'ALBUM',
 };
 
+Bio _$BioFromJson(Map<String, dynamic> json) => Bio(
+      summary: json['summary'] as String?,
+      full: json['full'] as String?,
+      source: json['source'] as String?,
+    );
+
+Map<String, dynamic> _$BioToJson(Bio instance) => <String, dynamic>{
+      'summary': instance.summary,
+      'full': instance.full,
+      'source': instance.source,
+    };
+
 Artist _$ArtistFromJson(Map<String, dynamic> json) => Artist(
       id: json['id'] as String?,
       name: json['name'] as String?,
@@ -122,7 +134,6 @@ Artist _$ArtistFromJson(Map<String, dynamic> json) => Artist(
               ?.map((e) => Album.fromJson(e as Map<String, dynamic>))
               .toList() ??
           const [],
-      albumCount: (json['albumCount'] as num?)?.toInt(),
       topTracks: (json['topTracks'] as List<dynamic>?)
               ?.map((e) => Track.fromJson(e as Map<String, dynamic>))
               .toList() ??
@@ -134,7 +145,20 @@ Artist _$ArtistFromJson(Map<String, dynamic> json) => Artist(
       offline: json['offline'] as bool?,
       library: json['library'] as bool?,
       radio: json['radio'] as bool?,
+      featuredIn: (json['featuredIn'] as List<dynamic>?)
+          ?.map((e) => Album.fromJson(e as Map<String, dynamic>))
+          .toList(),
+      relatedArtists: (json['relatedArtists'] as List<dynamic>?)
+          ?.map((e) => Artist.fromJson(e as Map<String, dynamic>))
+          .toList(),
+      playlists: (json['playlists'] as List<dynamic>?)
+          ?.map((e) => Playlist.fromJson(e as Map<String, dynamic>))
+          .toList(),
+      biography: json['biography'] == null
+          ? null
+          : Bio.fromJson(json['biography'] as Map<String, dynamic>),
       favoriteDate: json['favoriteDate'] as String?,
+      hasNextPage: json['hasNextPage'] as bool?,
       highlight: json['highlight'] == null
           ? null
           : ArtistHighlight.fromJson(json['highlight'] as Map<String, dynamic>),
@@ -144,8 +168,11 @@ Map<String, dynamic> _$ArtistToJson(Artist instance) => <String, dynamic>{
       'id': instance.id,
       'name': instance.name,
       'albums': instance.albums,
-      'albumCount': instance.albumCount,
       'topTracks': instance.topTracks,
+      'featuredIn': instance.featuredIn,
+      'playlists': instance.playlists,
+      'relatedArtists': instance.relatedArtists,
+      'biography': instance.biography,
       'image': instance.image,
       'fans': instance.fans,
       'offline': instance.offline,
@@ -153,6 +180,7 @@ Map<String, dynamic> _$ArtistToJson(Artist instance) => <String, dynamic>{
       'radio': instance.radio,
       'favoriteDate': instance.favoriteDate,
       'highlight': instance.highlight,
+      'hasNextPage': instance.hasNextPage,
     };
 
 Playlist _$PlaylistFromJson(Map<String, dynamic> json) => Playlist(

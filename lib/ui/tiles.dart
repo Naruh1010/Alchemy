@@ -1358,12 +1358,14 @@ class LargeAlbumTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-        padding: EdgeInsets.symmetric(horizontal: 4),
+        padding: EdgeInsets.symmetric(
+            horizontal: MediaQuery.of(context).size.width * 0.02),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.start,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             InkWell(
+              borderRadius: BorderRadius.circular(30),
               onTap: () => Navigator.of(context).push(
                   MaterialPageRoute(builder: (context) => AlbumDetails(album))),
               onLongPress: () {
@@ -1372,47 +1374,54 @@ class LargeAlbumTile extends StatelessWidget {
               },
               child: Container(
                 clipBehavior: Clip.hardEdge,
-                decoration: BoxDecoration(
-                    border: Border.all(color: Colors.transparent),
-                    borderRadius: BorderRadius.circular(10)),
+                decoration: ShapeDecoration(
+                  shape: SmoothRectangleBorder(
+                    borderRadius: SmoothBorderRadius(
+                      cornerRadius: 30,
+                      cornerSmoothing: 0.8,
+                    ),
+                  ),
+                ),
                 child: CachedImage(
                   url: album.image?.fullUrl ?? '',
-                  height: 180,
-                  width: 180,
+                  height: 160,
+                  width: 160,
                 ),
               ),
             ),
             SizedBox(
-                width: 180,
+                width: 160,
                 child: Padding(
                   padding: EdgeInsets.symmetric(horizontal: 2.0, vertical: 6.0),
                   child: Text(album.title ?? '',
                       overflow: TextOverflow.ellipsis,
                       maxLines: 1,
-                      textAlign: TextAlign.start,
+                      textAlign: TextAlign.center,
                       style:
                           TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
                 )),
             SizedBox(
-                width: 180,
+                width: 160,
                 child: Padding(
                   padding: EdgeInsets.symmetric(horizontal: 4.0),
                   child: Text('By '.i18n + (album.artistString ?? ''),
                       maxLines: 1,
-                      textAlign: TextAlign.start,
+                      textAlign: TextAlign.center,
                       style: TextStyle(
                           color: Settings.secondaryText, fontSize: 8)),
                 )),
-            SizedBox(
-                width: 180,
-                child: Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 4.0, vertical: 2.0),
-                  child: Text('Out on '.i18n + (album.releaseDate ?? ''),
-                      maxLines: 1,
-                      textAlign: TextAlign.start,
-                      style: TextStyle(
-                          color: Settings.secondaryText, fontSize: 8)),
-                )),
+            if (album.releaseDate != null)
+              SizedBox(
+                  width: 160,
+                  child: Padding(
+                    padding:
+                        EdgeInsets.symmetric(horizontal: 4.0, vertical: 2.0),
+                    child: Text('Out on '.i18n + (album.releaseDate ?? ''),
+                        maxLines: 1,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                            color: Settings.secondaryText, fontSize: 8)),
+                  )),
           ],
         ));
   }

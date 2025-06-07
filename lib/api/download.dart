@@ -59,7 +59,7 @@ class DownloadManager {
       b.execute('''CREATE TABLE Albums (
         id TEXT PRIMARY KEY, title TEXT, artists TEXT, tracks TEXT, image TEXT, fans INTEGER, offline INTEGER, library INTEGER, type INTEGER, releaseDate TEXT)''');
       b.execute('''CREATE TABLE Artists (
-        id TEXT PRIMARY KEY, name TEXT, albums TEXT, topTracks TEXT, picture TEXT, fans INTEGER, albumCount INTEGER, offline INTEGER, library INTEGER, radio INTEGER)''');
+        id TEXT PRIMARY KEY, name TEXT, albums TEXT, topTracks TEXT, picture TEXT, fans INTEGER, hasNextPage INTEGER, offline INTEGER, library INTEGER, radio INTEGER)''');
       b.execute('''CREATE TABLE Playlists (
         id TEXT PRIMARY KEY, title TEXT, tracks TEXT, image TEXT, duration INTEGER, userId TEXT, userName TEXT, fans INTEGER, library INTEGER, description TEXT)''');
       b.execute('''CREATE TABLE Shows (
