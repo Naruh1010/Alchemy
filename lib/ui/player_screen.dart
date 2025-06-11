@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:ui';
 
+import 'package:alchemy/utils/connectivity.dart';
 import 'package:async/async.dart';
 import 'package:audio_service/audio_service.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -1326,7 +1327,16 @@ class _QueueScreenState extends State<QueueScreen> with WidgetsBindingObserver {
                 semanticLabel: 'Create playlist'.i18n,
               ),
               onPressed: () async {
-                await audioHandler.toggleShuffle();
+                if (!(await isConnected())) {
+                  Fluttertoast.showToast(
+                      msg: 'Cannot create playlists in offline mode'.i18n,
+                      gravity: ToastGravity.BOTTOM);
+                  return;
+                }
+                MenuSheet m = MenuSheet();
+                if (mounted) {
+                  await m.createPlaylist(context);
+                }
               },
             ),
           ),

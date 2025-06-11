@@ -232,7 +232,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
                           Expanded(
                             child: LibraryGridItem(
                               title: 'Favorites'.i18n,
-                              subtitle: '${trackCount ?? 0} Songs'.i18n,
+                              subtitle: '${(trackCount ?? 0)} ' + 'Songs'.i18n,
                               icon: AlchemyIcons.heart,
                               onTap: () {
                                 Navigator.of(context).push(MaterialPageRoute(
@@ -252,7 +252,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
                             child: LibraryGridItem(
                               title: 'Artists'.i18n,
                               subtitle: favoriteArtists != null
-                                  ? '$favoriteArtists Artists'.i18n
+                                  ? '$favoriteArtists ' + 'Artists'.i18n
                                   : 'You are offline',
                               icon: AlchemyIcons.human_circle,
                               onTap: () {
@@ -273,7 +273,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
                           Expanded(
                             child: LibraryGridItem(
                               title: 'Podcasts'.i18n,
-                              subtitle: '$favoriteShows Shows'.i18n,
+                              subtitle: '$favoriteShows ' + 'Shows'.i18n,
                               icon: AlchemyIcons.podcast,
                               onTap: () {
                                 Navigator.of(context).push(MaterialPageRoute(
@@ -289,7 +289,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
                             child: LibraryGridItem(
                               title: 'Albums'.i18n,
                               subtitle: favoriteAlbums != null
-                                  ? '$favoriteAlbums Albums'.i18n
+                                  ? '$favoriteAlbums ' + 'Albums'.i18n
                                   : 'You are offline',
                               icon: AlchemyIcons.album,
                               onTap: () {

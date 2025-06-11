@@ -454,9 +454,7 @@ class Artist {
       {Map<dynamic, dynamic>? pipeJson}) {
     Map<dynamic, dynamic>? artistData = gwJson['MASTHEAD']?['data'];
     Map<dynamic, dynamic>? albumsData = pipeJson?['ALBUM']?['albums'];
-    List<dynamic> playlistData = gwJson['PLAYLISTS']?['data'];
-
-    Logger.root.info(playlistData);
+    List<dynamic>? playlistData = gwJson['PLAYLISTS']?['data'];
 
     return Artist(
       id: artistData?['ART_ID'].toString(),
@@ -466,18 +464,23 @@ class Artist {
           ? null
           : ImageDetails.fromPrivateString(artistData?['ART_PICTURE'],
               type: 'artist'),
-      hasNextPage: false,
+      hasNextPage: (pipeJson?['ALBUM']?['albums']?['pageInfo']
+                  ?['hasNextPage'] ??
+              true) ||
+          (pipeJson?['EP']?['albums']?['pageInfo']?['hasNextPage'] ?? true) ||
+          (pipeJson?['SINGLES']?['albums']?['pageInfo']?['hasNextPage'] ??
+              true),
       albums: (albumsData?['edges'] ?? [])
           .map<Album>((dynamic data) => Album.fromPipeJson(data['node']))
           .toList(),
       playlists: playlistData
-          .map<Playlist>((dynamic data) => Playlist.fromPrivateJson(data))
+          ?.map<Playlist>((dynamic data) => Playlist.fromPrivateJson(data))
           .toList(),
       topTracks: (gwJson['TOP_TRACKS']?['data'] ?? [])
           .map<Track>((dynamic data) => Track.fromPrivateJson(data))
           .toList(),
       library: gwJson['MASTHEAD']?['FAVORITE_STATUS'] ?? false,
-      radio: artistData?['DATA']?['SMARTRADIO'],
+      radio: artistData?['SMARTRADIO'],
       favoriteDate: artistData?['DATE_FAVORITE'],
       biography: Bio(
           summary: pipeJson?['artist']?['bio']?['summary'] ??

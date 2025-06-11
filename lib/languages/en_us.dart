@@ -1,5 +1,5 @@
 const language_en_us = {
-  'en-us': {
+  'en-US': {
     'Home': 'Home',
     'Search': 'Search',
     'Library': 'Library',
@@ -454,5 +454,16 @@ const language_en_us = {
 
     // 0.7.15
     'Allow screen to turn off': 'Allow screen to turn off',
+
+    'Podcasts': 'Podcasts',
+    'Your Playlists': 'Your Playlists',
+    'Your Top Tracks': 'Your Top Tracks',
+    'Songs': 'Songs',
+    'Profile': 'Profile',
+    'Name': 'Name',
+    'Preferences': 'Preferences',
+    'Play blind test': 'Play blind test',
+    'By ': 'By ',
+    'Out on ': 'Out on '
   }
 };

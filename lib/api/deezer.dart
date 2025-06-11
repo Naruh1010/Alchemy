@@ -63,7 +63,16 @@ class DeezerAPI {
 
   Future? _authorizing;
 
-  Future testFunction() async {}
+  Future testFunction(context) async {
+    Navigator.of(context)
+        .push(MaterialPageRoute(builder: (context) => CreatePlaylistScreen()));
+
+/*    ImagePicker picker = ImagePicker();
+    XFile? imageFile = await picker.pickImage(source: ImageSource.gallery);
+    if (imageFile == null) return;
+    List<int>? imageData = await imageFile.readAsBytes();
+    Logger.root.info(await imageUpload(imageData: imageData));*/
+  }
 
   //Get headers
   Map<String, String> get headers => {
@@ -636,8 +645,32 @@ class DeezerAPI {
         songsJson: data['results']['SONGS']);
   }
 
-  //Get artist details
   Future<Artist> artist(String id) async {
+    Map<dynamic, dynamic> data =
+        await callGwApi('mobile.pageArtistSections', params: {
+      'USER_ID': userId,
+      'ART_ID': id,
+      'SECTIONS': [
+        {
+          'TOP_TRACKS': {'count': 4, 'start': 0},
+          'HIGHLIGHT': {},
+          'MASTHEAD': {'smartradio': true, 'bio_url': true},
+        }
+      ],
+      'LANG': settings.deezerLanguage,
+    });
+
+    if (data['results'] == null) return Artist();
+
+    Artist a = Artist.fromGwJson(
+      data['results'].first,
+    );
+
+    return a;
+  }
+
+  //Get artist details
+  Future<Artist> completeArtist(String id) async {
     Map<dynamic, dynamic> data =
         await callGwApi('mobile.pageArtistSections', params: {
       'USER_ID': userId,
@@ -665,6 +698,30 @@ class DeezerAPI {
         pipeJson: complementaryData['data']);
 
     return a;
+  }
+
+  Future<List<Track>> artistTopTracks(
+    String id, {
+    int count = 100,
+    int start = 0,
+  }) async {
+    Map<dynamic, dynamic> data =
+        await callGwApi('mobile.pageArtistSections', params: {
+      'USER_ID': userId,
+      'ART_ID': id,
+      'SECTIONS': [
+        {
+          'TOP_TRACKS': {'count': count, 'start': start}
+        }
+      ],
+      'LANG': settings.deezerLanguage,
+    });
+
+    if (data['results']?[0]?['TOP_TRACKS']?['data'] == null) return [];
+
+    return data['results']?[0]?['TOP_TRACKS']?['data']
+        .map<Track>((dynamic t) => Track.fromPrivateJson(t))
+        .toList();
   }
 
   //Get playlist tracks at offset
@@ -1287,22 +1344,124 @@ class DeezerAPI {
     await callGwLightApi('playlist.delete', params: {'playlist_id': id});
   }
 
+  Future<String> imageUpload({
+    required List<int> imageData,
+    String uploadPath = '/v2/playlist/picture',
+  }) async {
+    String jwtToken = await getJsonWebToken();
+    Map<String, String> uploadApiHeaders = headers;
+    // Add jwt token to headers
+    uploadApiHeaders['Authorization'] = 'Bearer $jwtToken';
+
+    Uri uri = Uri.https('upload.deezer.com', uploadPath);
+    //Post
+
+    http.MultipartFile imageFile = http.MultipartFile.fromBytes(
+      'file',
+      imageData,
+      filename: 'playlist_cover.png',
+    );
+
+    http.MultipartRequest request = http.MultipartRequest('POST', uri)
+      ..files.add(imageFile)
+      ..headers.addAll(uploadApiHeaders);
+    http.StreamedResponse streamedRes = await request.send();
+    http.Response res = await http.Response.fromStream(streamedRes);
+
+    dynamic body = jsonDecode(res.body);
+
+    return body['results']?.toString() ?? '';
+  }
+
   //Create playlist
   //Status 1 - private, 2 - collaborative
-  Future<String> createPlaylist(String title,
-      {String description = '',
-      int status = 1,
+  Future<String> createPlaylist(
+      {required String title,
+      bool isPrivate = true,
+      bool isCollaborative = false,
+      List<int>? pictureData,
       List<String> trackIds = const []}) async {
-    Map data = await callGwLightApi('playlist.create', params: {
-      'title': title,
-      'description': description,
-      'songs': trackIds
-          .map<List>((id) => [int.parse(id), trackIds.indexOf(id)])
-          .toList(),
-      'status': status
-    });
+    String? imageRef;
+
+    if (pictureData?.isNotEmpty ?? false) {
+      imageRef = await imageUpload(
+          imageData: pictureData!, uploadPath: '/v2/playlist/picture');
+    }
+
+    Logger.root.info(imageRef);
+
+    Map data = await callPipeApi(
+      params: {
+        'operationName': 'CreatePlaylist',
+        'variables': {
+          'input': {
+            'title': title,
+            'isPrivate': isPrivate,
+            'isCollaborative': isCollaborative,
+            'picture': imageRef,
+          }
+        },
+        'query':
+            'mutation CreatePlaylist(\$input: PlaylistCreateMutationInput!) { createPlaylist(input: \$input) { __typename playlist { __typename ...PlaylistDetailFragment mostPopularTrack { __typename ...TrackMinimalFragment } owner { __typename ...UserMinimalFragment picture { __typename ...PictureMD5Fragment } } linkedArtist { __typename ...ArtistMinimalFragment picture { __typename ...PictureMD5Fragment } } picture { __typename ...PictureFragment ...PictureMD5Fragment } } } }  fragment PlaylistDetailFragment on Playlist { __typename id title description estimatedDuration estimatedTracksCount lastModificationDate playlistIsFavorite: isFavorite isFromFavoriteTracks isBlindTestable isCharts isCollaborative isEditorialized isPrivate fansCount }  fragment TrackMinimalFragment on Track { __typename id title }  fragment UserMinimalFragment on User { __typename id name }  fragment PictureMD5Fragment on Picture { __typename id md5 explicitStatus }  fragment ArtistMinimalFragment on Artist { __typename id name }  fragment PictureFragment on Picture { __typename id small: urls(pictureRequest: { height: 256 width: 256 } ) medium: urls(pictureRequest: { height: 750 width: 750 } ) large: urls(pictureRequest: { height: 1200 width: 1200 } ) copyright explicitStatus }'
+      },
+    );
+
+    if (trackIds.isNotEmpty &&
+        data['data']?['createPlaylist']?['playlist']?['id'] != null) {
+      Map addTracksData = await callPipeApi(params: {
+        'operationName': 'AddTracksToPlaylist',
+        'variables': {
+          'input': {
+            'playlistId': data['data']['createPlaylist']['playlist']['id'],
+            'trackIds': trackIds
+          }
+        },
+        'query':
+            'mutation AddTracksToPlaylist(\$input: PlaylistAddTracksMutationInput!) { addTracksToPlaylist(input: \$input) { __typename ... on PlaylistAddTracksOutput { addedTrackIds duplicatedTrackIds beyondLimitTrackIds playlist { __typename ...PlaylistOnTrackMutationFragment picture { __typename ...PictureFragment ...PictureMD5Fragment } } } ... on PlaylistAddTracksError { isNotAllowed } } }  fragment PlaylistOnTrackMutationFragment on Playlist { __typename id title estimatedDuration estimatedTracksCount lastModificationDate }  fragment PictureFragment on Picture { __typename id small: urls(pictureRequest: { height: 256 width: 256 } ) medium: urls(pictureRequest: { height: 750 width: 750 } ) large: urls(pictureRequest: { height: 1200 width: 1200 } ) copyright explicitStatus }  fragment PictureMD5Fragment on Picture { __typename id md5 explicitStatus }'
+      });
+      return addTracksData['data']?['addTracksToPlaylist']?['playlist']?['id']
+              ?.toString() ??
+          '';
+    }
     //Return playlistId
-    return data['results'].toString();
+    return data['data']?['createPlaylist']?['playlist']?['id']?.toString() ??
+        '';
+  }
+
+  Future<String> updatePlaylist({
+    required String playlistId,
+    String? title,
+    bool isPrivate = true,
+    bool isCollaborative = false,
+    List<int>? pictureData,
+  }) async {
+    String? imageRef;
+
+    if (pictureData?.isNotEmpty ?? false) {
+      imageRef = await imageUpload(
+          imageData: pictureData!, uploadPath: '/v2/playlist/picture');
+    }
+
+    Map data = await callPipeApi(
+      params: {
+        'operationName': 'UpdatePlaylist',
+        'variables': {
+          'input': {
+            'playlistId': playlistId,
+            'title': title,
+            'isCollaborative': isCollaborative,
+            'isPrivate': isPrivate,
+            'picture': imageRef,
+          }
+        },
+        'query':
+            'mutation UpdatePlaylist(\$input: PlaylistUpdateMutationInput!) { updatePlaylist(input: \$input) { __typename playlist { __typename ...PlaylistDetailFragment mostPopularTrack { __typename ...TrackMinimalFragment } owner { __typename ...UserMinimalFragment picture { __typename ...PictureMD5Fragment } } linkedArtist { __typename ...ArtistMinimalFragment picture { __typename ...PictureMD5Fragment } } picture { __typename ...PictureFragment ...PictureMD5Fragment } } } }  fragment PlaylistDetailFragment on Playlist { __typename id title description estimatedDuration estimatedTracksCount lastModificationDate playlistIsFavorite: isFavorite isFromFavoriteTracks isBlindTestable isCharts isCollaborative isEditorialized isPrivate fansCount }  fragment TrackMinimalFragment on Track { __typename id title }  fragment UserMinimalFragment on User { __typename id name }  fragment PictureMD5Fragment on Picture { __typename id md5 explicitStatus }  fragment ArtistMinimalFragment on Artist { __typename id name }  fragment PictureFragment on Picture { __typename id small: urls(pictureRequest: { height: 256 width: 256 } ) medium: urls(pictureRequest: { height: 750 width: 750 } ) large: urls(pictureRequest: { height: 1200 width: 1200 } ) copyright explicitStatus }'
+      },
+    );
+
+    //Return playlistId
+    return data['data']?['updatePlaylist']?['playlist']?['id']?.toString() ??
+        '';
   }
 
   //Get part of discography
@@ -1341,18 +1500,6 @@ class DeezerAPI {
     return data['results']?['data']
         .map<Track>((t) => Track.fromPrivateJson(t))
         .toList();
-  }
-
-  //Update playlist metadata, status = see createPlaylist
-  Future updatePlaylist(String id, String title, String description,
-      {int status = 1}) async {
-    await callGwLightApi('playlist.update', params: {
-      'description': description,
-      'title': title,
-      'playlist_id': int.parse(id),
-      'status': status,
-      'songs': []
-    });
   }
 
   //Get shuffled library

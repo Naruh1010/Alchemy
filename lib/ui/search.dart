@@ -6,6 +6,7 @@ import 'package:alchemy/settings.dart';
 import 'package:alchemy/ui/cached_image.dart';
 import 'package:alchemy/ui/settings_screen.dart';
 import 'package:alchemy/utils/connectivity.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get_it/get_it.dart';
@@ -1248,24 +1249,26 @@ class _SearchScreenState extends State<SearchScreen> {
                                                         results.bestResult
                                                                 .runtimeType ==
                                                             Album
-                                                    ? 'Track • By ' +
-                                                        results.bestResult
-                                                            .artists[0]?.name
-                                                    : results.bestResult
-                                                                .runtimeType ==
+                                                    ? (results.bestResult.artists as List<Artist?>?)
+                                                                ?.isNotEmpty ??
+                                                            false
+                                                        ? 'Track • By ' +
+                                                            results
+                                                                .bestResult
+                                                                .artists[0]
+                                                                ?.name
+                                                        : ''
+                                                    : results.bestResult.runtimeType ==
                                                             Artist
                                                         ? 'Artist • ' +
                                                             results.bestResult.fans
                                                                 .toString() +
                                                             ' fans'
-                                                        : results.bestResult.runtimeType ==
-                                                                    Show ||
-                                                                results.bestResult
-                                                                        .runtimeType ==
+                                                        : results.bestResult.runtimeType == Show ||
+                                                                results.bestResult.runtimeType ==
                                                                     ShowEpisode
                                                             ? 'Podcast'
-                                                            : results.bestResult
-                                                                        .runtimeType ==
+                                                            : results.bestResult.runtimeType ==
                                                                     Playlist
                                                                 ? 'Playlist • By ' +
                                                                     results
@@ -1359,34 +1362,70 @@ class SearchBrowseCard extends StatelessWidget {
 }
 
 //List all tracks
-class TrackListScreen extends StatelessWidget {
+class TrackListScreen extends StatefulWidget {
   final QueueSource queueSource;
   final List<Track> tracks;
+  final Future<List<Track>>? load;
 
-  const TrackListScreen(this.tracks, this.queueSource, {super.key});
+  const TrackListScreen(this.tracks, this.queueSource, {this.load, super.key});
+
+  @override
+  _TrackListScreenState createState() => _TrackListScreenState();
+}
+
+class _TrackListScreenState extends State<TrackListScreen> {
+  bool _isLoading = false;
+  List<Track> _tracks = [];
+
+  void _parentLoader() async {
+    if (mounted) {
+      setState(() {
+        _isLoading = true;
+      });
+    }
+
+    List<Track> fetchedTracks = await widget.load!;
+
+    if (mounted) {
+      setState(() {
+        _tracks = fetchedTracks;
+        _isLoading = false;
+      });
+    }
+  }
+
+  @override
+  void initState() {
+    if (mounted && widget.load != null) {
+      _parentLoader();
+    }
+    super.initState();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: FreezerAppBar('Tracks'.i18n),
-      body: ListView.builder(
-        itemCount: tracks.length,
-        itemBuilder: (BuildContext context, int i) {
-          Track t = tracks[i];
-          return TrackTile(
-            t,
-            onTap: () {
-              GetIt.I<AudioPlayerHandler>()
-                  .playFromTrackList(tracks, t.id ?? '', queueSource);
-            },
-            onHold: () {
-              MenuSheet m = MenuSheet();
-              m.defaultTrackMenu(t, context: context);
-            },
+    return _isLoading
+        ? SplashScreen()
+        : Scaffold(
+            appBar: FreezerAppBar('Tracks'.i18n),
+            body: ListView.builder(
+              itemCount: _tracks.length,
+              itemBuilder: (BuildContext context, int i) {
+                Track t = _tracks[i];
+                return TrackTile(
+                  t,
+                  onTap: () {
+                    GetIt.I<AudioPlayerHandler>().playFromTrackList(
+                        _tracks, t.id ?? '', widget.queueSource);
+                  },
+                  onHold: () {
+                    MenuSheet m = MenuSheet();
+                    m.defaultTrackMenu(t, context: context);
+                  },
+                );
+              },
+            ),
           );
-        },
-      ),
-    );
   }
 }
 

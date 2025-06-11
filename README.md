@@ -44,25 +44,30 @@ Get Alchemy running: Follow [these instructions](./HOWTO.md) to compile it yours
 *   Lyrics provided by [LRCLIB](https://github.com/tranxuanthang/lrclib) by @tranxuanthang;
 *   Design inspired by [Mallari Kishor's Spotify Redesign](https://www.behance.net/gallery/194018249/Spotify-App-Redesign).
 
-## :running: Ongoing development
+## :running: Ongoing Development
 
 *   Moving gateway light API calls to the mobile gateway API
-*   Implementing complete artist pages :
-    *   Incomplete `see more` buttons
-    *   Missing `favorite tracks from artist` section
-    *   Loading seems overall slower than it used to be
+    *   ![](https://geps.dev/progress/80) Login (missing error handling and logout function)
+    *   ![](https://geps.dev/progress/95) Artists (missing full discography fetch)
+    *   ![](https://geps.dev/progress/0) Albums
+    *   ![](https://geps.dev/progress/10) Playlists
+    *   ![](https://geps.dev/progress/0) Shows
+    *   ![](https://geps.dev/progress/0) Tracks
+    *   ![](https://geps.dev/progress/95) Search (missing feature to log recently searched items on click)
 
 ## :building_construction: Upcoming Features
 
-*   Move all gateway light API calls to mobile gateway API;
+*   Log "clicked" search results in recently searched;
 *   Create notification settings;
 *   Remove the See All / View More button when it is not required;
-*   Implement a profile edition screen;
+*   Implement a profile editing screen;
 *   Prefetch lyrics for tracks in the queue;
 *   Add lyrics to the downloaded tracks.
 
 ## :lady_beetle: Bugs
 
+*   Importing large images for playlist covers is an error and is not handled properly (we need to compress images before upload);
+*   The handling of login errors is incomplete;
 *   The logout function is broken;
 *   Downloads that are stopped and restarted will not be saved in the database and therefore not be available;
 *   Skipping tracks on the player screen is not as fluid as it used to be and can be choppy;

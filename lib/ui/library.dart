@@ -1026,14 +1026,16 @@ class _LibraryPlaylistsState extends State<LibraryPlaylists> {
                 leading: const LeadingIcon(Icons.playlist_add,
                     color: Color(0xff009a85)),
                 onTap: () async {
-                  if (settings.offlineMode) {
+                  if (!(await isConnected())) {
                     Fluttertoast.showToast(
                         msg: 'Cannot create playlists in offline mode'.i18n,
                         gravity: ToastGravity.BOTTOM);
                     return;
                   }
                   MenuSheet m = MenuSheet();
-                  await m.createPlaylist(context);
+                  if (mounted) {
+                    await m.createPlaylist(context);
+                  }
                   await _load();
                 },
               ),

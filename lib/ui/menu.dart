@@ -1,11 +1,17 @@
 import 'dart:async';
+import 'dart:math';
 
 import 'package:alchemy/ui/blind_test.dart';
+import 'package:alchemy/ui/elements.dart';
 import 'package:alchemy/ui/router.dart';
+import 'package:alchemy/ui/tiles.dart';
+import 'package:figma_squircle/figma_squircle.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:fluttericon/octicons_icons.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:get_it/get_it.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:numberpicker/numberpicker.dart';
 import 'package:alchemy/fonts/alchemy_icons.dart';
 import 'package:alchemy/settings.dart';
@@ -627,10 +633,12 @@ class MenuSheet {
         title: Text('Edit playlist'.i18n),
         leading: const Icon(AlchemyIcons.pen),
         onTap: () async {
-          await showDialog(
-              context: context,
-              builder: (context) => CreatePlaylistDialog(playlist: p));
           if (context.mounted) _close(context);
+          await Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) => CreatePlaylistScreen(playlist: p),
+            ),
+          );
           if (onUpdate != null) onUpdate();
         },
       );
@@ -678,12 +686,12 @@ class MenuSheet {
   }
 
   //Create playlist
-  Future createPlaylist(BuildContext context) async {
-    await showDialog(
-        context: context,
-        builder: (BuildContext context) {
-          return const CreatePlaylistDialog();
-        });
+  Future createPlaylist(BuildContext context, {List<Track>? tracks}) async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => CreatePlaylistScreen(tracks: tracks),
+      ),
+    );
   }
 
   Widget shareTile(String type, String id) => ListTile(
@@ -848,9 +856,9 @@ class _SelectPlaylistDialogState extends State<SelectPlaylistDialog> {
     //Create new playlist
     if (createNew) {
       if (widget.track == null) {
-        return const CreatePlaylistDialog();
+        return CreatePlaylistScreen();
       }
-      return CreatePlaylistDialog(tracks: [widget.track!]);
+      return CreatePlaylistScreen(tracks: [widget.track!]);
     }
 
     return AlertDialog(
@@ -905,22 +913,28 @@ class _SelectPlaylistDialogState extends State<SelectPlaylistDialog> {
   }
 }
 
-class CreatePlaylistDialog extends StatefulWidget {
-  final List<Track>? tracks;
-  //If playlist not null, update
+class CreatePlaylistScreen extends StatefulWidget {
+  List<Track>? tracks;
   final Playlist? playlist;
-  const CreatePlaylistDialog({this.tracks, this.playlist, super.key});
+  CreatePlaylistScreen({this.tracks, this.playlist, super.key});
 
   @override
-  _CreatePlaylistDialogState createState() => _CreatePlaylistDialogState();
+  _CreatePlaylistScreenState createState() => _CreatePlaylistScreenState();
 }
 
-class _CreatePlaylistDialogState extends State<CreatePlaylistDialog> {
-  int _playlistType = 1;
+class _CreatePlaylistScreenState extends State<CreatePlaylistScreen> {
+  bool _isPrivate = true;
+  bool _isCollaborative = false;
+  bool _emptyTitle = false;
   String _title = '';
-  String _description = '';
   TextEditingController? _titleController;
-  TextEditingController? _descController;
+  List<int>? _imageBytes;
+  bool _isLoading = false;
+
+  bool _titleHasFocus = false;
+
+  final FocusNode _keyboardListenerFocusNode = FocusNode();
+  final FocusNode _textFieldFocusNode = FocusNode();
 
   //Create or edit mode
   bool get edit => widget.playlist != null;
@@ -930,82 +944,350 @@ class _CreatePlaylistDialogState extends State<CreatePlaylistDialog> {
     //Edit playlist mode
     if (edit) {
       _title = widget.playlist?.title ?? '';
-      _description = widget.playlist?.description ?? '';
+      widget.tracks = widget.playlist?.tracks;
     }
 
     _titleController = TextEditingController(text: _title);
-    _descController = TextEditingController(text: _description);
 
     super.initState();
   }
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      title: Text(edit ? 'Edit playlist'.i18n : 'Create playlist'.i18n),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          TextField(
-            decoration: InputDecoration(labelText: 'Title'.i18n),
-            controller: _titleController ?? TextEditingController(),
-            onChanged: (String s) => _title = s,
-          ),
-          TextField(
-            onChanged: (String s) => _description = s,
-            controller: _descController ?? TextEditingController(),
-            decoration: InputDecoration(labelText: 'Description'.i18n),
-          ),
-          Container(
-            height: 4.0,
-          ),
-          DropdownButton<int>(
-            value: _playlistType,
-            onChanged: (int? v) {
-              setState(() => _playlistType = v!);
-            },
-            items: [
-              DropdownMenuItem<int>(
-                value: 1,
-                child: Text('Private'.i18n),
-              ),
-              DropdownMenuItem<int>(
-                value: 2,
-                child: Text('Collaborative'.i18n),
-              ),
-            ],
-          ),
+    return Scaffold(
+      appBar: FreezerAppBar(
+        edit ? 'Edit playlist'.i18n : 'Create playlist'.i18n,
+        actions: [
+          TextButton(
+              onPressed: () async {
+                if (_title == '') {
+                  Fluttertoast.showToast(
+                      msg: "The playlist's title can't be empty.".i18n);
+                  if (mounted) {
+                    setState(() {
+                      _emptyTitle = true;
+                    });
+                  }
+                  return;
+                }
+                if (mounted) {
+                  setState(() {
+                    _isLoading = true;
+                    _keyboardListenerFocusNode.unfocus();
+                    _textFieldFocusNode.unfocus();
+                  });
+                }
+                if (edit) {
+                  //Update
+                  await deezerAPI.updatePlaylist(
+                    title: _titleController!.value.text,
+                    playlistId: widget.playlist!.id!,
+                    isPrivate: _isPrivate,
+                    isCollaborative: _isCollaborative,
+                    pictureData: _imageBytes,
+                  );
+                  Fluttertoast.showToast(
+                      msg: 'Playlist updated!'.i18n,
+                      gravity: ToastGravity.BOTTOM);
+                } else {
+                  List<String> tracks = [];
+                  tracks =
+                      widget.tracks?.map<String>((t) => t.id!).toList() ?? [];
+                  await deezerAPI.createPlaylist(
+                      title: _title,
+                      isPrivate: _isPrivate,
+                      isCollaborative: _isCollaborative,
+                      pictureData: _imageBytes,
+                      trackIds: tracks);
+                  Fluttertoast.showToast(
+                      msg: 'Playlist created!'.i18n,
+                      gravity: ToastGravity.BOTTOM);
+                }
+                if (mounted) {
+                  setState(() {
+                    _isLoading = false;
+                  });
+                }
+                if (context.mounted) Navigator.of(context).pop();
+              },
+              child: Text(
+                'Save',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                ),
+              ))
         ],
       ),
-      actions: <Widget>[
-        TextButton(
-          child: Text('Cancel'.i18n),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        TextButton(
-          child: Text(edit ? 'Update'.i18n : 'Create'.i18n),
-          onPressed: () async {
-            if (edit) {
-              //Update
-              await deezerAPI.updatePlaylist(widget.playlist!.id!,
-                  _titleController!.value.text, _descController!.value.text,
-                  status: _playlistType);
-              Fluttertoast.showToast(
-                  msg: 'Playlist updated!'.i18n, gravity: ToastGravity.BOTTOM);
-            } else {
-              List<String> tracks = [];
-              tracks = widget.tracks?.map<String>((t) => t.id!).toList() ?? [];
-              await deezerAPI.createPlaylist(_title,
-                  status: _playlistType,
-                  description: _description,
-                  trackIds: tracks);
-              Fluttertoast.showToast(
-                  msg: 'Playlist created!'.i18n, gravity: ToastGravity.BOTTOM);
-            }
-            if (context.mounted) Navigator.of(context).pop();
-          },
-        )
-      ],
+      body: Stack(
+        children: [
+          ListView(
+            children: <Widget>[
+              Padding(
+                padding: EdgeInsetsGeometry.only(top: 30, bottom: 45),
+                child: Row(
+                  mainAxisSize: MainAxisSize.max,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Stack(
+                      alignment: AlignmentDirectional.bottomEnd,
+                      children: [
+                        Container(
+                          clipBehavior: Clip.hardEdge,
+                          decoration: ShapeDecoration(
+                            shape: SmoothRectangleBorder(
+                              borderRadius: SmoothBorderRadius(
+                                cornerRadius: 30,
+                                cornerSmoothing: 0.8,
+                              ),
+                            ),
+                          ),
+                          child: (_imageBytes?.isNotEmpty ?? false)
+                              ? Image.memory(
+                                  _imageBytes as Uint8List,
+                                  height: 160,
+                                  width: 160,
+                                  fit: BoxFit.cover,
+                                )
+                              : widget.playlist?.image != null
+                                  ? CachedImage(
+                                      url: widget.playlist?.image?.full ?? '',
+                                      width: 160,
+                                      height: 160,
+                                    )
+                                  : Container(
+                                      height: 160,
+                                      width: 160,
+                                      color: Color(
+                                              (Random().nextDouble() * 0xFFFFFF)
+                                                  .toInt())
+                                          .withAlpha(255)),
+                        ),
+                        IconButton(
+                            onPressed: () async {
+                              ImagePicker picker = ImagePicker();
+                              XFile? imageFile = await picker.pickImage(
+                                  source: ImageSource.gallery);
+                              if (imageFile == null) return;
+                              List<int>? imageData =
+                                  await imageFile.readAsBytes();
+                              if (mounted) {
+                                setState(() {
+                                  _imageBytes = imageData;
+                                });
+                              }
+                            },
+                            icon: Icon(AlchemyIcons.pen))
+                      ],
+                    )
+                  ],
+                ),
+              ),
+              Padding(
+                padding: EdgeInsets.fromLTRB(16, 16, 16, 0),
+                child: Text(
+                  'Name'.i18n,
+                  style: TextStyle(color: Settings.secondaryText),
+                ),
+              ),
+              Padding(
+                padding: EdgeInsets.all(
+                  16,
+                ),
+                child: Row(
+                  children: <Widget>[
+                    Expanded(
+                      child: KeyboardListener(
+                        focusNode: _keyboardListenerFocusNode,
+                        onKeyEvent: (event) {
+                          // For Android TV: quit search textfield
+                          if (event is KeyUpEvent) {
+                            if (event.logicalKey ==
+                                LogicalKeyboardKey.arrowDown) {
+                              _textFieldFocusNode.unfocus();
+                            }
+                          }
+                        },
+                        child: Container(
+                          clipBehavior: Clip.hardEdge,
+                          decoration: ShapeDecoration(
+                            shape: SmoothRectangleBorder(
+                              borderRadius: SmoothBorderRadius(
+                                cornerRadius: 10,
+                                cornerSmoothing: 0.4,
+                              ),
+                              side: _emptyTitle
+                                  ? BorderSide(
+                                      color: Colors.redAccent,
+                                      width: 1.5,
+                                    )
+                                  : _titleHasFocus
+                                      ? BorderSide(
+                                          color: settings.theme == Themes.Light
+                                              ? Colors.black.withAlpha(100)
+                                              : Colors.white.withAlpha(100),
+                                          width: 1.5)
+                                      : BorderSide.none,
+                            ),
+                          ),
+                          child: Focus(
+                            onFocusChange: (focused) {
+                              setState(() {
+                                _titleHasFocus = focused;
+                              });
+                            },
+                            focusNode: _textFieldFocusNode,
+                            child: TextField(
+                              onChanged: (String s) {
+                                if (mounted && s != '') {
+                                  setState(() {
+                                    _emptyTitle = false;
+                                    _title = s;
+                                  });
+                                }
+                              },
+                              decoration: InputDecoration(
+                                hintText: 'Playlist name',
+                                hintStyle: TextStyle(
+                                  color: settings.theme == Themes.Light
+                                      ? Colors.black.withAlpha(100)
+                                      : Colors.white.withAlpha(100),
+                                ),
+
+                                fillColor: settings.theme == Themes.Light
+                                    ? Colors.black.withAlpha(30)
+                                    : Colors.white.withAlpha(30),
+                                filled: true,
+                                focusedBorder: InputBorder.none,
+                                enabledBorder: InputBorder.none,
+                                contentPadding: EdgeInsets.symmetric(
+                                    vertical: 4.0,
+                                    horizontal: 10.0), // Added contentPadding
+                              ),
+                              controller: _titleController,
+                              textInputAction: TextInputAction.next,
+                              onSubmitted: (String s) {},
+                              style: TextStyle(
+                                  color: settings.theme == Themes.Light
+                                      ? Colors.black
+                                      : Colors.white),
+                              cursorColor: settings.theme == Themes.Light
+                                  ? Colors.black
+                                  : Colors.white,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Padding(
+                padding: EdgeInsets.fromLTRB(16, 16, 16, 0),
+                child: Text(
+                  'Preferences'.i18n,
+                  style: TextStyle(color: Settings.secondaryText),
+                ),
+              ),
+              Padding(
+                padding: EdgeInsets.all(
+                  16,
+                ),
+                child: Row(
+                  children: <Widget>[
+                    Expanded(
+                      child: Container(
+                        clipBehavior: Clip.hardEdge,
+                        decoration: ShapeDecoration(
+                            shape: SmoothRectangleBorder(
+                                borderRadius: SmoothBorderRadius(
+                                  cornerRadius: 10,
+                                  cornerSmoothing: 0.4,
+                                ),
+                                side: BorderSide(
+                                    color: settings.theme == Themes.Light
+                                        ? Colors.black.withAlpha(100)
+                                        : Colors.white.withAlpha(100),
+                                    width: 1.5)),
+                            color: settings.theme == Themes.Light
+                                ? Colors.black.withAlpha(30)
+                                : Colors.white.withAlpha(30)),
+                        child: Column(
+                          children: [
+                            ListTile(
+                              leading: Icon(
+                                AlchemyIcons.humans,
+                                size: 20,
+                              ),
+                              title: Text('Collaborative'),
+                              trailing: Switch(
+                                value: _isCollaborative,
+                                onChanged: (bool v) {
+                                  if (mounted && !_isPrivate) {
+                                    setState(() => _isCollaborative = v);
+                                  }
+                                },
+                              ),
+                              enabled: !_isPrivate,
+                            ),
+                            FreezerDivider(),
+                            ListTile(
+                              leading: Icon(
+                                AlchemyIcons.mask,
+                                size: 20,
+                              ),
+                              title: Text('Private'),
+                              trailing: Switch(
+                                value: _isPrivate,
+                                onChanged: (bool v) {
+                                  if (mounted && !_isCollaborative) {
+                                    setState(() => _isPrivate = v);
+                                  }
+                                },
+                              ),
+                              enabled: !_isCollaborative,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              ...List.generate(
+                  widget.tracks?.length ?? 0,
+                  (int i) => TrackTile(
+                        widget.tracks![i],
+                        trailing: IconButton(
+                            onPressed: () {
+                              deezerAPI.removeFromPlaylist(
+                                  widget.tracks?[i].id ?? '',
+                                  widget.playlist?.id ?? '');
+                              if (mounted) {
+                                setState(() {
+                                  widget.tracks?.removeAt(i);
+                                });
+                              }
+                            },
+                            icon: Icon(
+                              AlchemyIcons.trash,
+                              color: Colors.redAccent,
+                            )),
+                      ))
+            ],
+          ),
+          if (_isLoading)
+            Container(
+              width: MediaQuery.of(context).size.width,
+              height: MediaQuery.of(context).size.height,
+              alignment: Alignment.center,
+              color: Colors.black.withAlpha(30),
+              child: CircularProgressIndicator(
+                color: Theme.of(context).primaryColor,
+              ),
+            )
+        ],
+      ),
     );
   }
 }

@@ -1109,6 +1109,16 @@ class _ArtistDetailsState extends State<ArtistDetails> {
       }
     }
     setState(() => _isLoading = false);
+
+    //load complete artist
+    try {
+      Artist a = await deezerAPI.completeArtist(artist.id ?? '');
+      a.library = artist.library;
+      if (mounted) setState(() => artist = a);
+    } catch (e) {
+      Logger.root.info(
+          'Something went wrong loading full details for artist ${artist.id}');
+    }
   }
 
   @override
@@ -1121,18 +1131,21 @@ class _ArtistDetailsState extends State<ArtistDetails> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        extendBodyBehindAppBar: true,
-        body: _error
-            ? const ErrorScreen()
-            : _isLoading
-                ? SplashScreen()
-                : OrientationBuilder(builder: (context, orientation) {
+      extendBodyBehindAppBar: true,
+      body: _error
+          ? const ErrorScreen()
+          : _isLoading
+              ? SplashScreen()
+              : OrientationBuilder(
+                  builder: (context, orientation) {
                     //Responsive
                     ScreenUtil.init(context, minTextAdapt: true);
                     //Landscape
                     if (orientation == Orientation.landscape) {
                       // ignore: prefer_const_constructors
-                      return Row(
+                      return SafeArea(
+                        left: false,
+                        child: Row(
                           mainAxisAlignment: MainAxisAlignment.start,
                           mainAxisSize: MainAxisSize.max,
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1150,9 +1163,7 @@ class _ArtistDetailsState extends State<ArtistDetails> {
                                       padding:
                                           EdgeInsets.symmetric(horizontal: 4.0),
                                       child: ListTile(
-                                          dense: true,
-                                          visualDensity: VisualDensity.compact,
-                                          horizontalTitleGap: 8.0,
+                                          contentPadding: EdgeInsets.zero,
                                           leading: IconButton(
                                               onPressed: () async {
                                                 await Navigator.of(context)
@@ -1380,37 +1391,24 @@ class _ArtistDetailsState extends State<ArtistDetails> {
                                       },
                                     );
                                   }),
-                                  Container(
-                                    margin: EdgeInsets.symmetric(
-                                        vertical: 8.0, horizontal: 12.0),
-                                    decoration: BoxDecoration(
-                                      border: Border.all(
-                                          color: Theme.of(context).hintColor,
-                                          width: 1.5),
-                                      borderRadius: BorderRadius.circular(10.0),
-                                    ),
-                                    child: InkWell(
-                                      onTap: () {
-                                        Navigator.of(context).push(
-                                            MaterialPageRoute(
-                                                builder: (context) =>
-                                                    TrackListScreen(
-                                                        artist.topTracks,
-                                                        QueueSource(
-                                                            id: artist.id,
-                                                            text: 'Top'.i18n +
-                                                                '${artist.name}',
-                                                            source:
-                                                                'topTracks'))));
-                                      },
-                                      child: Padding(
-                                          padding: EdgeInsets.symmetric(
-                                              vertical: 8.0, horizontal: 12.0),
-                                          child: Text(
-                                            'View all'.i18n,
-                                            textAlign: TextAlign.center,
-                                          )),
-                                    ),
+                                  ViewAllButton(
+                                    padding: EdgeInsets.only(top: 4),
+                                    onTap: () async {
+                                      Navigator.of(context).push(
+                                        MaterialPageRoute(
+                                          builder: (context) => TrackListScreen(
+                                            artist.topTracks,
+                                            QueueSource(
+                                                id: artist.id,
+                                                text: 'Top'.i18n +
+                                                    '${artist.name}',
+                                                source: 'topTracks'),
+                                            load: deezerAPI.artistTopTracks(
+                                                artist.id ?? ''),
+                                          ),
+                                        ),
+                                      );
+                                    },
                                   ),
                                   //Highlight
                                   if (artist.highlight != null)
@@ -1590,26 +1588,239 @@ class _ArtistDetailsState extends State<ArtistDetails> {
                                       ),
                                       Container(height: 4.0),
                                       Padding(
-                                          padding: EdgeInsets.fromLTRB(
-                                              12.0, 8.0, 1.0, 8.0),
-                                          child: SingleChildScrollView(
-                                            scrollDirection: Axis.horizontal,
-                                            physics: ClampingScrollPhysics(),
-                                            child: Row(
-                                                crossAxisAlignment:
-                                                    CrossAxisAlignment.start,
-                                                mainAxisAlignment:
-                                                    MainAxisAlignment.start,
-                                                children: List.generate(
-                                                    artist.albums.length > 10
-                                                        ? 10
-                                                        : artist.albums.length,
-                                                    (i) {
-                                                  //Top albums
-                                                  Album a = artist.albums[i];
-                                                  return LargeAlbumTile(a);
-                                                })),
-                                          )),
+                                        padding: EdgeInsets.fromLTRB(
+                                            12.0, 8.0, 1.0, 8.0),
+                                        child: SingleChildScrollView(
+                                          scrollDirection: Axis.horizontal,
+                                          physics: ClampingScrollPhysics(),
+                                          child: Row(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment.start,
+                                              children: List.generate(
+                                                  artist.albums.length > 10
+                                                      ? 10
+                                                      : artist.albums.length,
+                                                  (i) {
+                                                //Top albums
+                                                Album a = artist.albums[i];
+                                                return LargeAlbumTile(a);
+                                              })),
+                                        ),
+                                      ),
+                                      // Biography
+                                      if (artist.biography?.summary != null)
+                                        Padding(
+                                          padding: const EdgeInsets.all(16.0),
+                                          child: Column(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.start,
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                'Biography'.i18n,
+                                                textAlign: TextAlign.left,
+                                                style: const TextStyle(
+                                                    fontWeight: FontWeight.bold,
+                                                    fontSize: 20.0),
+                                              ),
+                                              Container(height: 8.0),
+                                              Text(
+                                                artist.biography!.summary!,
+                                                maxLines:
+                                                    5, // Adjust as needed for landscape
+                                                overflow: TextOverflow.ellipsis,
+                                                style: TextStyle(
+                                                    color:
+                                                        Settings.secondaryText),
+                                              ),
+                                              ViewAllButton(
+                                                padding:
+                                                    EdgeInsets.only(top: 4),
+                                                onTap: () {
+                                                  Navigator.of(context).push(
+                                                    MaterialPageRoute(
+                                                      builder: (context) =>
+                                                          BiographyScreen(
+                                                        biography:
+                                                            artist.biography!,
+                                                      ),
+                                                    ),
+                                                  );
+                                                },
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      // Similar Artists
+                                      if (artist.relatedArtists?.isNotEmpty ??
+                                          false)
+                                        Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Padding(
+                                              padding:
+                                                  const EdgeInsets.all(16.0),
+                                              child: Text(
+                                                'Similar Artists'.i18n,
+                                                textAlign: TextAlign.left,
+                                                style: const TextStyle(
+                                                    fontWeight: FontWeight.bold,
+                                                    fontSize: 20.0),
+                                              ),
+                                            ),
+                                            Container(height: 4.0),
+                                            Padding(
+                                              padding: EdgeInsets.fromLTRB(
+                                                  12.0,
+                                                  0.0,
+                                                  1.0,
+                                                  8.0), // Reduced top padding
+                                              child: SizedBox(
+                                                height:
+                                                    180, // Adjust height as needed
+                                                child: ListView.builder(
+                                                  scrollDirection:
+                                                      Axis.horizontal,
+                                                  physics:
+                                                      ClampingScrollPhysics(),
+                                                  itemCount: (artist
+                                                                  .relatedArtists
+                                                                  ?.length ??
+                                                              0) >
+                                                          5
+                                                      ? 5
+                                                      : (artist.relatedArtists
+                                                              ?.length ??
+                                                          0), // Show fewer items or adjust based on screen width
+                                                  itemBuilder: (context, i) {
+                                                    Artist? a = artist
+                                                        .relatedArtists?[i];
+                                                    return Padding(
+                                                      padding: const EdgeInsets
+                                                          .symmetric(
+                                                          horizontal: 4.0),
+                                                      child: ArtistTile(
+                                                          a ?? Artist(),
+                                                          size:
+                                                              120), // Adjust size
+                                                    );
+                                                  },
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      // Playlists
+                                      if (artist.playlists?.isNotEmpty ?? false)
+                                        Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Padding(
+                                              padding:
+                                                  const EdgeInsets.all(16.0),
+                                              child: Text(
+                                                'Playlists'.i18n,
+                                                textAlign: TextAlign.left,
+                                                style: const TextStyle(
+                                                    fontWeight: FontWeight.bold,
+                                                    fontSize: 20.0),
+                                              ),
+                                            ),
+                                            Container(height: 4.0),
+                                            Padding(
+                                              padding: EdgeInsets.fromLTRB(
+                                                  12.0, 0.0, 1.0, 8.0),
+                                              child: SizedBox(
+                                                height:
+                                                    200, // Adjust height as needed
+                                                child: ListView.builder(
+                                                  scrollDirection:
+                                                      Axis.horizontal,
+                                                  physics:
+                                                      ClampingScrollPhysics(),
+                                                  itemCount: (artist.playlists
+                                                                  ?.length ??
+                                                              0) >
+                                                          5
+                                                      ? 5
+                                                      : (artist.playlists
+                                                              ?.length ??
+                                                          0),
+                                                  itemBuilder: (context, i) {
+                                                    Playlist? p =
+                                                        artist.playlists?[i];
+                                                    return Padding(
+                                                      padding: const EdgeInsets
+                                                          .symmetric(
+                                                          horizontal: 4.0),
+                                                      child: LargePlaylistTile(
+                                                          p ?? Playlist()),
+                                                    );
+                                                  },
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      // Featured In
+                                      if (artist.featuredIn?.isNotEmpty ??
+                                          false)
+                                        Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Padding(
+                                              padding:
+                                                  const EdgeInsets.all(16.0),
+                                              child: Text(
+                                                'Featured in'.i18n,
+                                                textAlign: TextAlign.left,
+                                                style: const TextStyle(
+                                                    fontWeight: FontWeight.bold,
+                                                    fontSize: 20.0),
+                                              ),
+                                            ),
+                                            Container(height: 4.0),
+                                            Padding(
+                                              padding: EdgeInsets.fromLTRB(
+                                                  12.0, 0.0, 1.0, 8.0),
+                                              child: SizedBox(
+                                                height:
+                                                    230, // Adjust height as needed
+                                                child: ListView.builder(
+                                                  scrollDirection:
+                                                      Axis.horizontal,
+                                                  physics:
+                                                      ClampingScrollPhysics(),
+                                                  itemCount: (artist.featuredIn
+                                                                  ?.length ??
+                                                              0) >
+                                                          5
+                                                      ? 5
+                                                      : (artist.featuredIn
+                                                              ?.length ??
+                                                          0),
+                                                  itemBuilder: (context, i) {
+                                                    Album? a =
+                                                        artist.featuredIn?[i];
+                                                    return Padding(
+                                                      padding: const EdgeInsets
+                                                          .symmetric(
+                                                          horizontal: 4.0),
+                                                      child: LargeAlbumTile(
+                                                          a ?? Album()),
+                                                    );
+                                                  },
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
                                       ListenableBuilder(
                                           listenable: playerBarState,
                                           builder: (BuildContext context,
@@ -1628,7 +1839,9 @@ class _ArtistDetailsState extends State<ArtistDetails> {
                                 ],
                               ),
                             )
-                          ]);
+                          ],
+                        ),
+                      );
                     }
                     //Portrait
                     // ignore: prefer_const_constructors
@@ -1894,14 +2107,20 @@ class _ArtistDetailsState extends State<ArtistDetails> {
                           child: ViewAllButton(
                             padding: EdgeInsets.symmetric(
                                 horizontal: 16, vertical: 4),
-                            onTap: () {
-                              Navigator.of(context).push(MaterialPageRoute(
+                            onTap: () async {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
                                   builder: (context) => TrackListScreen(
-                                      artist.topTracks,
-                                      QueueSource(
-                                          id: artist.id,
-                                          text: 'Top'.i18n + '${artist.name}',
-                                          source: 'topTracks'))));
+                                    artist.topTracks,
+                                    QueueSource(
+                                        id: artist.id,
+                                        text: 'Top'.i18n + '${artist.name}',
+                                        source: 'topTracks'),
+                                    load: deezerAPI
+                                        .artistTopTracks(artist.id ?? ''),
+                                  ),
+                                ),
+                              );
                             },
                           ),
                         ),
@@ -2018,74 +2237,79 @@ class _ArtistDetailsState extends State<ArtistDetails> {
                                       ),
                                     ),
                                   ),
+                                Container(
+                                  height: 16,
+                                )
                               ],
                             ),
                           ),
                         //Discography
-                        SliverToBoxAdapter(
-                          child: SizedBox(
-                            height: 290,
-                            child: Column(children: [
-                              Padding(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 12.0, vertical: 4.0),
-                                child: InkWell(
-                                    onTap: () {
-                                      Navigator.of(context).push(
-                                          MaterialPageRoute(
-                                              builder: (context) =>
-                                                  DiscographyScreen(
-                                                    artist: artist,
-                                                  )));
-                                    },
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.max,
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceBetween,
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.center,
-                                      children: [
-                                        Padding(
-                                          padding: EdgeInsets.symmetric(
-                                              vertical: 12.0, horizontal: 4.0),
-                                          child: Text(
-                                            'Discography'.i18n,
-                                            textAlign: TextAlign.left,
-                                            style: const TextStyle(
-                                                fontWeight: FontWeight.bold,
-                                                fontSize: 20.0),
-                                          ),
-                                        ),
-                                        Icon(
-                                          Icons.chevron_right,
-                                        )
-                                      ],
-                                    )),
-                              ),
-                              Container(height: 4.0),
-                              Padding(
-                                  padding:
-                                      EdgeInsets.fromLTRB(12.0, 8.0, 1.0, 8.0),
-                                  child: SingleChildScrollView(
-                                    scrollDirection: Axis.horizontal,
-                                    physics: ClampingScrollPhysics(),
-                                    child: Row(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
+                        if (artist.albums.isNotEmpty)
+                          SliverToBoxAdapter(
+                            child: SizedBox(
+                              height: 290,
+                              child: Column(children: [
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 12.0, vertical: 4.0),
+                                  child: InkWell(
+                                      onTap: () {
+                                        Navigator.of(context).push(
+                                            MaterialPageRoute(
+                                                builder: (context) =>
+                                                    DiscographyScreen(
+                                                      artist: artist,
+                                                    )));
+                                      },
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.max,
                                         mainAxisAlignment:
-                                            MainAxisAlignment.start,
-                                        children: List.generate(
-                                            artist.albums.length > 10
-                                                ? 10
-                                                : artist.albums.length, (i) {
-                                          //Top albums
-                                          Album a = artist.albums[i];
-                                          return LargeAlbumTile(a);
-                                        })),
-                                  ))
-                            ]),
+                                            MainAxisAlignment.spaceBetween,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.center,
+                                        children: [
+                                          Padding(
+                                            padding: EdgeInsets.symmetric(
+                                                vertical: 12.0,
+                                                horizontal: 4.0),
+                                            child: Text(
+                                              'Discography'.i18n,
+                                              textAlign: TextAlign.left,
+                                              style: const TextStyle(
+                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: 20.0),
+                                            ),
+                                          ),
+                                          Icon(
+                                            Icons.chevron_right,
+                                          )
+                                        ],
+                                      )),
+                                ),
+                                Container(height: 4.0),
+                                Padding(
+                                    padding: EdgeInsets.fromLTRB(
+                                        12.0, 8.0, 1.0, 8.0),
+                                    child: SingleChildScrollView(
+                                      scrollDirection: Axis.horizontal,
+                                      physics: ClampingScrollPhysics(),
+                                      child: Row(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.start,
+                                          children: List.generate(
+                                              artist.albums.length > 10
+                                                  ? 10
+                                                  : artist.albums.length, (i) {
+                                            //Top albums
+                                            Album a = artist.albums[i];
+                                            return LargeAlbumTile(a);
+                                          })),
+                                    ))
+                              ]),
+                            ),
                           ),
-                        ),
 
                         if (artist.biography?.summary != null)
                           SliverToBoxAdapter(
@@ -2119,202 +2343,196 @@ class _ArtistDetailsState extends State<ArtistDetails> {
                                     ),
                                     ViewAllButton(
                                       padding: EdgeInsets.only(top: 4),
-                                      onTap: () {},
+                                      onTap: () {
+                                        Navigator.of(context).push(
+                                          MaterialPageRoute(
+                                            builder: (context) =>
+                                                BiographyScreen(
+                                              biography: artist.biography!,
+                                            ),
+                                          ),
+                                        );
+                                      },
                                     ),
                                   ],
                                 )),
                           ),
 
                         //Similar artists
-                        SliverToBoxAdapter(
-                          child: SizedBox(
-                            height: 260,
-                            child: Column(children: [
-                              Padding(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 12.0, vertical: 4.0),
-                                child: InkWell(
-                                    onTap: () {
-                                      //TODO
-                                    },
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.max,
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceBetween,
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.center,
-                                      children: [
-                                        Padding(
-                                          padding: EdgeInsets.symmetric(
-                                              vertical: 12.0, horizontal: 4.0),
-                                          child: Text(
-                                            'Similar Artists'.i18n,
-                                            textAlign: TextAlign.left,
-                                            style: const TextStyle(
-                                                fontWeight: FontWeight.bold,
-                                                fontSize: 20.0),
-                                          ),
+                        if (artist.relatedArtists?.isNotEmpty ?? false)
+                          SliverToBoxAdapter(
+                            child: SizedBox(
+                              height: 260,
+                              child: Column(children: [
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 12.0, vertical: 4.0),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.max,
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.center,
+                                    children: [
+                                      Padding(
+                                        padding: EdgeInsets.symmetric(
+                                            vertical: 12.0, horizontal: 4.0),
+                                        child: Text(
+                                          'Similar Artists'.i18n,
+                                          textAlign: TextAlign.left,
+                                          style: const TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 20.0),
                                         ),
-                                        Icon(
-                                          Icons.chevron_right,
-                                        )
-                                      ],
-                                    )),
-                              ),
-                              Container(height: 4.0),
-                              Padding(
-                                  padding:
-                                      EdgeInsets.fromLTRB(12.0, 8.0, 1.0, 8.0),
-                                  child: SingleChildScrollView(
-                                    scrollDirection: Axis.horizontal,
-                                    physics: ClampingScrollPhysics(),
-                                    child: Row(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.start,
-                                        children: List.generate(
-                                            (artist.relatedArtists?.length ??
-                                                        0) >
-                                                    10
-                                                ? 10
-                                                : (artist.relatedArtists
-                                                        ?.length ??
-                                                    0), (i) {
-                                          //Top albums
-                                          Artist? a = artist.relatedArtists?[i];
-                                          return ArtistTile(a ?? Artist());
-                                        })),
-                                  ))
-                            ]),
+                                      )
+                                    ],
+                                  ),
+                                ),
+                                Container(height: 4.0),
+                                Padding(
+                                    padding: EdgeInsets.fromLTRB(
+                                        12.0, 8.0, 1.0, 8.0),
+                                    child: SingleChildScrollView(
+                                      scrollDirection: Axis.horizontal,
+                                      physics: ClampingScrollPhysics(),
+                                      child: Row(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.start,
+                                          children: List.generate(
+                                              (artist.relatedArtists?.length ??
+                                                          0) >
+                                                      10
+                                                  ? 10
+                                                  : (artist.relatedArtists
+                                                          ?.length ??
+                                                      0), (i) {
+                                            //Top albums
+                                            Artist? a =
+                                                artist.relatedArtists?[i];
+                                            return ArtistTile(a ?? Artist());
+                                          })),
+                                    ))
+                              ]),
+                            ),
                           ),
-                        ),
 
                         //Playlists
-                        SliverToBoxAdapter(
-                          child: SizedBox(
-                            height: 270,
-                            child: Column(children: [
-                              Padding(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 12.0, vertical: 4.0),
-                                child: InkWell(
-                                    onTap: () {
-                                      //TODO
-                                    },
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.max,
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceBetween,
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.center,
-                                      children: [
-                                        Padding(
-                                          padding: EdgeInsets.symmetric(
-                                              vertical: 12.0, horizontal: 4.0),
-                                          child: Text(
-                                            'Playlists'.i18n,
-                                            textAlign: TextAlign.left,
-                                            style: const TextStyle(
-                                                fontWeight: FontWeight.bold,
-                                                fontSize: 20.0),
-                                          ),
+                        if (artist.playlists?.isNotEmpty ?? false)
+                          SliverToBoxAdapter(
+                            child: SizedBox(
+                              height: 270,
+                              child: Column(children: [
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 12.0, vertical: 4.0),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.max,
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.center,
+                                    children: [
+                                      Padding(
+                                        padding: EdgeInsets.symmetric(
+                                            vertical: 12.0, horizontal: 4.0),
+                                        child: Text(
+                                          'Playlists'.i18n,
+                                          textAlign: TextAlign.left,
+                                          style: const TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 20.0),
                                         ),
-                                        Icon(
-                                          Icons.chevron_right,
-                                        )
-                                      ],
-                                    )),
-                              ),
-                              Container(height: 4.0),
-                              Padding(
-                                  padding:
-                                      EdgeInsets.fromLTRB(12.0, 8.0, 1.0, 8.0),
-                                  child: SingleChildScrollView(
-                                    scrollDirection: Axis.horizontal,
-                                    physics: ClampingScrollPhysics(),
-                                    child: Row(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.start,
-                                        children: List.generate(
-                                            (artist.playlists?.length ?? 0) > 10
-                                                ? 10
-                                                : (artist.playlists?.length ??
-                                                    0), (i) {
-                                          //Top albums
-                                          Playlist? a = artist.playlists?[i];
-                                          return LargePlaylistTile(
-                                              a ?? Playlist());
-                                        })),
-                                  ))
-                            ]),
+                                      )
+                                    ],
+                                  ),
+                                ),
+                                Container(height: 4.0),
+                                Padding(
+                                    padding: EdgeInsets.fromLTRB(
+                                        12.0, 8.0, 1.0, 8.0),
+                                    child: SingleChildScrollView(
+                                      scrollDirection: Axis.horizontal,
+                                      physics: ClampingScrollPhysics(),
+                                      child: Row(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.start,
+                                          children: List.generate(
+                                              (artist.playlists?.length ?? 0) >
+                                                      10
+                                                  ? 10
+                                                  : (artist.playlists?.length ??
+                                                      0), (i) {
+                                            //Top albums
+                                            Playlist? a = artist.playlists?[i];
+                                            return LargePlaylistTile(
+                                                a ?? Playlist());
+                                          })),
+                                    ))
+                              ]),
+                            ),
                           ),
-                        ),
 
                         //Featured in
-                        SliverToBoxAdapter(
-                          child: SizedBox(
-                            height: 320,
-                            child: Column(children: [
-                              Padding(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 12.0, vertical: 4.0),
-                                child: InkWell(
-                                    onTap: () {
-                                      //TODO
-                                    },
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.max,
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceBetween,
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.center,
-                                      children: [
-                                        Padding(
-                                          padding: EdgeInsets.symmetric(
-                                              vertical: 12.0, horizontal: 4.0),
-                                          child: Text(
-                                            'Featured in'.i18n,
-                                            textAlign: TextAlign.left,
-                                            style: const TextStyle(
-                                                fontWeight: FontWeight.bold,
-                                                fontSize: 20.0),
-                                          ),
+                        if (artist.featuredIn?.isNotEmpty ?? false)
+                          SliverToBoxAdapter(
+                            child: SizedBox(
+                              height: 320,
+                              child: Column(children: [
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 12.0, vertical: 4.0),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.max,
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.center,
+                                    children: [
+                                      Padding(
+                                        padding: EdgeInsets.symmetric(
+                                            vertical: 12.0, horizontal: 4.0),
+                                        child: Text(
+                                          'Featured in'.i18n,
+                                          textAlign: TextAlign.left,
+                                          style: const TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 20.0),
                                         ),
-                                        Icon(
-                                          Icons.chevron_right,
-                                        )
-                                      ],
-                                    )),
-                              ),
-                              Container(height: 4.0),
-                              Padding(
-                                  padding:
-                                      EdgeInsets.fromLTRB(12.0, 8.0, 1.0, 8.0),
-                                  child: SingleChildScrollView(
-                                    scrollDirection: Axis.horizontal,
-                                    physics: ClampingScrollPhysics(),
-                                    child: Row(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.start,
-                                        children: List.generate(
-                                            (artist.featuredIn?.length ?? 0) >
-                                                    10
-                                                ? 10
-                                                : (artist.featuredIn?.length ??
-                                                    0), (i) {
-                                          //Top albums
-                                          Album? a = artist.featuredIn?[i];
-                                          return LargeAlbumTile(a ?? Album());
-                                        })),
-                                  ))
-                            ]),
+                                      )
+                                    ],
+                                  ),
+                                ),
+                                Container(height: 4.0),
+                                Padding(
+                                    padding: EdgeInsets.fromLTRB(
+                                        12.0, 8.0, 1.0, 8.0),
+                                    child: SingleChildScrollView(
+                                      scrollDirection: Axis.horizontal,
+                                      physics: ClampingScrollPhysics(),
+                                      child: Row(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.start,
+                                          children: List.generate(
+                                              (artist.featuredIn?.length ?? 0) >
+                                                      10
+                                                  ? 10
+                                                  : (artist
+                                                          .featuredIn?.length ??
+                                                      0), (i) {
+                                            //Top albums
+                                            Album? a = artist.featuredIn?[i];
+                                            return LargeAlbumTile(a ?? Album());
+                                          })),
+                                    ))
+                              ]),
+                            ),
                           ),
-                        ),
 
                         SliverToBoxAdapter(
                           child: ListenableBuilder(
@@ -2329,7 +2547,41 @@ class _ArtistDetailsState extends State<ArtistDetails> {
                         ),
                       ],
                     );
-                  }));
+                  },
+                ),
+    );
+  }
+}
+
+class BiographyScreen extends StatelessWidget {
+  final Bio biography;
+
+  const BiographyScreen({required this.biography, super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: FreezerAppBar('Biography'),
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(biography.full ?? biography.summary ?? ''),
+              Container(height: 16),
+              if (biography.source != null)
+                Text(
+                  '© ' + (biography.source ?? ''),
+                  style: TextStyle(color: Settings.secondaryText),
+                )
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
 
@@ -2352,7 +2604,7 @@ class _DiscographyScreenState extends State<DiscographyScreen> {
   ];
 
   Future _load() async {
-    if (artist.hasNextPage ?? false || _isLoading) return;
+    if (!(artist.hasNextPage ?? true) || _isLoading) return;
     setState(() => _isLoading = true);
 
     //Fetch data
@@ -2372,6 +2624,7 @@ class _DiscographyScreenState extends State<DiscographyScreen> {
     if (mounted) {
       setState(() {
         artist.albums.addAll(data);
+        artist.hasNextPage = false;
         _isLoading = false;
       });
     }
@@ -2410,6 +2663,8 @@ class _DiscographyScreenState extends State<DiscographyScreen> {
   @override
   void initState() {
     artist = widget.artist;
+
+    _load();
 
     //Lazy loading scroll
     for (var c in _controllers) {
@@ -2568,7 +2823,7 @@ class _PlaylistDetailsState extends State<PlaylistDetails> {
       return;
     }
 
-    setState(() => _isLoadingTracks = true);
+    if (mounted) setState(() => _isLoadingTracks = true);
     int pos = playlist.tracks?.length ?? 0;
     //Get another page of tracks
     List<Track> tracks;
@@ -2584,15 +2839,16 @@ class _PlaylistDetailsState extends State<PlaylistDetails> {
       }
       return;
     }
-
-    setState(() {
-      playlist.tracks?.addAll(tracks);
-      _isLoadingTracks = false;
-    });
+    if (mounted) {
+      setState(() {
+        playlist.tracks?.addAll(tracks);
+        _isLoadingTracks = false;
+      });
+    }
   }
 
   Future _load() async {
-    setState(() => _isLoading = true);
+    if (mounted) setState(() => _isLoading = true);
 
     // Initial load if no tracks
     if (playlist.tracks?.isEmpty ?? true) {
@@ -2600,12 +2856,14 @@ class _PlaylistDetailsState extends State<PlaylistDetails> {
       Playlist? offlinePlaylist = await downloadManager
           .getOfflinePlaylist(playlist.id ?? '')
           .catchError((e) {
-        setState(() {
-          _error = true;
-        });
+        if (mounted) {
+          setState(() {
+            _error = true;
+          });
+        }
         return null;
       });
-      if (offlinePlaylist?.tracks?.isNotEmpty ?? false) {
+      if ((offlinePlaylist?.tracks?.isNotEmpty ?? false) && mounted) {
         setState(() {
           playlist = offlinePlaylist ?? Playlist();
           _isLoading = false;
@@ -2625,21 +2883,30 @@ class _PlaylistDetailsState extends State<PlaylistDetails> {
         //If playlist is not offline
         Playlist? onlinePlaylist =
             await deezerAPI.playlist(playlist.id ?? '', nb: 25).catchError((e) {
-          setState(() {
-            _error = true;
-          });
+          if (mounted) {
+            setState(
+              () {
+                _error = true;
+              },
+            );
+          }
+          ;
           return Playlist();
         });
-        setState(() {
-          playlist = onlinePlaylist;
-          _isLoading = false;
-        });
+        if (mounted) {
+          setState(() {
+            playlist = onlinePlaylist;
+            _isLoading = false;
+          });
+        }
       }
     }
 
-    setState(() {
-      _isLoading = false;
-    });
+    if (mounted) {
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
 
   @override
@@ -2669,6 +2936,8 @@ class _PlaylistDetailsState extends State<PlaylistDetails> {
 
   @override
   void dispose() {
+    _scrollController.dispose();
+    _playlistController.dispose();
     super.dispose();
   }
 
@@ -2728,7 +2997,14 @@ class _PlaylistDetailsState extends State<PlaylistDetails> {
                                         onPressed: () {
                                           MenuSheet m = MenuSheet();
                                           m.defaultPlaylistMenu(playlist,
-                                              context: context);
+                                              context: context, onUpdate: () {
+                                            if (mounted) {
+                                              setState(() {
+                                                playlist.tracks = [];
+                                              });
+                                              _load();
+                                            }
+                                          });
                                         },
                                       ))),
                               SizedBox(
@@ -3254,7 +3530,15 @@ class _PlaylistDetailsState extends State<PlaylistDetails> {
                         subtitle: playlist.user?.name ?? '',
                         moreFunction: () {
                           MenuSheet m = MenuSheet();
-                          m.defaultPlaylistMenu(playlist, context: context);
+                          m.defaultPlaylistMenu(playlist, context: context,
+                              onUpdate: () {
+                            if (mounted) {
+                              setState(() {
+                                playlist.tracks = [];
+                              });
+                              _load();
+                            }
+                          });
                         },
                         expandedHeight: MediaQuery.of(context).size.width,
                         screens: [

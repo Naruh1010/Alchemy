@@ -132,9 +132,9 @@ class _DetailedAppBarState extends State<DetailedAppBar> {
 
     widget.scrollController.addListener(() {
       double off = widget.scrollController.position.maxScrollExtent * 0.90;
-      if (widget.scrollController.position.pixels >=
-              (widget.expandedHeight - MediaQuery.of(context).padding.top) &&
-          mounted) {
+      if (mounted &&
+          widget.scrollController.position.pixels >=
+              (widget.expandedHeight - MediaQuery.of(context).padding.top)) {
         setState(() {
           isCollapsed = true;
         });

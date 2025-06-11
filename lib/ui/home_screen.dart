@@ -99,7 +99,7 @@ class _HomeScreenState extends State<HomeScreen> {
             const Padding(padding: EdgeInsets.only(top: 4.0)),
             ListTile(
               onTap: () {
-                deezerAPI.testFunction();
+                deezerAPI.testFunction(context);
               },
               contentPadding: EdgeInsets.symmetric(
                   horizontal: MediaQuery.of(context).size.width * 0.05),

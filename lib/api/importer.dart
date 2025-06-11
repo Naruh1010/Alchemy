@@ -24,13 +24,16 @@ class Importer {
   late StreamController _streamController;
 
   Stream get updateStream => _streamController.stream;
-  int get ok => tracks.fold(0, (v, t) => (t.state == TrackImportState.OK) ? v + 1 : v);
-  int get error => tracks.fold(0, (v, t) => (t.state == TrackImportState.ERROR) ? v + 1 : v);
+  int get ok =>
+      tracks.fold(0, (v, t) => (t.state == TrackImportState.OK) ? v + 1 : v);
+  int get error =>
+      tracks.fold(0, (v, t) => (t.state == TrackImportState.ERROR) ? v + 1 : v);
 
   Importer();
 
   //Start importing wrapper
-  Future<void> start(String title, String? description, List<ImporterTrack> tracks) async {
+  Future<void> start(
+      String title, String? description, List<ImporterTrack> tracks) async {
     //Save variables
     playlist = null;
     this.title = title;
@@ -41,7 +44,7 @@ class Importer {
     }).toList();
 
     //Create playlist
-    playlistId = await deezerAPI.createPlaylist(title, description: this.description);
+    playlistId = await deezerAPI.createPlaylist(title: title);
 
     busy = true;
     done = false;
@@ -90,21 +93,29 @@ class Importer {
   Future<String?> _searchTrack(ImporterTrack track) async {
     //Try by ISRC
     if (track.isrc?.length == 12) {
-      Map deezer = await deezerAPI.callPublicApi('track/isrc:' + track.isrc.toString());
+      Map deezer =
+          await deezerAPI.callPublicApi('track/isrc:' + track.isrc.toString());
       if (deezer['id'] != null) {
         return deezer['id'].toString();
       }
     }
 
     //Search
-    String cleanedTitle = track.title.trim().toLowerCase().replaceAll('-', '').replaceAll('&', '').replaceAll('+', '');
-    SearchResults results = await deezerAPI.search('${track.artists[0]} $cleanedTitle');
+    String cleanedTitle = track.title
+        .trim()
+        .toLowerCase()
+        .replaceAll('-', '')
+        .replaceAll('&', '')
+        .replaceAll('+', '');
+    SearchResults results =
+        await deezerAPI.search('${track.artists[0]} $cleanedTitle');
     for (Track t in results.tracks ?? []) {
       //Match title
       if (_cleanMatching(t.title ?? '') == _cleanMatching(track.title)) {
         if (t.artists != null) {
           //Match artist
-          if (_matchArtists(track.artists, t.artists!.map((a) => a.name.toString()).toList())) {
+          if (_matchArtists(track.artists,
+              t.artists!.map((a) => a.name.toString()).toList())) {
             return t.id;
           }
         }
@@ -151,7 +162,8 @@ class ImporterTrack {
   String? isrc;
   TrackImportState state;
 
-  ImporterTrack(this.title, this.artists, {this.isrc, this.state = TrackImportState.NONE});
+  ImporterTrack(this.title, this.artists,
+      {this.isrc, this.state = TrackImportState.NONE});
 }
 
 enum TrackImportState { NONE, ERROR, OK }

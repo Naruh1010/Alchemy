@@ -3,10 +3,8 @@ import 'dart:math';
 import 'dart:typed_data';
 
 import 'package:alchemy/api/deezer.dart';
-import 'package:crypto/crypto.dart';
 import 'package:encrypt/encrypt.dart';
 import 'package:http/http.dart' as http;
-import 'package:logging/logging.dart';
 
 import '../utils/cookie_manager.dart';
 import '../utils/env.dart';
@@ -146,75 +144,6 @@ class DeezerLogin {
     );
 
     return k;
-  }
-
-  //Login with email
-  static Future<String?> getArlByEmailAndPassword(
-      String email, String password) async {
-    cookieManager.reset();
-    await signInWithEmail(email, password);
-    return '';
-    // Get initial cookies (sid) from empty getUser call
-    String url =
-        'https://www.deezer.com/ajax/gw-light.php?method=deezer.getUserData&input=3&api_version=1.0&api_token=null';
-    cookieManager.updateCookie(await http.get(Uri.parse(url)));
-    // Fuck the Bearer Token...
-    //cookieManager.updateCookie(await http.get(Uri.parse(url), headers: {'Authorization': 'Bearer $accessToken'}));
-
-    // Try to get AccessToken by login with email & password, which sets authentication cookies
-    String? accessToken = await _getAccessToken(email, password);
-    if (accessToken == null) return '';
-
-    // Get ARL
-    Map<String, String> requestheaders = {
-      ...defaultHeaders,
-      ...cookieManager.cookieHeader
-    };
-    url =
-        'https://www.deezer.com/ajax/gw-light.php?method=user.getArl&input=3&api_version=1.0&api_token=null';
-    http.Response response =
-        await http.get(Uri.parse(url), headers: requestheaders);
-    Map<dynamic, dynamic> data = jsonDecode(response.body);
-    return data['results'];
-  }
-
-  static Future<String?> _getAccessToken(String email, String password) async {
-    final clientId = Env.deezerClientId;
-    final clientSecret = Env.deezerClientSecret;
-    String? accessToken;
-
-    Map<String, String> requestheaders = {
-      ...defaultHeaders,
-      ...cookieManager.cookieHeader
-    };
-    requestheaders.addAll(cookieManager.cookieHeader);
-    final hashedPassword = md5.convert(utf8.encode(password)).toString();
-    final hashedParams = md5
-        .convert(utf8.encode('$clientId$email$hashedPassword$clientSecret'))
-        .toString();
-    final url = Uri.parse(
-        'https://connect.deezer.com/oauth/user_auth.php?app_id=$clientId&login=$email&password=$hashedPassword&hash=$hashedParams');
-
-    await http.get(url, headers: requestheaders).then((res) {
-      cookieManager.updateCookie(res);
-      final responseJson = jsonDecode(res.body);
-      if (responseJson.containsKey('access_token')) {
-        accessToken = responseJson['access_token'];
-      } else if (responseJson.containsKey('error')) {
-        throw DeezerLoginException(
-            responseJson['error']['type'], responseJson['error']['message']);
-      }
-    }).catchError((e) {
-      Logger.root.severe('Login Error (E): $e');
-      if (e is DeezerLoginException) {
-        // Throw the login exception for custom error dialog
-        throw e;
-      }
-      // All other errors will just use general invalid ARL error dialog
-      accessToken = null;
-    });
-
-    return accessToken;
   }
 }
 
