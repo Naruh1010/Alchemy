@@ -47,13 +47,13 @@ Get Alchemy running: Follow [these instructions](./HOWTO.md) to compile it yours
 ## :running: Ongoing Development
 
 *   Moving gateway light API calls to the mobile gateway API
-    *   ![](https://geps.dev/progress/80) Login (missing error handling and logout function)
-    *   ![](https://geps.dev/progress/95) Artists (missing full discography fetch)
-    *   ![](https://geps.dev/progress/0) Albums
-    *   ![](https://geps.dev/progress/10) Playlists
-    *   ![](https://geps.dev/progress/0) Shows
-    *   ![](https://geps.dev/progress/0) Tracks
-    *   ![](https://geps.dev/progress/95) Search (missing feature to log recently searched items on click)
+![](https://geps.dev/progress/80) Login (missing error handling and logout function)
+![](https://geps.dev/progress/95) Artists (missing full discography fetch)
+![](https://geps.dev/progress/0) Albums
+![](https://geps.dev/progress/10) Playlists
+![](https://geps.dev/progress/0) Shows
+![](https://geps.dev/progress/0) Tracks
+![](https://geps.dev/progress/95) Search (missing feature to log recently searched items on click)
 
 ## :building_construction: Upcoming Features
 
