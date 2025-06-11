@@ -46,7 +46,7 @@ Get Alchemy running: Follow [these instructions](./HOWTO.md) to compile it yours
 
 ## :running: Ongoing Development
 
-*   Moving gateway light API calls to the mobile gateway API
+*   Moving gateway light API calls to the mobile gateway API  
 ![](https://geps.dev/progress/80) Login (missing error handling and logout function)  
 ![](https://geps.dev/progress/95) Artists (missing full discography fetch)  
 ![](https://geps.dev/progress/0) Albums  
