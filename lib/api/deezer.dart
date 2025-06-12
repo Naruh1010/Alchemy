@@ -537,7 +537,7 @@ class DeezerAPI {
               Show.fromPipeJson(rawItem['node']), SearchHistoryItemType.SHOW);
           break;
       }
-      searchHistory.add(item);
+      if (item != null) searchHistory.add(item);
     }
 
     return searchHistory;
@@ -607,6 +607,57 @@ class DeezerAPI {
     };
     Map<dynamic, dynamic> data = await callPipeApi(params: searchParams);
     return InstantSearchResults.fromPipeJson(data['data']['instantSearch']);
+  }
+
+  Future logSuccessfullSearchResult(dynamic searchResult) async {
+    switch (searchResult.runtimeType) {
+      case Track:
+        await callPipeApi(params: {
+          'operationName': 'AddTrackInSearchSuccessResult',
+          'variables': {'trackId': (searchResult as Track).id},
+          'query':
+              'mutation AddTrackInSearchSuccessResult(\$trackId: String!) { addTrackInSearchSuccessResult(trackId: \$trackId) { __typename status } }'
+        });
+      case Artist:
+        await callPipeApi(params: {
+          'operationName': 'AddArtistInSearchSuccessResult',
+          'variables': {'artistId': (searchResult as Artist).id},
+          'query':
+              'mutation AddArtistInSearchSuccessResult(\$artistId: String!) { addArtistInSearchSuccessResult(artistId: \$artistId) { __typename status } }'
+        });
+      case Album:
+        await callPipeApi(params: {
+          'operationName': 'AddAlbumInSearchSuccessResult',
+          'variables': {'albumId': (searchResult as Album).id},
+          'query':
+              'mutation AddAlbumInSearchSuccessResult(\$albumId: String!) { addAlbumInSearchSuccessResult(albumId: \$albumId) { __typename status } }'
+        });
+      case Playlist:
+        await callPipeApi(params: {
+          'operationName': 'AddPlaylistInSearchSuccessResult',
+          'variables': {'playlistId': (searchResult as Playlist).id},
+          'query':
+              'mutation AddPlaylistInSearchSuccessResult(\$playlistId: String!) { addPlaylistInSearchSuccessResult(playlistId: \$playlistId) { __typename status } }'
+        });
+      case Show:
+        await callPipeApi(params: {
+          'operationName': 'AddPodcastInSearchSuccessResult',
+          'variables': {'podcastId': (searchResult as Show).id},
+          'query':
+              'mutation AddPodcastInSearchSuccessResult(\$podcastId: String!) { addPodcastInSearchSuccessResult(podcastId: \$podcastId) { __typename status } }'
+        });
+      case ShowEpisode:
+        await callPipeApi(params: {
+          'operationName': 'AddPodcastEpisodeInSearchSuccessResult',
+          'variables': {'podcastEpisodeId': (searchResult as ShowEpisode).id},
+          'query':
+              'mutation AddPodcastEpisodeInSearchSuccessResult(\$podcastEpisodeId: String!) { addPodcastEpisodeInSearchSuccessResult(episodeId: \$podcastEpisodeId) { __typename status } }'
+        });
+      default:
+        Logger.root.info(
+            'Unsupported search result type : ${searchResult.runtimeType}');
+        return;
+    }
   }
 
   Future<Track> track(String id) async {

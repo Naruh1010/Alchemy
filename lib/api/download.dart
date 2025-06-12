@@ -23,9 +23,9 @@ DownloadManager downloadManager = DownloadManager();
 
 class DownloadManager {
   //Platform channels
-  static const MethodChannel platform =
+  static MethodChannel get platform =>
       MethodChannel('definitely.not.deezer/native');
-  static const EventChannel eventChannel =
+  static EventChannel get eventChannel =>
       EventChannel('definitely.not.deezer/events');
 
   bool running = false;

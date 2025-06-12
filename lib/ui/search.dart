@@ -75,6 +75,27 @@ class _SearchScreenState extends State<SearchScreen> {
     }
   }
 
+  void _refreshHistory() async {
+    if (mounted) {
+      setState(() {
+        _recentlySearched = cache.searchHistory ?? [];
+      });
+    }
+
+    if (await isConnected()) {
+      List<SearchHistoryItem> recentlySearched =
+          await deezerAPI.getUserHistory();
+      if (mounted) {
+        setState(() {
+          _recentlySearched = recentlySearched;
+        });
+      }
+
+      cache.searchHistory = recentlySearched;
+      cache.save();
+    }
+  }
+
   void _load() async {
     if (mounted) {
       setState(() {
@@ -253,6 +274,7 @@ class _SearchScreenState extends State<SearchScreen> {
                                   _showCards = false;
                                 }
                               });
+                              _refreshHistory();
                             },
                             focusNode: _textFieldFocusNode,
                             child: TextField(
@@ -466,7 +488,7 @@ class _SearchScreenState extends State<SearchScreen> {
                       });
                       cache.searchHistory = [];
                       cache.save();
-                      setState(() {});
+                      _refreshHistory();
                     },
                     icon: Icon(
                       AlchemyIcons.trash,
@@ -737,6 +759,7 @@ class _SearchScreenState extends State<SearchScreen> {
                               padding: EdgeInsets.zero,
                               onTap: () {
                                 cache.addToSearchHistory(t);
+                                deezerAPI.logSuccessfullSearchResult(t);
                                 GetIt.I<AudioPlayerHandler>().playFromTrackList(
                                     results.tracks!,
                                     t.id ?? '',
@@ -813,6 +836,7 @@ class _SearchScreenState extends State<SearchScreen> {
                               },
                               onTap: () {
                                 cache.addToSearchHistory(a);
+                                deezerAPI.logSuccessfullSearchResult(a);
                                 Navigator.of(context).push(MaterialPageRoute(
                                     builder: (context) => AlbumDetails(a)));
                               },
@@ -870,6 +894,7 @@ class _SearchScreenState extends State<SearchScreen> {
                                     a,
                                     onTap: () {
                                       cache.addToSearchHistory(a);
+                                      deezerAPI.logSuccessfullSearchResult(a);
                                       Navigator.of(context).push(
                                           MaterialPageRoute(
                                               builder: (context) =>
@@ -923,6 +948,7 @@ class _SearchScreenState extends State<SearchScreen> {
                               p,
                               onTap: () {
                                 cache.addToSearchHistory(p);
+                                deezerAPI.logSuccessfullSearchResult(p);
                                 Navigator.of(context).push(MaterialPageRoute(
                                     builder: (context) => PlaylistDetails(p)));
                               },
@@ -984,6 +1010,7 @@ class _SearchScreenState extends State<SearchScreen> {
                               s,
                               padding: EdgeInsets.zero,
                               onTap: () async {
+                                deezerAPI.logSuccessfullSearchResult(s);
                                 Navigator.of(context).push(MaterialPageRoute(
                                     builder: (context) => ShowScreen(s)));
                               },
@@ -1054,6 +1081,7 @@ class _SearchScreenState extends State<SearchScreen> {
                               ),
                               onTap: () async {
                                 //Load entire show, then play
+                                deezerAPI.logSuccessfullSearchResult(e);
                                 Show show =
                                     await deezerAPI.show(e.show?.id ?? '');
                                 await GetIt.I<AudioPlayerHandler>()

@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:json_annotation/json_annotation.dart';
+import 'package:logging/logging.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
@@ -130,6 +131,9 @@ class Cache {
     String cacheFilePath = await Cache.getPath();
     if (await File(cacheFilePath).exists()) {
       await File(cacheFilePath).delete();
+      Logger.root.info('Wiped cache !');
+    } else {
+      Logger.root.severe('Cache may be inaccessible.');
     }
   }
 

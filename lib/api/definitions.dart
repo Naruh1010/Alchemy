@@ -134,19 +134,21 @@ class Track {
       id: json['id'],
       title: json['title'],
       duration: Duration(seconds: json['duration'] ?? 0),
-      album:
-          Album(id: json['album']['id'], title: json['album']['displayTitle']),
-      image: ImageDetails.fromPrivateString(json['album']['cover']['md5']),
+      album: Album(
+          id: json['album']?['id'], title: json['album']?['displayTitle']),
+      image:
+          ImageDetails.fromPrivateString(json['album']?['cover']?['md5'] ?? ''),
       artists: json['contributors'] != null
           ? json['contributors']['edges']
-              .map<Artist>((dynamic rawArtist) => Artist(
-                  id: rawArtist['node']['id'], name: rawArtist['node']['name']))
+              ?.map<Artist>((dynamic rawArtist) => Artist(
+                  id: rawArtist['node']?['id'],
+                  name: rawArtist['node']?['name']))
               .toList()
           : json['trackContributors'] != null
               ? json['trackContributors']['edges']
-                  .map<Artist>((dynamic rawArtist) => Artist(
-                      id: rawArtist['node']['id'],
-                      name: rawArtist['node']['name']))
+                  ?.map<Artist>((dynamic rawArtist) => Artist(
+                      id: rawArtist['node']?['id'],
+                      name: rawArtist['node']?['name']))
                   .toList()
               : null,
       favorite: favorite ?? json['trackIsExplicit'],
@@ -186,7 +188,7 @@ class Track {
           : null,
       playbackDetailsFallback: (json['FALLBACK'] != null)
           ? [
-              json['FALLBACK']['MD5_ORIGIN'],
+              json['FALLBACK']?['MD5_ORIGIN'],
               json['FALLBACK']?['MEDIA_VERSION'],
               json['FALLBACK']?['TRACK_TOKEN']
             ]
@@ -317,7 +319,7 @@ class Album {
     return Album(
       id: json['id'].toString(),
       title: json['displayTitle'],
-      image: ImageDetails.fromPrivateString(json['cover']['md5']),
+      image: ImageDetails.fromPrivateString(json['cover']?['md5']),
       artists: artists,
       tracks: (songsJson['data'] ?? [])
           .map<Track>((dynamic track) => Track.fromPrivateJson(track))
@@ -487,7 +489,7 @@ class Artist {
               gwJson['MASTHEAD']?['BIOGRAPHY']?['SUMMARY'],
           full: pipeJson?['artist']?['bio']?['full'] ??
               gwJson['MASTHEAD']?['BIOGRAPHY']?['URL'],
-          source: pipeJson?['artist']['bio']['source'] ??
+          source: pipeJson?['artist']?['bio']?['source'] ??
               gwJson['MASTHEAD']?['BIOGRAPHY']?['SOURCE']),
       highlight: ArtistHighlight.fromPrivateJson(gwJson['HIGHLIGHT']),
       relatedArtists:
@@ -551,7 +553,7 @@ class Artist {
         fans: json['fansCount'],
         image: json['picture'] == null
             ? null
-            : ImageDetails.fromPrivateString(json['picture']['md5'],
+            : ImageDetails.fromPrivateString(json['picture']?['md5'],
                 type: 'artist'),
         albums: (albumsJson['data'] ?? [])
             .map<Album>((dynamic data) => Album.fromPrivateJson(data))
@@ -644,8 +646,8 @@ class Playlist {
         id: json['PLAYLIST_ID'].toString(),
         title: json['TITLE'],
         trackCount: json['NB_SONG'] ?? songsJson['total'],
-        image: ImageDetails.fromPrivateString(json['PLAYLIST_PICTURE'],
-            type: json['PICTURE_TYPE']),
+        image: ImageDetails.fromPrivateString(json['PLAYLIST_PICTURE'] ?? '',
+            type: json['PICTURE_TYPE'] ?? ''),
         fans: json['NB_FAN'],
         duration: Duration(seconds: json['DURATION'] ?? 0),
         description: json['DESCRIPTION'],
@@ -661,7 +663,8 @@ class Playlist {
         library: library,
         addedDate: DateTime.tryParse(json['DATE_FAVORITE'] ??
                 json['DATE_CREATE'] ??
-                json['DATE_MOD'])
+                json['DATE_MOD'] ??
+                '')
             .toString(),
       );
 
@@ -856,22 +859,22 @@ class SearchResults {
 
   factory SearchResults.fromPrivateJson(Map<dynamic, dynamic> json) =>
       SearchResults(
-        tracks: json['TRACK']['data']
+        tracks: json['TRACK']?['data']
             .map<Track>((dynamic data) => Track.fromPrivateJson(data))
             .toList(),
-        albums: json['ALBUM']['data']
+        albums: json['ALBUM']?['data']
             .map<Album>((dynamic data) => Album.fromPrivateJson(data))
             .toList(),
-        artists: json['ARTIST']['data']
+        artists: json['ARTIST']?['data']
             .map<Artist>((dynamic data) => Artist.fromPrivateJson(data))
             .toList(),
-        playlists: json['PLAYLIST']['data']
+        playlists: json['PLAYLIST']?['data']
             .map<Playlist>((dynamic data) => Playlist.fromPrivateJson(data))
             .toList(),
-        shows: json['SHOW']['data']
+        shows: json['SHOW']?['data']
             .map<Show>((dynamic data) => Show.fromPrivateJson(data))
             .toList(),
-        episodes: json['EPISODE']['data']
+        episodes: json['EPISODE']?['data']
             .map<ShowEpisode>(
                 (dynamic data) => ShowEpisode.fromPrivateJson(data))
             .toList(),
@@ -910,49 +913,55 @@ class InstantSearchResults {
     dynamic bestResult;
 
     if (json['bestResult'] != null) {
-      if (json['bestResult']['track'] != null) {
-        bestResult = Track.fromPipeJson(json['bestResult']['track']);
+      if (json['bestResult']?['track'] != null) {
+        bestResult = Track.fromPipeJson(json['bestResult']?['track']);
       }
-      if (json['bestResult']['album'] != null) {
-        bestResult = Album.fromPipeJson(json['bestResult']['album']);
+      if (json['bestResult']?['album'] != null) {
+        bestResult = Album.fromPipeJson(json['bestResult']?['album']);
       }
-      if (json['bestResult']['artist'] != null) {
-        bestResult = Artist.fromPipeJson(json['bestResult']['artist']);
+      if (json['bestResult']?['artist'] != null) {
+        bestResult = Artist.fromPipeJson(json['bestResult']?['artist']);
       }
-      if (json['bestResult']['playlist'] != null) {
-        bestResult = Playlist.fromPipeJson(json['bestResult']['playlist']);
+      if (json['bestResult']?['playlist'] != null) {
+        bestResult = Playlist.fromPipeJson(json['bestResult']?['playlist']);
       }
-      if (json['bestResult']['podcast'] != null) {
-        bestResult = Show.fromPipeJson(json['bestResult']['podcast']);
+      if (json['bestResult']?['podcast'] != null) {
+        bestResult = Show.fromPipeJson(json['bestResult']?['podcast']);
       }
-      if (json['bestResult']['podcastEpisode'] != null) {
+      if (json['bestResult']?['podcastEpisode'] != null) {
         bestResult =
-            ShowEpisode.fromPipeJson(json['bestResult']['podcastEpisode']);
+            ShowEpisode.fromPipeJson(json['bestResult']?['podcastEpisode']);
       }
-
-      Logger.root.info(bestResult.runtimeType);
     }
 
     return InstantSearchResults(
       bestResult: bestResult,
-      tracks: json['results']['tracks']['edges']
-          .map<Track>((dynamic data) => Track.fromPipeJson(data['node']))
+      tracks: json['results']?['tracks']?['edges']
+          ?.map<Track>((dynamic data) => Track.fromPipeJson(data['node'] ?? {}))
+          .where((Track t) => t.id != null)
           .toList(),
-      albums: json['results']['albums']['edges']
-          .map<Album>((dynamic data) => Album.fromPipeJson(data['node']))
+      albums: json['results']?['albums']?['edges']
+          ?.map<Album>((dynamic data) => Album.fromPipeJson(data['node'] ?? {}))
+          .where((Album a) => a.id != null)
           .toList(),
-      artists: json['results']['artists']['edges']
-          .map<Artist>((dynamic data) => Artist.fromPipeJson(data['node']))
+      artists: json['results']?['artists']?['edges']
+          ?.map<Artist>(
+              (dynamic data) => Artist.fromPipeJson(data['node'] ?? {}))
+          .where((Artist a) => a.id != null)
           .toList(),
-      playlists: json['results']['playlists']['edges']
-          .map<Playlist>((dynamic data) => Playlist.fromPipeJson(data['node']))
+      playlists: json['results']?['playlists']?['edges']
+          ?.map<Playlist>(
+              (dynamic data) => Playlist.fromPipeJson(data['node'] ?? {}))
+          .where((Playlist p) => p.id != null)
           .toList(),
-      shows: json['results']['podcasts']['edges']
-          .map<Show>((dynamic data) => Show.fromPipeJson(data['node']))
+      shows: json['results']?['podcasts']?['edges']
+          ?.map<Show>((dynamic data) => Show.fromPipeJson(data['node'] ?? {}))
+          .where((Show s) => s.id != null)
           .toList(),
-      episodes: json['results']['podcastEpisodes']['edges']
-          .map<ShowEpisode>(
-              (dynamic data) => ShowEpisode.fromPipeJson(data['node']))
+      episodes: json['results']?['podcastEpisodes']?['edges']
+          ?.map<ShowEpisode>(
+              (dynamic data) => ShowEpisode.fromPipeJson(data['node'] ?? {}))
+          .where((ShowEpisode e) => e.id != null)
           .toList(),
     );
   }
@@ -1043,7 +1052,7 @@ class LyricsFull extends Lyrics {
   });
 
   factory LyricsFull.fromPrivateJson(Map<dynamic, dynamic> json) {
-    var lyricsJson = json['track']['lyrics'] ?? {};
+    var lyricsJson = json['track']?['lyrics'] ?? {};
 
     return LyricsFull(
       id: lyricsJson['id'],
@@ -1053,7 +1062,7 @@ class LyricsFull extends Lyrics {
               SynchronizedLyric.fromPrivateJson(l as Map<dynamic, dynamic>))
           .toList(),
       unsyncedLyrics: lyricsJson['text'],
-      isExplicit: json['track']['isExplicit'],
+      isExplicit: json['track']?['isExplicit'],
       copyright: lyricsJson['copyright'],
     );
   }
@@ -1155,7 +1164,7 @@ class HomePage {
   HomePage({this.flowSection, this.mainSection, this.sections = const []});
 
   //Save/Load
-  Future<String> _getPath() async {
+  static Future<String> _getPath() async {
     Directory d = await getApplicationDocumentsDirectory();
     return p.join(d.path, 'homescreen.json');
   }
@@ -1177,7 +1186,7 @@ class HomePage {
     return HomePage.fromJson(data);
   }
 
-  Future wipe() async {
+  static Future wipe() async {
     await File(await _getPath()).delete();
   }
 
@@ -1316,7 +1325,7 @@ class DeezerNotification {
         subtitle: json['subtitle'],
         footer: json['footer'],
         read: json['read'],
-        image: ImageDetails.fromPrivateString(json['picture']['md5'],
+        image: ImageDetails.fromPrivateString(json['picture']?['md5'],
             type: 'cover'),
         url: 'https://www.deezer.com' + json['url'],
       );
@@ -1466,7 +1475,7 @@ class DeezerFlow {
   factory DeezerFlow.fromPrivateJson(Map<dynamic, dynamic> json) => DeezerFlow(
       id: json['id'],
       title: json['title'],
-      image: ImageDetails.fromPrivateJson(json['pictures'][0]),
+      image: ImageDetails.fromPrivateJson(json['pictures']?[0]),
       target: json['target'].replaceFirst('/', ''));
 
   //JSON
@@ -1629,7 +1638,7 @@ class Show {
           name: json['displayTitle'],
           isExplicit: json['podcastIsExplicit'],
           image: json['cover'] != null
-              ? ImageDetails.fromPrivateString(json['cover']['md5'],
+              ? ImageDetails.fromPrivateString(json['cover']?['md5'],
                   type: 'talk')
               : null,
           description: json['description'],
@@ -1789,7 +1798,8 @@ class ShowEpisode {
             : DateFormat('MMM d, y').format(
                 DateFormat('yyyy-MM-ddThh:mm:ss').parse(json['releaseDate'])),
         episodeCover: json['cover'] != null
-            ? ImageDetails.fromPrivateString(json['cover']['md5'], type: 'talk')
+            ? ImageDetails.fromPrivateString(json['cover']?['md5'],
+                type: 'talk')
             : null,
       );
 

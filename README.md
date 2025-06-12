@@ -47,19 +47,18 @@ Get Alchemy running: Follow [these instructions](./HOWTO.md) to compile it yours
 ## :running: Ongoing Development
 
 *   Moving gateway light API calls to the mobile gateway API  
-![](https://geps.dev/progress/80) Login (missing error handling and logout)  
+![](https://geps.dev/progress/80) Login (missing error handling)  
 ![](https://geps.dev/progress/95) Artists (missing full discography)  
 ![](https://geps.dev/progress/100) Albums  
 ![](https://geps.dev/progress/100) Playlists  
 ![](https://geps.dev/progress/100) Shows  
 ![](https://geps.dev/progress/95) Tracks (missing dislike feature)  
-![](https://geps.dev/progress/95) Search (missing feature to log searched items)  
+![](https://geps.dev/progress/100) Search
 ![](https://geps.dev/progress/75) User (missing home, music quizzes, favorite tracks, top tracks, legacy lyrics)  
 ![](https://geps.dev/progress/60) Miscellaneous (missing smart track lists, log listen, channel, games)  
 
 ## :building_construction: Upcoming Features
 
-*   Log "clicked" search results in recently searched;
 *   Create notification settings;
 *   Remove the See All / View More button when it is not required;
 *   Implement a profile editing screen;
@@ -68,9 +67,7 @@ Get Alchemy running: Follow [these instructions](./HOWTO.md) to compile it yours
 
 ## :lady_beetle: Bugs
 
-*   Importing large images for playlist covers is an error and is not handled properly (we need to compress images before upload);
 *   The handling of login errors is incomplete;
-*   The logout function is broken;
 *   Downloads that are stopped and restarted will not be saved in the database and therefore not be available;
 *   Skipping tracks on the player screen is not as fluid as it used to be and can be choppy;
 *   Some home tiles are not and will not be implemented (Concerts, Did you know, Original videos, ...);

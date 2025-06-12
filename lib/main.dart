@@ -210,7 +210,7 @@ class _LoginMainWrapperState extends State<LoginMainWrapper> {
   }
 
   Future _logOut() async {
-    await compute(_logOutInBackground, null);
+    await _logOutInBackground(null);
     setState(() {
       settings.arl = null;
       settings.offlineMode = false;
@@ -218,21 +218,27 @@ class _LoginMainWrapperState extends State<LoginMainWrapper> {
     });
     await settings.save();
     await Cache.wipe();
+    cache = Cache();
+    await HomePage.wipe();
     Restartable.restart();
     //Restart.restartApp();
   }
 
   static Future<void> _logOutInBackground(void _) async {
     try {
-      GetIt.I<AudioPlayerHandler>().stop();
-      GetIt.I<AudioPlayerHandler>().updateQueue([]);
-      GetIt.I<AudioPlayerHandler>().removeSavedQueueFile();
+      await GetIt.I<AudioPlayerHandler>().stop();
+      await GetIt.I<AudioPlayerHandler>().updateQueue([]);
+      await GetIt.I<AudioPlayerHandler>().removeSavedQueueFile();
     } catch (e, st) {
       Logger.root.severe(
           'Error stopping and clearing audio service before logout', e, st);
     }
-    await downloadManager.stop();
-    await DownloadManager.platform.invokeMethod('kill');
+    try {
+      await downloadManager.stop();
+      await DownloadManager.platform.invokeMethod('kill');
+    } catch (e, st) {
+      Logger.root.severe('Error stopping download manager', e, st);
+    }
   }
 
   @override
