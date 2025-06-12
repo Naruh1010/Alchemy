@@ -53,7 +53,7 @@ Get Alchemy running: Follow [these instructions](./HOWTO.md) to compile it yours
 ![](https://geps.dev/progress/100) Playlists  
 ![](https://geps.dev/progress/100) Shows  
 ![](https://geps.dev/progress/95) Tracks (missing dislike feature)  
-![](https://geps.dev/progress/100) Search
+![](https://geps.dev/progress/100) Search  
 ![](https://geps.dev/progress/75) User (missing home, music quizzes, favorite tracks, top tracks, legacy lyrics)  
 ![](https://geps.dev/progress/60) Miscellaneous (missing smart track lists, log listen, channel, games)  
 
