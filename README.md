@@ -49,7 +49,7 @@ Get Alchemy running: Follow [these instructions](./HOWTO.md) to compile it yours
 *   Moving gateway light API calls to the mobile gateway API  
 ![](https://geps.dev/progress/80) Login (missing error handling and logout)  
 ![](https://geps.dev/progress/95) Artists (missing full discography)  
-![](https://geps.dev/progress/100) Albums
+![](https://geps.dev/progress/100) Albums  
 ![](https://geps.dev/progress/100) Playlists  
 ![](https://geps.dev/progress/100) Shows  
 ![](https://geps.dev/progress/95) Tracks (missing dislike feature)  

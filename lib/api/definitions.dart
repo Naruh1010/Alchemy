@@ -1285,9 +1285,9 @@ class HomePageSection {
       _$HomePageSectionFromJson(json);
   Map<String, dynamic> toJson() => _$HomePageSectionToJson(this);
 
-  static HomePageItem _homePageItemFromJson(dynamic json) =>
+  static dynamic _homePageItemFromJson(dynamic json) =>
       json.map<HomePageItem>((d) => HomePageItem.fromJson(d)).toList();
-  static HomePageItem _homePageItemToJson(dynamic items) =>
+  static dynamic _homePageItemToJson(dynamic items) =>
       items.map((i) => i.toJson()).toList();
 }
 

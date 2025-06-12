@@ -202,6 +202,7 @@ Playlist _$PlaylistFromJson(Map<String, dynamic> json) => Playlist(
       fans: (json['fans'] as num?)?.toInt(),
       library: json['library'] as bool?,
       description: json['description'] as String?,
+      addedDate: json['addedDate'] as String? ?? '',
     );
 
 Map<String, dynamic> _$PlaylistToJson(Playlist instance) => <String, dynamic>{
@@ -215,6 +216,7 @@ Map<String, dynamic> _$PlaylistToJson(Playlist instance) => <String, dynamic>{
       'fans': instance.fans,
       'library': instance.library,
       'description': instance.description,
+      'addedDate': instance.addedDate,
     };
 
 User _$UserFromJson(Map<String, dynamic> json) => User(
