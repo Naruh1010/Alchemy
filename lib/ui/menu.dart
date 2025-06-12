@@ -914,9 +914,9 @@ class _SelectPlaylistDialogState extends State<SelectPlaylistDialog> {
 }
 
 class CreatePlaylistScreen extends StatefulWidget {
-  List<Track>? tracks;
+  final List<Track>? tracks;
   final Playlist? playlist;
-  CreatePlaylistScreen({this.tracks, this.playlist, super.key});
+  const CreatePlaylistScreen({this.tracks, this.playlist, super.key});
 
   @override
   _CreatePlaylistScreenState createState() => _CreatePlaylistScreenState();
@@ -930,8 +930,8 @@ class _CreatePlaylistScreenState extends State<CreatePlaylistScreen> {
   TextEditingController? _titleController;
   List<int>? _imageBytes;
   bool _isLoading = false;
-
   bool _titleHasFocus = false;
+  List<Track> _tracks = [];
 
   final FocusNode _keyboardListenerFocusNode = FocusNode();
   final FocusNode _textFieldFocusNode = FocusNode();
@@ -944,7 +944,7 @@ class _CreatePlaylistScreenState extends State<CreatePlaylistScreen> {
     //Edit playlist mode
     if (edit) {
       _title = widget.playlist?.title ?? '';
-      widget.tracks = widget.playlist?.tracks;
+      _tracks = widget.playlist?.tracks ?? [];
     }
 
     _titleController = TextEditingController(text: _title);
@@ -991,8 +991,7 @@ class _CreatePlaylistScreenState extends State<CreatePlaylistScreen> {
                       gravity: ToastGravity.BOTTOM);
                 } else {
                   List<String> tracks = [];
-                  tracks =
-                      widget.tracks?.map<String>((t) => t.id!).toList() ?? [];
+                  tracks = _tracks.map<String>((t) => t.id!).toList();
                   await deezerAPI.createPlaylist(
                       title: _title,
                       isPrivate: _isPrivate,
@@ -1067,7 +1066,10 @@ class _CreatePlaylistScreenState extends State<CreatePlaylistScreen> {
                             onPressed: () async {
                               ImagePicker picker = ImagePicker();
                               XFile? imageFile = await picker.pickImage(
-                                  source: ImageSource.gallery);
+                                source: ImageSource.gallery,
+                                maxWidth: 1000,
+                                maxHeight: 1000,
+                              );
                               if (imageFile == null) return;
                               List<int>? imageData =
                                   await imageFile.readAsBytes();
@@ -1255,17 +1257,16 @@ class _CreatePlaylistScreenState extends State<CreatePlaylistScreen> {
                 ),
               ),
               ...List.generate(
-                  widget.tracks?.length ?? 0,
+                  _tracks.length,
                   (int i) => TrackTile(
-                        widget.tracks![i],
+                        _tracks[i],
                         trailing: IconButton(
                             onPressed: () {
-                              deezerAPI.removeFromPlaylist(
-                                  widget.tracks?[i].id ?? '',
+                              deezerAPI.removeFromPlaylist(_tracks[i].id ?? '',
                                   widget.playlist?.id ?? '');
                               if (mounted) {
                                 setState(() {
-                                  widget.tracks?.removeAt(i);
+                                  _tracks.removeAt(i);
                                 });
                               }
                             },

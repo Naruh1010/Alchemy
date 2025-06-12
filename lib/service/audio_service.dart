@@ -227,7 +227,7 @@ class AudioPlayerHandler extends BaseAudioHandler
       _player.seek(
         Duration.zero,
         index:
-            _player.shuffleModeEnabled ? _player.shuffleIndices![index] : index,
+            _player.shuffleModeEnabled ? _player.shuffleIndices[index] : index,
       );
     } else {
       Logger.root.severe('playFromMediaId: MediaItem not found');
@@ -502,7 +502,7 @@ class AudioPlayerHandler extends BaseAudioHandler
 
   /// Resolve the effective queue index taking into account shuffleMode.
   int _getQueueIndex(int currentIndex, {bool shuffleModeEnabled = false}) {
-    final effectiveIndices = _player.effectiveIndices ?? [];
+    final effectiveIndices = _player.effectiveIndices;
     final shuffleIndicesInv = List.filled(effectiveIndices.length, 0);
     for (var i = 0; i < effectiveIndices.length; i++) {
       shuffleIndicesInv[effectiveIndices[i]] = i;

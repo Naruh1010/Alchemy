@@ -618,18 +618,21 @@ class Playlist {
   int? fans;
   bool? library;
   String? description;
+  String addedDate;
 
-  Playlist(
-      {this.id,
-      this.title,
-      this.tracks,
-      this.image,
-      this.trackCount,
-      this.duration,
-      this.user,
-      this.fans,
-      this.library,
-      this.description});
+  Playlist({
+    this.id,
+    this.title,
+    this.tracks,
+    this.image,
+    this.trackCount,
+    this.duration,
+    this.user,
+    this.fans,
+    this.library,
+    this.description,
+    this.addedDate = '',
+  });
 
   String get durationString =>
       "${duration?.inHours}:${duration?.inMinutes.remainder(60).toString().padLeft(2, '0')}:${duration?.inSeconds.remainder(60).toString().padLeft(2, '0')}";
@@ -638,42 +641,49 @@ class Playlist {
   factory Playlist.fromPrivateJson(Map<dynamic, dynamic> json,
           {Map<dynamic, dynamic> songsJson = const {}, bool library = false}) =>
       Playlist(
-          id: json['PLAYLIST_ID'].toString(),
-          title: json['TITLE'],
-          trackCount: json['NB_SONG'] ?? songsJson['total'],
-          image: ImageDetails.fromPrivateString(json['PLAYLIST_PICTURE'],
-              type: json['PICTURE_TYPE']),
-          fans: json['NB_FAN'],
-          duration: Duration(seconds: json['DURATION'] ?? 0),
-          description: json['DESCRIPTION'],
-          user: User(
-              id: json['PARENT_USER_ID'],
-              name: json['PARENT_USERNAME'] ?? '',
-              image: ImageDetails.fromPrivateString(
-                  json['PARENT_USER_PICTURE'] ?? '',
-                  type: 'user')),
-          tracks: (songsJson['data'] ?? [])
-              .map<Track>((dynamic data) => Track.fromPrivateJson(data))
-              .toList(),
-          library: library);
+        id: json['PLAYLIST_ID'].toString(),
+        title: json['TITLE'],
+        trackCount: json['NB_SONG'] ?? songsJson['total'],
+        image: ImageDetails.fromPrivateString(json['PLAYLIST_PICTURE'],
+            type: json['PICTURE_TYPE']),
+        fans: json['NB_FAN'],
+        duration: Duration(seconds: json['DURATION'] ?? 0),
+        description: json['DESCRIPTION'],
+        user: User(
+            id: json['PARENT_USER_ID'],
+            name: json['PARENT_USERNAME'] ?? '',
+            image: ImageDetails.fromPrivateString(
+                json['PARENT_USER_PICTURE'] ?? '',
+                type: 'user')),
+        tracks: (songsJson['data'] ?? [])
+            .map<Track>((dynamic data) => Track.fromPrivateJson(data))
+            .toList(),
+        library: library,
+        addedDate: DateTime.tryParse(json['DATE_FAVORITE'] ??
+                json['DATE_CREATE'] ??
+                json['DATE_MOD'])
+            .toString(),
+      );
 
   factory Playlist.fromPipeJson(Map<dynamic, dynamic> json,
           {Map<dynamic, dynamic> songsJson = const {}, bool library = false}) =>
       Playlist(
-          id: json['id'].toString(),
-          title: json['title'],
-          image: ImageDetails(
-            thumbUrl: json['picture']?['small']?[0],
-            fullUrl: json['picture']?['large']?[0],
-          ),
-          user: User(
-            id: json['owner']?['id'] ?? '',
-            name: json['owner']?['name'] ?? '',
-          ),
-          tracks: (songsJson['data'] ?? [])
-              .map<Track>((dynamic data) => Track.fromPrivateJson(data))
-              .toList(),
-          library: library);
+        id: json['id'].toString(),
+        title: json['title'],
+        image: ImageDetails(
+          thumbUrl: json['picture']?['small']?[0],
+          fullUrl: json['picture']?['large']?[0],
+        ),
+        user: User(
+          id: json['owner']?['id'] ?? '',
+          name: json['owner']?['name'] ?? '',
+        ),
+        tracks: (songsJson['data'] ?? [])
+            .map<Track>((dynamic data) => Track.fromPrivateJson(data))
+            .toList(),
+        library: library,
+        addedDate: '',
+      );
 
   Map<String, dynamic> toSQL() => {
         'id': id,
@@ -687,17 +697,18 @@ class Playlist {
         'description': description,
         'library': (library ?? false) ? 1 : 0
       };
-  factory Playlist.fromSQL(data) => Playlist(
-      id: data['id'],
-      title: data['title'],
-      description: data['description'],
-      tracks: List<Track>.generate(data?['tracks']?.split(',')?.length ?? 0,
-          (i) => Track(id: data?['tracks']?.split(',')[i])),
-      image: ImageDetails(fullUrl: data['image']),
-      duration: Duration(seconds: data?['duration'] ?? 0),
-      user: User(id: data['userId'], name: data['userName']),
-      fans: data['fans'],
-      library: (data['library'] == 1) ? true : false);
+  factory Playlist.fromSQL(dynamic data) => Playlist(
+        id: data['id'],
+        title: data['title'],
+        description: data['description'],
+        tracks: List<Track>.generate(data?['tracks']?.split(',')?.length ?? 0,
+            (i) => Track(id: data?['tracks']?.split(',')[i])),
+        image: ImageDetails(fullUrl: data['image']),
+        duration: Duration(seconds: data?['duration'] ?? 0),
+        user: User(id: data['userId'], name: data['userName']),
+        fans: data['fans'],
+        library: (data['library'] == 1) ? true : false,
+      );
 
   factory Playlist.fromJson(Map<String, dynamic> json) =>
       _$PlaylistFromJson(json);
@@ -1593,7 +1604,7 @@ class Show {
 
   //JSON
   factory Show.fromPrivateJson(Map<dynamic, dynamic> json,
-          {Map<dynamic, dynamic>? epsJson}) =>
+          {Map<dynamic, dynamic>? epsJson, bool? isFavorite}) =>
       Show(
           id: json['SHOW_ID'],
           name: json['SHOW_NAME'],
@@ -1607,7 +1618,8 @@ class Show {
           description: json['SHOW_DESCRIPTION'],
           episodes: (epsJson?['data'] ?? [])
               .map<ShowEpisode>((e) => ShowEpisode.fromPrivateJson(e))
-              .toList());
+              .toList(),
+          isLibrary: isFavorite);
 
   factory Show.fromPipeJson(Map<dynamic, dynamic> json,
           {Map<dynamic, dynamic>? epsJson}) =>

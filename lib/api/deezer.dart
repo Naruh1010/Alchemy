@@ -64,8 +64,7 @@ class DeezerAPI {
   Future? _authorizing;
 
   Future testFunction(context) async {
-    Navigator.of(context)
-        .push(MaterialPageRoute(builder: (context) => CreatePlaylistScreen()));
+    Logger.root.info((await libraryShuffle()));
 
 /*    ImagePicker picker = ImagePicker();
     XFile? imageFile = await picker.pickImage(source: ImageSource.gallery);
@@ -336,7 +335,7 @@ class DeezerAPI {
     if (body['error'].isNotEmpty &&
         body['error'].containsKey('NEED_API_AUTH_REQUIRED') &&
         (method != 'deezer.getUserData' && await getGatewayAuth())) {
-      return callGwLightApi(method, params: params, gatewayInput: gatewayInput);
+      return callGwApi(method, params: params, gatewayInput: gatewayInput);
     }
     return body;
   }
@@ -508,12 +507,6 @@ class DeezerAPI {
   }
 
   //Search
-  Future<SearchResults> search(String query) async {
-    Map<dynamic, dynamic> data = await callGwLightApi('deezer.pageSearch',
-        params: {'nb': 128, 'query': query, 'start': 0});
-    return SearchResults.fromPrivateJson(data['results'] ?? {});
-  }
-
   List<SearchHistoryItem> parseRawHistory(List<dynamic> json) {
     if (json.isEmpty) return [];
 
@@ -617,8 +610,7 @@ class DeezerAPI {
   }
 
   Future<Track> track(String id) async {
-    Map<dynamic, dynamic> data =
-        await callGwLightApi('song.getListData', params: {
+    Map<dynamic, dynamic> data = await callGwApi('song.getListData', params: {
       'sng_ids': [id]
     });
     return Track.fromPrivateJson(data['results']?['data']?[0] ?? {});
@@ -626,23 +618,23 @@ class DeezerAPI {
 
   //Get album details, tracks
   Future<Album> album(String id) async {
-    Map<dynamic, dynamic> data = await callGwLightApi('deezer.pageAlbum',
-        params: {
-          'alb_id': id,
-          'header': true,
-          'lang': settings.deezerLanguage
-        });
+    Map<dynamic, dynamic> data = await callGwApi('mobile.pageAlbum', params: {
+      'ALB_ID': id,
+      'USER_ID': userId,
+      'LANG': settings.deezerLanguage
+    });
     while (data['results']?['DATA'] == null &&
         data['payload']?['FALLBACK']?['ALB_ID'] != null) {
-      data = await callGwLightApi('deezer.pageAlbum', params: {
-        'alb_id': data['payload']?['FALLBACK']?['ALB_ID'],
-        'header': true,
-        'lang': settings.deezerLanguage
+      data = await callGwApi('mobile.pageAlbum', params: {
+        'ALB_ID': id,
+        'USER_ID': userId,
+        'LANG': settings.deezerLanguage
       });
     }
     if (data['results']?['DATA'] == null) return Album();
     return Album.fromPrivateJson(data['results']['DATA'],
-        songsJson: data['results']['SONGS']);
+        songsJson: data['results']['SONGS'],
+        library: data['results']['FAVORITE_STATUS']);
   }
 
   Future<Artist> artist(String id) async {
@@ -727,32 +719,33 @@ class DeezerAPI {
   //Get playlist tracks at offset
   Future<List<Track>> playlistTracksPage(String id, int start,
       {int nb = 50}) async {
-    Map data = await callGwLightApi('deezer.pagePlaylist', params: {
-      'playlist_id': id,
-      'lang': settings.deezerLanguage,
-      'nb': nb,
-      'tags': true,
-      'start': start
+    Map data = await callGwApi('playlist_getSongs', params: {
+      'PLAYLIST_ID': id,
+      'START': start.toString(),
+      'NB': nb.toString(),
     });
     if (data['results'] == null) return [];
-    return data['results']['SONGS']['data']
-        .map<Track>((json) => Track.fromPrivateJson(json))
+    return data['results']['data']
+        ?.map<Track>((json) => Track.fromPrivateJson(json))
         .toList();
   }
 
   //Get playlist details
   Future<Playlist> playlist(String id, {int nb = 100}) async {
-    Map<dynamic, dynamic> data =
-        await callGwLightApi('deezer.pagePlaylist', params: {
-      'playlist_id': id,
-      'lang': settings.deezerLanguage,
-      'nb': nb,
-      'tags': true,
-      'start': 0
+    Map<dynamic, dynamic> data = await callGwApi('playlist_getData', params: {
+      'PLAYLIST_ID': id,
     });
+
+    Map<dynamic, dynamic> songsData =
+        await callGwApi('playlist_getSongs', params: {
+      'PLAYLIST_ID': id,
+      'START': '0',
+      'NB': nb.toString(),
+    });
+
     if (data['results'] == null) return Playlist();
-    return Playlist.fromPrivateJson(data['results']['DATA'],
-        songsJson: data['results']['SONGS']);
+    return Playlist.fromPrivateJson(data['results'],
+        songsJson: songsData['results']);
   }
 
   //Get playlist with all tracks
@@ -762,26 +755,19 @@ class DeezerAPI {
 
   //Add track to favorites
   Future<bool> addFavoriteTrack(String id) async {
-    Map data =
-        await callGwLightApi('favorite_song.add', params: {'SNG_ID': id});
-    if (await downloadManager.checkOffline(
-        playlist: Playlist(id: favoritesPlaylistId))) {
-      downloadManager.updateOfflinePlaylist(Playlist(id: favoritesPlaylistId));
-    }
-
-    if (data['results'] == true) {
-      return true;
-    }
-
-    return false;
+    return addToPlaylist(id, cache.favoritesPlaylistId);
   }
 
   //Add album to favorites/library
   Future<bool> addFavoriteAlbum(String id) async {
-    Map data =
-        await callGwLightApi('album.addFavorite', params: {'ALB_ID': id});
+    Map data = await callPipeApi(params: {
+      'operationName': 'AddAlbumToFavorite',
+      'variables': {'albumId': id},
+      'query':
+          'mutation AddAlbumToFavorite(\$albumId: String!) { addAlbumToFavorite(albumId: \$albumId) { __typename favoritedAt album { __typename id isFavorite } } }'
+    });
 
-    if (data['results'] == true) {
+    if (data['data']?['addAlbumToFavorite']?['album']?['isFavorite'] == true) {
       return true;
     }
 
@@ -790,10 +776,15 @@ class DeezerAPI {
 
   //Add artist to favorites/library
   Future<bool> addFavoriteArtist(String id) async {
-    Map data =
-        await callGwLightApi('artist.addFavorite', params: {'ART_ID': id});
+    Map data = await callPipeApi(params: {
+      'operationName': 'AddArtistToFavorite',
+      'variables': {'artistId': id},
+      'query':
+          'mutation AddArtistToFavorite(\$artistId: String!) { addArtistToFavorite(artistId: \$artistId) { __typename favoritedAt artist { __typename id isFavorite isBannedFromRecommendation } } }'
+    });
 
-    if (data['results'] == true) {
+    if (data['data']?['addArtistToFavorite']?['artist']?['isFavorite'] ==
+        true) {
       return true;
     }
 
@@ -802,10 +793,15 @@ class DeezerAPI {
 
   //Remove artist from favorites/library
   Future<bool> removeArtist(String id) async {
-    Map data =
-        await callGwLightApi('artist.deleteFavorite', params: {'ART_ID': id});
+    Map data = await callPipeApi(params: {
+      'operationName': 'RemoveArtistFromFavorite',
+      'variables': {'artistId': id},
+      'query':
+          'mutation RemoveArtistFromFavorite(\$artistId: String!) { removeArtistFromFavorite(artistId: \$artistId) { __typename artist { __typename id isFavorite } } }'
+    });
 
-    if (data['results'] == true) {
+    if (data['data']?['removeArtistFromFavorite']?['artist']?['isFavorite'] ==
+        false) {
       return true;
     }
 
@@ -819,29 +815,56 @@ class DeezerAPI {
   }
 
   //Add tracks to playlist
-  Future addToPlaylist(String trackId, String playlistId,
-      {int offset = -1}) async {
-    await callGwLightApi('playlist.addSongs', params: {
-      'offset': offset,
-      'playlist_id': playlistId,
-      'songs': [
-        [trackId, 0]
-      ]
+  Future<bool> addToPlaylist(
+    String trackId,
+    String playlistId,
+  ) async {
+    Map data = await callPipeApi(params: {
+      'operationName': 'AddTracksToPlaylist',
+      'variables': {
+        'input': {
+          'playlistId': playlistId,
+          'trackIds': [trackId]
+        }
+      },
+      'query':
+          'mutation AddTracksToPlaylist(\$input: PlaylistAddTracksMutationInput!) { addTracksToPlaylist(input: \$input) { __typename ... on PlaylistAddTracksOutput { addedTrackIds duplicatedTrackIds beyondLimitTrackIds playlist { __typename ...PlaylistOnTrackMutationFragment picture { __typename ...PictureFragment ...PictureMD5Fragment } } } ... on PlaylistAddTracksError { isNotAllowed } } }  fragment PlaylistOnTrackMutationFragment on Playlist { __typename id title estimatedDuration estimatedTracksCount lastModificationDate }  fragment PictureFragment on Picture { __typename id small: urls(pictureRequest: { height: 256 width: 256 } ) medium: urls(pictureRequest: { height: 750 width: 750 } ) large: urls(pictureRequest: { height: 1200 width: 1200 } ) copyright explicitStatus }  fragment PictureMD5Fragment on Picture { __typename id md5 explicitStatus }'
     });
     if (await downloadManager.checkOffline(
-        playlist: Playlist(id: playlistId))) {
+        playlist: Playlist(id: favoritesPlaylistId))) {
       downloadManager.updateOfflinePlaylist(Playlist(id: favoritesPlaylistId));
     }
+
+    if (data['data']?['addTracksToPlaylist']?['addedTrackIds']?.isNotEmpty ==
+        true) {
+      return true;
+    }
+
+    return false;
   }
 
   //Remove track from playlist
-  Future removeFromPlaylist(String trackId, String playlistId) async {
-    await callGwLightApi('playlist.deleteSongs', params: {
-      'playlist_id': playlistId,
-      'songs': [
-        [trackId, 0]
-      ]
-    });
+  Future<bool> removeFromPlaylist(String trackId, String playlistId) async {
+    Map data = await callPipeApi(
+      params: {
+        'operationName': 'RemoveTracksFromPlaylist',
+        'variables': {
+          'input': {
+            'playlistId': playlistId,
+            'trackIds': [trackId]
+          }
+        },
+        'query':
+            'mutation RemoveTracksFromPlaylist(\$input: PlaylistRemoveTracksMutationInput!) { removeTracksFromPlaylist(input: \$input) { __typename removedTrackIds playlist { __typename ...PlaylistOnTrackMutationFragment picture { __typename ...PictureFragment ...PictureMD5Fragment } } } }  fragment PlaylistOnTrackMutationFragment on Playlist { __typename id title estimatedDuration estimatedTracksCount lastModificationDate }  fragment PictureFragment on Picture { __typename id small: urls(pictureRequest: { height: 256 width: 256 } ) medium: urls(pictureRequest: { height: 750 width: 750 } ) large: urls(pictureRequest: { height: 1200 width: 1200 } ) copyright explicitStatus }  fragment PictureMD5Fragment on Picture { __typename id md5 explicitStatus }'
+      },
+    );
+
+    if (data['data']?['removeTracksFromPlaylist']?['removedTrackIds']
+        ?.isNotEmpty) {
+      return true;
+    }
+
+    return false;
   }
 
   //Get homepage/music library from deezer
@@ -917,12 +940,35 @@ class DeezerAPI {
   }
 
   //Get users playlists
-  Future<List<Playlist>> getPlaylists() async {
-    Map data = await callGwLightApi('deezer.pageProfile',
-        params: {'nb': 100, 'tab': 'playlists', 'user_id': userId});
-    return (data['results']?['TAB']?['playlists']?['data'] ?? [])
+  Future<List<Playlist>> getUserPlaylists() async {
+    Map data = await callGwApi('playlist.getList',
+        params: {'nb': '1000', 'start': '0', 'user_id': userId});
+    return (data['results']?['data'] ?? [])
         .map<Playlist>((json) => Playlist.fromPrivateJson(json, library: true))
         .toList();
+  }
+
+  //Get favorite playlists
+  Future<List<Playlist>> getFavoritePlaylists() async {
+    Map data = await callGwApi('playlist.getFavorites',
+        params: {'nb': '1000', 'start': '0', 'user_id': userId});
+    return (data['results']?['data'] ?? [])
+        .map<Playlist>((json) => Playlist.fromPrivateJson(json, library: true))
+        .toList();
+  }
+
+  //Get all playlists
+  Future<List<Playlist>> getPlaylists() async {
+    List<List<Playlist>> playlists =
+        await Future.wait([getUserPlaylists(), getFavoritePlaylists()]);
+    if (playlists.isEmpty) return [];
+    if (playlists.length == 1) return playlists[0];
+
+    return List.from(playlists[0])
+      ..addAll(playlists[1])
+      ..removeWhere((Playlist p) => p.id == cache.favoritesPlaylistId)
+      ..sort((Playlist a, Playlist b) =>
+          DateTime.parse(b.addedDate).compareTo(DateTime.parse(a.addedDate)));
   }
 
   //Get favorite trackIds
@@ -950,10 +996,15 @@ class DeezerAPI {
 
   //Remove album from library
   Future<bool> removeAlbum(String id) async {
-    Map data =
-        await callGwLightApi('album.deleteFavorite', params: {'ALB_ID': id});
+    Map data = await callPipeApi(params: {
+      'operationName': 'RemoveAlbumFromFavorite',
+      'variables': {'albumId': id},
+      'query':
+          'mutation RemoveAlbumFromFavorite(\$albumId: String!) { removeAlbumFromFavorite(albumId: \$albumId) { __typename album { __typename id isFavorite } } }'
+    });
 
-    if (data['results'] == true) {
+    if (data['data']?['removeAlbumFromFavorite']?['album']?['isFavorite'] ==
+        false) {
       return true;
     }
 
@@ -962,14 +1013,7 @@ class DeezerAPI {
 
   //Remove track from favorites
   Future<bool> removeFavorite(String id) async {
-    Map data =
-        await callGwLightApi('favorite_song.remove', params: {'SNG_ID': id});
-
-    if (data['results'] == true) {
-      return true;
-    }
-
-    return false;
+    return removeFromPlaylist(id, cache.favoritesPlaylistId);
   }
 
   //Get favorite artists
@@ -1216,7 +1260,7 @@ class DeezerAPI {
   }
 
   Future<List<Track>> flow({String? type}) async {
-    Map data = await callGwLightApi('radio.getUserRadio',
+    Map data = await callGwApi('radio.getUserRadio',
         params: {'user_id': userId, 'config_id': type});
     return data['results']['data']
         .map<Track>((json) => Track.fromPrivateJson(json))
@@ -1317,10 +1361,15 @@ class DeezerAPI {
 
   //Add playlist to library
   Future<bool> addPlaylist(String id) async {
-    Map data = await callGwLightApi('playlist.addFavorite',
-        params: {'parent_playlist_id': int.parse(id)});
+    Map data = await callPipeApi(params: {
+      'operationName': 'AddPlaylistToFavorite',
+      'variables': {'playlistId': id},
+      'query':
+          'mutation AddPlaylistToFavorite(\$playlistId: String!) { addPlaylistToFavorite(playlistId: \$playlistId) { __typename favoritedAt playlist { __typename id isFavorite } } }'
+    });
 
-    if (data['results'] == true) {
+    if (data['data']?['addPlaylistToFavorite']?['playlist']?['isFavorite'] ==
+        true) {
       return true;
     }
 
@@ -1329,10 +1378,16 @@ class DeezerAPI {
 
   //Remove playlist from library
   Future<bool> removePlaylist(String id) async {
-    Map data = await callGwLightApi('playlist.deleteFavorite',
-        params: {'playlist_id': int.parse(id)});
+    Map data = await callPipeApi(params: {
+      'operationName': 'RemovePlaylistFromFavorite',
+      'variables': {'playlistId': id},
+      'query':
+          'mutation RemovePlaylistFromFavorite(\$playlistId: String!) { removePlaylistFromFavorite(playlistId: \$playlistId) { __typename playlist { __typename id isFavorite } } }'
+    });
 
-    if (data['results'] == true) {
+    if (data['data']?['removePlaylistFromFavorite']?['playlist']
+            ?['isFavorite'] ==
+        false) {
       return true;
     }
 
@@ -1341,7 +1396,14 @@ class DeezerAPI {
 
   //Delete playlist
   Future deletePlaylist(String id) async {
-    await callGwLightApi('playlist.delete', params: {'playlist_id': id});
+    await callPipeApi(params: {
+      'operationName': 'DeletePlaylist',
+      'variables': {
+        'input': {'playlistId': id}
+      },
+      'query':
+          'mutation DeletePlaylist(\$input: PlaylistDeleteMutationInput!) { deletePlaylist(input: \$input) { __typename deleteStatus } }'
+    });
   }
 
   Future<String> imageUpload({
@@ -1480,12 +1542,6 @@ class DeezerAPI {
         .toList();
   }
 
-  Future<List> searchSuggestions(String query) async {
-    Map data = await callGwLightApi('search_getSuggestedQueries',
-        params: {'QUERY': query});
-    return data['results']['SUGGESTION'].map((s) => s['QUERY']).toList();
-  }
-
   //Get smart radio for artist id
   Future<List<Track>> smartRadio(String artistId) async {
     Map data = await callGwApi('radio_getChannel', params: {
@@ -1504,7 +1560,7 @@ class DeezerAPI {
 
   //Get shuffled library
   Future<List<Track>> libraryShuffle({int start = 0}) async {
-    Map data = await callGwLightApi('tracklist.getShuffledCollection',
+    Map data = await callGwApi('tracklist.getShuffledCollection',
         params: {'nb': 50, 'start': start});
     return data['results']['data']
         .map<Track>((t) => Track.fromPrivateJson(t))
@@ -1513,7 +1569,7 @@ class DeezerAPI {
 
   //Get similar tracks for track with id [trackId]
   Future<List<Track>> playMix(String trackId) async {
-    Map data = await callGwLightApi('song.getSearchTrackMix',
+    Map data = await callGwApi('song.getSearchTrackMix',
         params: {'sng_id': trackId, 'start_with_input_track': 'true'});
     return data['results']['data']
         .map<Track>((t) => Track.fromPrivateJson(t))
@@ -1521,32 +1577,32 @@ class DeezerAPI {
   }
 
   Future<Show> show(String showId, {int page = 0, int nb = 1000}) async {
-    Map<String, dynamic> data =
-        await callGwLightApi('deezer.pageShow', params: {
-      'country': settings.deezerCountry,
-      'lang': settings.deezerLanguage,
-      'nb': nb,
-      'show_id': showId,
-      'start': page * nb,
-      'user_id': int.parse(deezerAPI.userId ?? ''),
+    Map<String, dynamic> data = await callGwApi('mobile.pageShow', params: {
+      'SHOW_ID': showId,
+      'START': page * nb,
+      'NB': nb,
+      'LANG': settings.deezerLanguage
     });
     if (data['results']?['DATA'] == null) return Show();
-    Show show = Show.fromPrivateJson(data['results']['DATA'],
-        epsJson: data['results']['EPISODES']);
+    Show show = Show.fromPrivateJson(
+      data['results']['DATA'],
+      epsJson: data['results']['EPISODES'],
+      isFavorite: data['results']['FAVORITE_STATUS'],
+    );
     return show;
   }
 
   //Add show to library
   Future<bool> addShow(String id) async {
-    Map data = await callGwLightApi('show.addFavorite', params: {
-      'CTXT': {
-        'id': int.parse(id),
-        't': 'show_page',
-      },
-      'SHOW_ID': id
+    Map data = await callPipeApi(params: {
+      'operationName': 'AddPodcastToFavorite',
+      'variables': {'podcastId': id},
+      'query':
+          'mutation AddPodcastToFavorite(\$podcastId: String!) { addPodcastToFavorite(podcastId: \$podcastId) { __typename favoritedAt podcast { __typename id isFavorite } } }'
     });
 
-    if (data['results'] == true) {
+    if (data['data']?['addPodcastToFavorite']?['podcast']?['isFavorite'] ==
+        true) {
       return true;
     }
 
@@ -1555,15 +1611,15 @@ class DeezerAPI {
 
   //Add show to library
   Future<bool> removeShow(String id) async {
-    Map data = await callGwLightApi('show.deleteFavorite', params: {
-      'CTXT': {
-        'id': int.parse(id),
-        't': 'show_page',
-      },
-      'SHOW_ID': id
+    Map data = await callPipeApi(params: {
+      'operationName': 'RemovePodcastFromFavorite',
+      'variables': {'podcastId': id},
+      'query':
+          'mutation RemovePodcastFromFavorite(\$podcastId: String!) { removePodcastFromFavorite(podcastId: \$podcastId) { __typename podcast { __typename id isFavorite } } }'
     });
 
-    if (data['results'] == true) {
+    if (data['data']?['removePodcastFromFavorite']?['podcast']?['isFavorite'] ==
+        false) {
       return true;
     }
 
@@ -1618,8 +1674,8 @@ class DeezerAPI {
   }
 
   Future<bool> subscribeShow(String id) async {
-    Map data = await callGwLightApi('shownotification_subscribe',
-        params: {'SHOW_ID': id});
+    Map data =
+        await callGwApi('shownotification_subscribe', params: {'SHOW_ID': id});
 
     if (data['results'] == true) {
       return true;
@@ -1629,7 +1685,7 @@ class DeezerAPI {
   }
 
   Future<bool> unSubscribeShow(String id) async {
-    Map data = await callGwLightApi('shownotification_unsubscribe',
+    Map data = await callGwApi('shownotification_unsubscribe',
         params: {'SHOW_ID': id});
 
     if (data['results'] == true) {
@@ -1640,8 +1696,8 @@ class DeezerAPI {
   }
 
   Future<ShowEpisode> showEpisode(String episodeId) async {
-    Map<String, dynamic> data = await callGwLightApi('episode.getData',
-        params: {'episode_id': episodeId});
+    Map<String, dynamic> data =
+        await callGwApi('episode.getData', params: {'episode_id': episodeId});
     if (data['results'] == null) {
       return ShowEpisode();
     }

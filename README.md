@@ -47,13 +47,15 @@ Get Alchemy running: Follow [these instructions](./HOWTO.md) to compile it yours
 ## :running: Ongoing Development
 
 *   Moving gateway light API calls to the mobile gateway API  
-![](https://geps.dev/progress/80) Login (missing error handling and logout function)  
-![](https://geps.dev/progress/95) Artists (missing full discography fetch)  
-![](https://geps.dev/progress/0) Albums  
-![](https://geps.dev/progress/10) Playlists  
-![](https://geps.dev/progress/0) Shows  
-![](https://geps.dev/progress/0) Tracks  
-![](https://geps.dev/progress/95) Search (missing feature to log recently searched items on click)  
+![](https://geps.dev/progress/80) Login (missing error handling and logout)  
+![](https://geps.dev/progress/95) Artists (missing full discography)  
+![](https://geps.dev/progress/100) Albums
+![](https://geps.dev/progress/100) Playlists  
+![](https://geps.dev/progress/100) Shows  
+![](https://geps.dev/progress/95) Tracks (missing dislike feature)  
+![](https://geps.dev/progress/95) Search (missing feature to log searched items)  
+![](https://geps.dev/progress/75) User (missing home, music quizzes, favorite tracks, top tracks, legacy lyrics)  
+![](https://geps.dev/progress/60) Miscellaneous (missing smart track lists, log listen, channel, games)  
 
 ## :building_construction: Upcoming Features
 

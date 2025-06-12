@@ -107,8 +107,8 @@ class Importer {
         .replaceAll('-', '')
         .replaceAll('&', '')
         .replaceAll('+', '');
-    SearchResults results =
-        await deezerAPI.search('${track.artists[0]} $cleanedTitle');
+    InstantSearchResults results =
+        await deezerAPI.instantSearch('${track.artists[0]} $cleanedTitle');
     for (Track t in results.tracks ?? []) {
       //Match title
       if (_cleanMatching(t.title ?? '') == _cleanMatching(track.title)) {
