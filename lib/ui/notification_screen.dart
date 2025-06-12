@@ -21,7 +21,7 @@ class _NotificationScreen extends State<NotificationScreen> {
   List<DeezerNotification> notifications = [];
   bool _isLoading = false;
   bool _online = true;
-  ScrollController _scrollController = ScrollController();
+  final ScrollController _scrollController = ScrollController();
 
   void _load() async {
     if (mounted) {

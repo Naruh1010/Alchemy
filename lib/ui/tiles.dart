@@ -1230,8 +1230,12 @@ class _ShowEpisodeTileState extends State<ShowEpisodeTile> {
                                                 leading:
                                                     const Icon(Icons.share),
                                                 onTap: () async {
-                                                  Share.share(
-                                                      'https://deezer.com/episode/${widget.episode.id}');
+                                                  SharePlus.instance.share(
+                                                    ShareParams(
+                                                      text:
+                                                          'https://deezer.com/episode/${widget.episode.id}',
+                                                    ),
+                                                  );
                                                 },
                                               ),
                                             ],

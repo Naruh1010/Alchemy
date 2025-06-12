@@ -647,7 +647,7 @@ class MenuSheet {
   // SHOW/EPISODE
   //===================
 
-  defaultShowEpisodeMenu(Show s, ShowEpisode e,
+  dynamic defaultShowEpisodeMenu(Show s, ShowEpisode e,
       {required BuildContext context, List<Widget> options = const []}) {
     show(context, [
       shareTile('episode', e.id!),
@@ -661,7 +661,11 @@ class MenuSheet {
         title: Text('Share show'.i18n),
         leading: const Icon(AlchemyIcons.share_android),
         onTap: () async {
-          Share.share('https://deezer.com/show/$id');
+          SharePlus.instance.share(
+            ShareParams(
+              text: 'https://deezer.com/show/$id',
+            ),
+          );
         },
       );
 
@@ -678,7 +682,7 @@ class MenuSheet {
   // OTHER
   //===================
 
-  showDownloadStartedToast() {
+  dynamic showDownloadStartedToast() {
     Fluttertoast.showToast(
         msg: 'Downloads added!'.i18n,
         gravity: ToastGravity.BOTTOM,
@@ -698,7 +702,11 @@ class MenuSheet {
         title: Text('Share'.i18n),
         leading: const Icon(Icons.share),
         onTap: () async {
-          Share.share('https://deezer.com/$type/$id');
+          SharePlus.instance.share(
+            ShareParams(
+              text: 'https://deezer.com/$type/$id',
+            ),
+          );
         },
       );
 

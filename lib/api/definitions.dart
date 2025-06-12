@@ -193,7 +193,7 @@ class Track {
           : null,
     );
   }
-  Map<String, dynamic> toSQL({off = false}) => {
+  Map<String, dynamic> toSQL({bool off = false}) => {
         'id': id,
         'title': title,
         'album': album?.id,
@@ -328,7 +328,7 @@ class Album {
     );
   }
 
-  Map<String, dynamic> toSQL({off = false}) => {
+  Map<String, dynamic> toSQL({bool off = false}) => {
         'id': id,
         'title': title,
         'artists': (artists ?? []).map<String>((dynamic a) => a.id).join(','),
@@ -564,7 +564,7 @@ class Artist {
         highlight: ArtistHighlight.fromPrivateJson(highlight));
   }
 
-  Map<String, dynamic> toSQL({off = false}) => {
+  Map<String, dynamic> toSQL({bool off = false}) => {
         'id': id,
         'name': name,
         'albums': albums.map<String>((dynamic a) => a.id).join(','),
@@ -979,7 +979,7 @@ class Lyrics {
     this.provider,
   });
 
-  static error(String? message) => Lyrics(
+  static Lyrics error(String? message) => Lyrics(
         id: null,
         writers: null,
         syncedLyrics: [
@@ -1285,9 +1285,10 @@ class HomePageSection {
       _$HomePageSectionFromJson(json);
   Map<String, dynamic> toJson() => _$HomePageSectionToJson(this);
 
-  static _homePageItemFromJson(json) =>
+  static HomePageItem _homePageItemFromJson(dynamic json) =>
       json.map<HomePageItem>((d) => HomePageItem.fromJson(d)).toList();
-  static _homePageItemToJson(items) => items.map((i) => i.toJson()).toList();
+  static HomePageItem _homePageItemToJson(dynamic items) =>
+      items.map((i) => i.toJson()).toList();
 }
 
 class DeezerNotification {
@@ -1446,8 +1447,8 @@ class DeezerChannel {
               : LogoDetails.fromPrivateJson(json['logo_image']));
 
   //JSON
-  static _colorToJson(Color? c) => c?.toARGB32();
-  static _colorFromJson(int? v) => Color(v ?? Colors.blue.toARGB32());
+  static int _colorToJson(Color? c) => c?.toARGB32() ?? 0;
+  static Color _colorFromJson(int? v) => Color(v ?? Colors.blue.toARGB32());
   factory DeezerChannel.fromJson(Map<String, dynamic> json) =>
       _$DeezerChannelFromJson(json);
   Map<String, dynamic> toJson() => _$DeezerChannelToJson(this);
@@ -1502,7 +1503,7 @@ class DeezerLinkResponse {
   DeezerLinkResponse({this.type, this.id});
 
   //String to DeezerLinkType
-  static typeFromString(String t) {
+  static DeezerLinkType? typeFromString(String t) {
     t = t.toLowerCase().trim();
     if (t == 'album') return DeezerLinkType.ALBUM;
     if (t == 'artist') return DeezerLinkType.ARTIST;
@@ -1636,7 +1637,7 @@ class Show {
               .map<ShowEpisode>((e) => ShowEpisode.fromPrivateJson(e))
               .toList());
 
-  factory Show.fromSQL(data) => Show(
+  factory Show.fromSQL(Map<dynamic, dynamic> data) => Show(
         id: data['id'],
         name: data['name'],
         authors: data['authors'],
@@ -1647,7 +1648,7 @@ class Show {
         image: ImageDetails(fullUrl: data['art']),
       );
 
-  Map<String, dynamic> toSQL({off = false}) => {
+  Map<String, dynamic> toSQL({bool off = false}) => {
         'id': id,
         'name': name,
         'authors': authors,
@@ -1696,7 +1697,7 @@ class ShowEpisode {
     return false;
   }
 
-  factory ShowEpisode.fromSQL(data) => ShowEpisode(
+  factory ShowEpisode.fromSQL(Map<dynamic, dynamic> data) => ShowEpisode(
       id: data['id'],
       title: data['title'],
       description: data['description'],
@@ -1707,7 +1708,7 @@ class ShowEpisode {
       isExplicit: data['isExplicit'] == 1,
       show: Show(id: data['showId']));
 
-  Map<String, dynamic> toSQL({off = false}) => {
+  Map<String, dynamic> toSQL({bool off = false}) => {
         'id': id,
         'title': title,
         'description': description,

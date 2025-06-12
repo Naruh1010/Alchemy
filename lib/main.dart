@@ -76,7 +76,7 @@ class _SplashScreenState extends State<SplashScreen> {
 
 class PlayerBarState with ChangeNotifier {
   bool _playerBarState = false;
-  get state => _playerBarState;
+  bool get state => _playerBarState;
   void setPlayerBarState(bool state) {
     _playerBarState = state;
     notifyListeners();

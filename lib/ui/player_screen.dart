@@ -844,7 +844,9 @@ class _ActionControls extends State<ActionControls> {
         children: [
           IconButton(
               onPressed: () async {
-                Share.share('https://deezer.com/track/$id');
+                SharePlus.instance.share(
+                  ShareParams(text: 'https://deezer.com/track/$id'),
+                );
               },
               icon: Icon(
                 AlchemyIcons.share_android,

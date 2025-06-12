@@ -6,7 +6,6 @@ import 'package:alchemy/settings.dart';
 import 'package:alchemy/ui/cached_image.dart';
 import 'package:alchemy/ui/settings_screen.dart';
 import 'package:alchemy/utils/connectivity.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get_it/get_it.dart';

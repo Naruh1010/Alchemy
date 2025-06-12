@@ -503,9 +503,14 @@ class _AlbumDetailsState extends State<AlbumDetails> {
                                             ),
                                             IconButton(
                                                 onPressed: () => {
-                                                      Share.share(
-                                                          'https://deezer.com/album/' +
-                                                              (album.id ?? ''))
+                                                      SharePlus.instance.share(
+                                                        ShareParams(
+                                                          text:
+                                                              'https://deezer.com/album/' +
+                                                                  (album.id ??
+                                                                      ''),
+                                                        ),
+                                                      )
                                                     },
                                                 icon: Icon(
                                                   AlchemyIcons.share_android,
@@ -905,9 +910,13 @@ class _AlbumDetailsState extends State<AlbumDetails> {
                                       ),
                                       IconButton(
                                           onPressed: () => {
-                                                Share.share(
-                                                    'https://deezer.com/album/' +
-                                                        (album.id ?? ''))
+                                                SharePlus.instance.share(
+                                                  ShareParams(
+                                                    text:
+                                                        'https://deezer.com/album/' +
+                                                            (album.id ?? ''),
+                                                  ),
+                                                )
                                               },
                                           icon: Icon(
                                             AlchemyIcons.share_android,
@@ -1291,9 +1300,14 @@ class _ArtistDetailsState extends State<ArtistDetails> {
                                             ),
                                             IconButton(
                                                 onPressed: () => {
-                                                      Share.share(
-                                                          'https://deezer.com/artist/' +
-                                                              (artist.id ?? ''))
+                                                      SharePlus.instance.share(
+                                                        ShareParams(
+                                                          text:
+                                                              'https://deezer.com/artist/' +
+                                                                  (artist.id ??
+                                                                      ''),
+                                                        ),
+                                                      )
                                                     },
                                                 icon: Icon(
                                                   AlchemyIcons.share_android,
@@ -2015,9 +2029,13 @@ class _ArtistDetailsState extends State<ArtistDetails> {
                                     ),
                                     IconButton(
                                         onPressed: () => {
-                                              Share.share(
-                                                  'https://deezer.com/artist/' +
-                                                      (artist.id ?? ''))
+                                              SharePlus.instance.share(
+                                                ShareParams(
+                                                  text:
+                                                      'https://deezer.com/artist/' +
+                                                          (artist.id ?? ''),
+                                                ),
+                                              )
                                             },
                                         icon: Icon(
                                           AlchemyIcons.share_android,
@@ -2890,7 +2908,7 @@ class _PlaylistDetailsState extends State<PlaylistDetails> {
               },
             );
           }
-          ;
+
           return Playlist();
         });
         if (mounted) {
@@ -3310,9 +3328,14 @@ class _PlaylistDetailsState extends State<PlaylistDetails> {
                                           ),
                                         IconButton(
                                             onPressed: () => {
-                                                  Share.share(
-                                                      'https://deezer.com/playlist/' +
-                                                          (playlist.id ?? ''))
+                                                  SharePlus.instance.share(
+                                                    ShareParams(
+                                                      text:
+                                                          'https://deezer.com/playlist/' +
+                                                              (playlist.id ??
+                                                                  ''),
+                                                    ),
+                                                  )
                                                 },
                                             icon: Icon(
                                               AlchemyIcons.share_android,
@@ -3845,9 +3868,13 @@ class _PlaylistDetailsState extends State<PlaylistDetails> {
                                     ),
                                   IconButton(
                                       onPressed: () => {
-                                            Share.share(
-                                                'https://deezer.com/playlist/' +
-                                                    (playlist.id ?? ''))
+                                            SharePlus.instance.share(
+                                              ShareParams(
+                                                text:
+                                                    'https://deezer.com/playlist/' +
+                                                        (playlist.id ?? ''),
+                                              ),
+                                            )
                                           },
                                       icon: Icon(
                                         AlchemyIcons.share_android,
@@ -4476,9 +4503,14 @@ class _ShowScreenState extends State<ShowScreen> {
                                             ),
                                             IconButton(
                                                 onPressed: () => {
-                                                      Share.share(
-                                                          'https://deezer.com/show/' +
-                                                              (_show.id ?? ''))
+                                                      SharePlus.instance.share(
+                                                        ShareParams(
+                                                          text:
+                                                              'https://deezer.com/show/' +
+                                                                  (_show.id ??
+                                                                      ''),
+                                                        ),
+                                                      )
                                                     },
                                                 icon: Icon(
                                                   AlchemyIcons.share_android,
@@ -4678,8 +4710,13 @@ class _ShowScreenState extends State<ShowScreen> {
                                           title: Text('Share'.i18n),
                                           leading: const Icon(Icons.share),
                                           onTap: () async {
-                                            Share.share(
-                                                'https://deezer.com/show/${_show.id}');
+                                            SharePlus.instance.share(
+                                              ShareParams(
+                                                text:
+                                                    'https://deezer.com/show/' +
+                                                        (_show.id ?? ''),
+                                              ),
+                                            );
                                           },
                                         ),
                                       ],
@@ -4835,8 +4872,13 @@ class _ShowScreenState extends State<ShowScreen> {
                                                 leading:
                                                     const Icon(Icons.share),
                                                 onTap: () async {
-                                                  Share.share(
-                                                      'https://deezer.com/show/${_show.id}');
+                                                  SharePlus.instance.share(
+                                                    ShareParams(
+                                                      text:
+                                                          'https://deezer.com/show/' +
+                                                              (_show.id ?? ''),
+                                                    ),
+                                                  );
                                                 },
                                               ),
                                             ],
@@ -4933,9 +4975,13 @@ class _ShowScreenState extends State<ShowScreen> {
                                     ),
                                     IconButton(
                                         onPressed: () => {
-                                              Share.share(
-                                                  'https://deezer.com/playlist/' +
-                                                      (_show.id ?? ''))
+                                              SharePlus.instance.share(
+                                                ShareParams(
+                                                  text:
+                                                      'https://deezer.com/show/' +
+                                                          (_show.id ?? ''),
+                                                ),
+                                              )
                                             },
                                         icon: Icon(
                                           AlchemyIcons.share_android,

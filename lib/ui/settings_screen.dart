@@ -1642,7 +1642,7 @@ class ContentLanguage {
       ];
 }
 
-//TODO: Reimplement proxy
+//Reimplement proxy
 //          ListTile(
 //            title: Text('Proxy'.i18n),
 //            leading: Icon(Icons.vpn_key),

@@ -13,8 +13,10 @@ class Restartable extends StatefulWidget {
   @override
   _RestartableState createState() => _RestartableState();
 
-  static restart() {
-    mainNavigatorKey.currentContext!.findAncestorStateOfType<_RestartableState>()!.restartApp();
+  static dynamic restart() {
+    mainNavigatorKey.currentContext!
+        .findAncestorStateOfType<_RestartableState>()!
+        .restartApp();
   }
 }
 

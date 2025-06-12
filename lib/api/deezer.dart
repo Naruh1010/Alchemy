@@ -460,7 +460,7 @@ class DeezerAPI {
     //https://www.deezer.com/NOTHING_OR_COUNTRY/TYPE/ID
     if (uri.host == 'www.deezer.com' || uri.host == 'deezer.com') {
       if (uri.pathSegments.length < 2) return null;
-      DeezerLinkType type = DeezerLinkResponse.typeFromString(
+      DeezerLinkType? type = DeezerLinkResponse.typeFromString(
           uri.pathSegments[uri.pathSegments.length - 2]);
       return DeezerLinkResponse(
           type: type, id: uri.pathSegments[uri.pathSegments.length - 1]);
@@ -1719,7 +1719,7 @@ class DeezerAPI {
   }
 }
 
-openScreenByURL(String url) async {
+void openScreenByURL(String url) async {
   DeezerLinkResponse? res = await deezerAPI.parseLink(url);
 
   if (res == null || res.type == null) return;

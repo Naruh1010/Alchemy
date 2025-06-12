@@ -662,7 +662,7 @@ class AudioPlayerHandler extends BaseAudioHandler
     addQueueItems(extraTracks);
   }
 
-  void _playbackError(err) {
+  void _playbackError(dynamic err) {
     Logger.root.severe('Playback Error from audioservice: ${err.code}', err);
     if (err is PlatformException &&
         err.code == 'abort' &&
@@ -672,7 +672,7 @@ class AudioPlayerHandler extends BaseAudioHandler
     _onError(err, null);
   }
 
-  void _onError(err, stacktrace, {bool stopService = false}) {
+  void _onError(dynamic err, dynamic stacktrace, {bool stopService = false}) {
     Logger.root.severe('Error from audioservice: ${err.code}', err);
     if (stopService) stop();
   }
