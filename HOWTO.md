@@ -64,11 +64,7 @@ To use Alchemy, you'll need API keys from Deezer, Last.fm and ACRCloud:
 Create a `.env` file in the `/lib` directory with your API credentials:
 
 ```bash
-# Deezer GW light API credentials 
-deezerClientId = '<Required_Deezer_Client_Id>';
-deezerClientSecret = '<Required_Deezer_Client_Secret>';
-
-# Deezer GW API
+# Deezer Mobile GateWay API
 deezerGatewayAPI = '<Required_Deezer_Gateway_Key>';
 deezerMobileKey = '<Required_Deezer_Mobile_Key>';
 
