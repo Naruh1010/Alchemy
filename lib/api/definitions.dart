@@ -166,7 +166,7 @@ class Track {
     return Track(
       id: json['SNG_ID'].toString(),
       title: title,
-      duration: Duration(seconds: int.parse(json['DURATION'])),
+      duration: Duration(seconds: int.parse(json['DURATION'] ?? '0')),
       image: ImageDetails.fromPrivateString(json['ALB_PICTURE']),
       album: Album.fromPrivateJson(json),
       artists: (json['ARTISTS'] ?? [json])

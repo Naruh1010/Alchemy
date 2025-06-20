@@ -17,6 +17,7 @@ import 'package:alchemy/api/download.dart';
 import '../api/definitions.dart';
 import '../api/spotify.dart';
 import '../settings.dart';
+import '../ui/home_screen.dart';
 
 DeezerAPI deezerAPI = DeezerAPI();
 
@@ -63,8 +64,9 @@ class DeezerAPI {
 
   Future? _authorizing;
 
-  Future testFunction(context) async {
-    Logger.root.info((await libraryShuffle()));
+  Future testFunction(BuildContext context) async {
+    Navigator.of(context)
+        .push(MaterialPageRoute(builder: (context) => GamePageScreen()));
 
 /*    ImagePicker picker = ImagePicker();
     XFile? imageFile = await picker.pickImage(source: ImageSource.gallery);
@@ -127,16 +129,10 @@ class DeezerAPI {
   Future<String> getTrackIsrc(String trackId) async {
     try {
       //Generate URL
-      Uri uri = Uri.https('api.deezer.com', 'track/$trackId');
-      //Post
-      http.Response res = await http.get(uri).catchError((e) {
-        return http.Response('', 200);
-      });
+      Map<dynamic, dynamic> track = await callPublicApi('track/$trackId');
 
-      if (res.body == '') return '';
-
-      if (jsonDecode(res.body)['isrc'] != '') {
-        return jsonDecode(res.body)['isrc'];
+      if (track['isrc'] != '') {
+        return track['isrc'];
       } else {
         return '';
       }
@@ -148,7 +144,7 @@ class DeezerAPI {
   Future<String> getTrackPreview(String trackId) async {
     try {
       String isrc = await getTrackIsrc(trackId);
-      dynamic data = await deezerAPI.callPublicApi('track/isrc:$isrc');
+      dynamic data = await callPublicApi('track/isrc:$isrc');
       return data['preview'];
     } catch (e) {
       Logger.root.info('API preview fetch failed : $e');
@@ -391,7 +387,7 @@ class DeezerAPI {
     String? lastId,
   }) async {
     Map<dynamic, dynamic> data =
-        await deezerAPI.callGwApi('appnotif_getUserNotifications', params: {
+        await callGwApi('appnotif_getUserNotifications', params: {
       'NB': nb,
       'LAST_NOTIFICATION_ID': lastId,
     });
@@ -859,12 +855,6 @@ class DeezerAPI {
     return false;
   }
 
-  // Mark track as disliked
-  Future dislikeTrack(String id) async {
-    await callGwLightApi('favorite_dislike.add',
-        params: {'ID': id, 'TYPE': 'song'});
-  }
-
   //Add tracks to playlist
   Future<bool> addToPlaylist(
     String trackId,
@@ -923,50 +913,82 @@ class DeezerAPI {
     List grid = [
       'album',
       'artist',
-      'artistLineUp',
       'channel',
-      'livestream',
       'flow',
       'playlist',
       'radio',
       'show',
       'smarttracklist',
       'track',
-      'user',
-      'video-link',
-      'external-link'
+      'user'
     ];
-    Map data = await callGwLightApi('page.get',
-        gatewayInput: jsonEncode({
-          'PAGE': 'channels/games',
+
+    Uri uri = Uri.https('api.deezer.com', '/1.0/gateway.php', {
+      'api_key': deezerGatewayAPI,
+      'method': 'app_page_get',
+      'gateway_input': jsonEncode(
+        {
           'VERSION': '2.5',
+          'LANG': settings.deezerLanguage,
           'SUPPORT': {
-            /*
-        "deeplink-list": ["deeplink"],
-        "list": ["episode"],
-        "grid-preview-one": grid,
-        "grid-preview-two": grid,
-        "slideshow": grid,
-        "message": ["call_onboarding"],
-        */
-            'filterable-grid': ['flow'],
             'grid': grid,
             'horizontal-grid': grid,
+            'filterable-grid': ['flow'],
             'item-highlight': ['radio'],
-            'large-card': ['album', 'playlist', 'show', 'video-link'],
-            'ads': [] //Nope
+            'large-card': [
+              'playlist',
+              'video-link',
+              'app',
+              'album',
+              'show',
+              'artist'
+            ],
+            'highlight': [
+              'generic',
+              'playlist',
+              'radio',
+              'livestream',
+              'album',
+              'artist'
+            ],
           },
-          'LANG': settings.deezerLanguage,
-          'OPTIONS': []
-        }));
+          'page': 'channels/games',
+        },
+      ),
+      'sid': keyBag.sid,
+      'output': '3',
+      'input': '3',
+      'arl': keyBag.arl,
+    });
 
-    if (data['results'] == null) return [];
+    Map<String, String> gwHeaders = {
+      'User-Agent': '',
+      'Content-Type': 'text/plain;charset=UTF-8',
+      'origin': 'https://www.deezer.com',
+      'Cache-Control': 'max-age=0',
+      'Accept': '*/*',
+      'Accept-Charset': 'utf-8,ISO-8859-1;q=0.7,*;q=0.3',
+      'Connection': 'keep-alive',
+      'sec-fetch-site': 'same-origin',
+      'sec-fetch-mode': 'same-origin',
+      'sec-fetch-dest': 'empty',
+      'referer': 'https://www.deezer.com/',
+    };
 
-    List<dynamic> sections = data['results']['sections'];
+    //Post
+    http.Response res = await http.get(uri, headers: gwHeaders).catchError((e) {
+      return http.Response('', 200);
+    });
+
+    dynamic body = jsonDecode(res.body);
+
+    if (body['results'] == null) return [];
+
+    List<dynamic>? sections = body['results']['sections'];
     List<Playlist> userQuizzes = [];
 
-    for (int i = 0; i < sections.length; i++) {
-      List<dynamic> items = sections[i]['items'];
+    for (int i = 0; i < (sections?.length ?? 0); i++) {
+      List<dynamic> items = sections?[i]['items'];
 
       for (int j = 0; j < items.length; j++) {
         final regex = RegExp(r'^/game/blindtest/playlist/(\d+)');
@@ -982,18 +1004,14 @@ class DeezerAPI {
   }
 
   Future<List<Playlist>> getMusicQuizzes() async {
-    Map data = await callGwLightApi('deezer.pageProfile',
-        params: {'nb': 100, 'tab': 'playlists', 'user_id': '5207298602'});
-    if (data['results']?['TAB']?['playlists']?['data'] == null) return [];
-    return data['results']['TAB']['playlists']['data']
-        .map<Playlist>((json) => Playlist.fromPrivateJson(json, library: true))
-        .toList();
+    List<Playlist> playlists = await getUserPlaylists(uId: '5207298602');
+    return playlists;
   }
 
   //Get users playlists
-  Future<List<Playlist>> getUserPlaylists() async {
+  Future<List<Playlist>> getUserPlaylists({String? uId}) async {
     Map data = await callGwApi('playlist.getList',
-        params: {'nb': '1000', 'start': '0', 'user_id': userId});
+        params: {'nb': '1000', 'start': '0', 'user_id': uId ?? userId});
     return (data['results']?['data'] ?? [])
         .map<Playlist>((json) => Playlist.fromPrivateJson(json, library: true))
         .toList();
@@ -1024,8 +1042,8 @@ class DeezerAPI {
 
   //Get favorite trackIds
   Future<List<String>?> getFavoriteTrackIds() async {
-    Map data = await callGwLightApi('user.getAllFeedbacks',
-        params: {'checksums': null});
+    Map data =
+        await callGwApi('user.getAllFeedbacks', params: {'checksums': null});
     final songsData = data['results']?['FAVORITES']?['SONGS']?['data'];
 
     if (songsData is List) {
@@ -1289,7 +1307,7 @@ class DeezerAPI {
   }
 
   Future<List<Track?>> userTracks({int? limit}) async {
-    Map data = await callGwLightApi('charts.getUserSongs', params: {
+    Map data = await callGwApi('charts.getUserSongs', params: {
       'USER_ID': userId,
       'START': '0',
       'NB': (limit ?? 100).toString()
@@ -1301,8 +1319,8 @@ class DeezerAPI {
   }
 
   Future<SmartTrackList?> smartTrackList(String id) async {
-    Map data = await callGwLightApi('deezer.pageSmartTracklist',
-        params: {'smarttracklist_id': id});
+    Map data = await callGwApi('mobile.pageSmartTracklist',
+        params: {'SMARTTRACKLIST_ID': id});
     if (data['results']['DATA'] == null) {
       return null;
     }
@@ -1332,35 +1350,72 @@ class DeezerAPI {
       'track',
       'user'
     ];
-    Map data = await callGwLightApi('page.get',
-        gatewayInput: jsonEncode({
-          'PAGE': 'home',
+
+    Uri uri = Uri.https('api.deezer.com', '/1.0/gateway.php', {
+      'api_key': deezerGatewayAPI,
+      'method': 'app_page_get',
+      'gateway_input': jsonEncode(
+        {
           'VERSION': '2.5',
+          'LANG': settings.deezerLanguage,
           'SUPPORT': {
-            /*
-        "deeplink-list": ["deeplink"],
-        "list": ["episode"],
-        "grid-preview-one": grid,
-        "grid-preview-two": grid,
-        "slideshow": grid,
-        "message": ["call_onboarding"],
-        */
-            'filterable-grid': ['flow'],
             'grid': grid,
             'horizontal-grid': grid,
+            'filterable-grid': ['flow'],
             'item-highlight': ['radio'],
-            'large-card': ['album', 'playlist', 'show', 'video-link'],
-            'ads': [] //Nope
+            'large-card': [
+              'playlist',
+              'video-link',
+              'app',
+              'album',
+              'show',
+              'artist'
+            ],
+            'highlight': [
+              'generic',
+              'playlist',
+              'radio',
+              'livestream',
+              'album',
+              'artist'
+            ],
           },
-          'LANG': settings.deezerLanguage,
-          'OPTIONS': []
-        }));
-    return HomePage.fromPrivateJson(data['results']);
+          'page': 'home',
+        },
+      ),
+      'sid': keyBag.sid,
+      'output': '3',
+      'input': '3',
+      'arl': keyBag.arl,
+    });
+
+    Map<String, String> gwHeaders = {
+      'User-Agent': '',
+      'Content-Type': 'text/plain;charset=UTF-8',
+      'origin': 'https://www.deezer.com',
+      'Cache-Control': 'max-age=0',
+      'Accept': '*/*',
+      'Accept-Charset': 'utf-8,ISO-8859-1;q=0.7,*;q=0.3',
+      'Connection': 'keep-alive',
+      'sec-fetch-site': 'same-origin',
+      'sec-fetch-mode': 'same-origin',
+      'sec-fetch-dest': 'empty',
+      'referer': 'https://www.deezer.com/',
+    };
+
+    //Post
+    http.Response res = await http.get(uri, headers: gwHeaders).catchError((e) {
+      return http.Response('', 200);
+    });
+
+    dynamic body = jsonDecode(res.body);
+
+    return HomePage.fromPrivateJson(body['results']);
   }
 
   //Log song listen to deezer
   Future logListen(String trackId) async {
-    await callGwLightApi('log.listen', params: {
+    await callGwApi('log.listen', params: {
       'params': {
         'timestamp': DateTime.now().millisecondsSinceEpoch,
         'ts_listen': DateTime.now().millisecondsSinceEpoch,
@@ -1384,30 +1439,53 @@ class DeezerAPI {
       'track',
       'user'
     ];
-    Map data = await callGwLightApi('page.get',
-        gatewayInput: jsonEncode({
-          'PAGE': target,
+
+    Uri uri = Uri.https('api.deezer.com', '/1.0/gateway.php', {
+      'api_key': deezerGatewayAPI,
+      'method': 'app_page_get',
+      'gateway_input': jsonEncode(
+        {
           'VERSION': '2.5',
+          'LANG': settings.deezerLanguage,
           'SUPPORT': {
-            /*
-        "deeplink-list": ["deeplink"],
-        "list": ["episode"],
-        "grid-preview-one": grid,
-        "grid-preview-two": grid,
-        "slideshow": grid,
-        "message": ["call_onboarding"],
-        */
             'filterable-grid': ['flow'],
             'grid': grid,
             'horizontal-grid': grid,
             'item-highlight': ['radio'],
             'large-card': ['album', 'playlist', 'show', 'video-link'],
-            'ads': [] //Nope
+            'ads': []
           },
-          'LANG': settings.deezerLanguage,
-          'OPTIONS': []
-        }));
-    return HomePage.fromPrivateJson(data['results']);
+          'page': target,
+        },
+      ),
+      'sid': keyBag.sid,
+      'output': '3',
+      'input': '3',
+      'arl': keyBag.arl,
+    });
+
+    Map<String, String> gwHeaders = {
+      'User-Agent': '',
+      'Content-Type': 'text/plain;charset=UTF-8',
+      'origin': 'https://www.deezer.com',
+      'Cache-Control': 'max-age=0',
+      'Accept': '*/*',
+      'Accept-Charset': 'utf-8,ISO-8859-1;q=0.7,*;q=0.3',
+      'Connection': 'keep-alive',
+      'sec-fetch-site': 'same-origin',
+      'sec-fetch-mode': 'same-origin',
+      'sec-fetch-dest': 'empty',
+      'referer': 'https://www.deezer.com/',
+    };
+
+    //Post
+    http.Response res = await http.get(uri, headers: gwHeaders).catchError((e) {
+      return http.Response('', 200);
+    });
+
+    dynamic body = jsonDecode(res.body);
+
+    return HomePage.fromPrivateJson(body['results']);
   }
 
   //Add playlist to library

@@ -107,15 +107,18 @@ class DetailedAppBar extends StatefulWidget {
   final Function? loadNextPage;
   final ScrollController scrollController;
   final double expandedHeight;
-  const DetailedAppBar(
-      {required this.title,
-      this.subtitle,
-      required this.moreFunction,
-      required this.expandedHeight,
-      required this.screens,
-      required this.scrollController,
-      this.loadNextPage,
-      super.key});
+  final Color? backgroundColor;
+  const DetailedAppBar({
+    required this.title,
+    this.subtitle,
+    required this.moreFunction,
+    required this.expandedHeight,
+    required this.screens,
+    required this.scrollController,
+    this.loadNextPage,
+    this.backgroundColor,
+    super.key,
+  });
 
   @override
   _DetailedAppBarState createState() => _DetailedAppBarState();
@@ -164,7 +167,8 @@ class _DetailedAppBarState extends State<DetailedAppBar> {
   @override
   Widget build(BuildContext context) {
     return SliverAppBar(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      backgroundColor:
+          widget.backgroundColor ?? Theme.of(context).scaffoldBackgroundColor,
       actionsPadding: EdgeInsets.zero,
       stretch: true,
       pinned: true,
@@ -213,24 +217,25 @@ class _DetailedAppBarState extends State<DetailedAppBar> {
                   child: Padding(
                     padding: EdgeInsets.only(top: 8.0),
                     child: Row(
-                        mainAxisSize: MainAxisSize.max,
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: List.generate(
-                            2,
-                            (i) => Container(
-                                  margin: EdgeInsets.symmetric(
-                                      horizontal: 2.0, vertical: 8.0),
-                                  width: 12.0,
-                                  height: 4.0,
-                                  decoration: BoxDecoration(
-                                    color: Colors.white.withAlpha(
-                                        _currentPage == i ? 255 : 150),
-                                    border:
-                                        Border.all(color: Colors.transparent),
-                                    borderRadius: BorderRadius.circular(100),
-                                  ),
-                                ))),
+                      mainAxisSize: MainAxisSize.max,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: List.generate(
+                        widget.screens.length,
+                        (i) => Container(
+                          margin: EdgeInsets.symmetric(
+                              horizontal: 2.0, vertical: 8.0),
+                          width: 12.0,
+                          height: 4.0,
+                          decoration: BoxDecoration(
+                            color: Colors.white
+                                .withAlpha(_currentPage == i ? 255 : 150),
+                            border: Border.all(color: Colors.transparent),
+                            borderRadius: BorderRadius.circular(100),
+                          ),
+                        ),
+                      ),
+                    ),
                   ),
                 ),
             ],

@@ -109,23 +109,20 @@ class _HomeScreenState extends State<HomeScreen> {
                   width: 60,
                   height: 60,
                   alignment: Alignment.center,
-                  child: SizedBox(
-                    width: 60,
-                    height: 60,
-                    child: ValueListenableBuilder<bool>(
-                      valueListenable: _isLoadingNotifier,
-                      builder: (context, isLoading, child) {
-                        return isLoading
-                            ? const CircularProgressIndicator()
-                            : CachedImage(
-                                url: ImageDetails.fromJson(cache.userPicture)
-                                        .fullUrl ??
-                                    '',
-                                circular: true,
-                                width: 56,
-                              );
-                      },
-                    ),
+                  child: ValueListenableBuilder<bool>(
+                    valueListenable: _isLoadingNotifier,
+                    builder: (context, isLoading, child) {
+                      return isLoading
+                          ? const CircularProgressIndicator()
+                          : CachedImage(
+                              url: ImageDetails.fromJson(cache.userPicture)
+                                      .fullUrl ??
+                                  '',
+                              circular: true,
+                              width: 56,
+                              height: 56,
+                            );
+                    },
                   ),
                 ),
               ),
@@ -315,6 +312,8 @@ class _HomePageScreenState extends State<HomePageScreen> {
         cards = List.generate(_homePage?.mainSection?.items?.length ?? 0,
             (int i) => _homePage?.mainSection?.items?[i]?.value);
         return ListView(
+          shrinkWrap: true,
+          controller: ScrollController(),
           // Wrapped with ListView
           children: [
             if (_homePage?.flowSection != null)
@@ -428,6 +427,9 @@ class _HomePageScreenState extends State<HomePageScreen> {
                 }
               },
             ),
+            Container(
+              height: 16.0,
+            ),
             ListenableBuilder(
                 listenable: playerBarState,
                 builder: (BuildContext context, Widget? child) {
@@ -467,6 +469,24 @@ class HomepageRowSection extends StatelessWidget {
                   const TextStyle(fontSize: 22.0, fontWeight: FontWeight.bold),
             ),
           ),
+          onTap: (section.hasMore ?? false)
+              ? () => Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => Scaffold(
+                        appBar: FreezerAppBar(section.title ?? ''),
+                        body: HomePageScreen(
+                          channel: DeezerChannel(target: section.pagePath),
+                        ),
+                      ),
+                    ),
+                  )
+              : null,
+          trailing: (section.hasMore ?? false)
+              ? Icon(
+                  AlchemyIcons.chevron_end,
+                  size: 15,
+                )
+              : null,
         ),
         SingleChildScrollView(
           scrollDirection: Axis.horizontal,
@@ -476,31 +496,7 @@ class HomepageRowSection extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.start,
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: List.generate((section.items?.length ?? 0) + 1, (j) {
-                //Has more items
-                if (j == (section.items?.length ?? 0)) {
-                  if (section.hasMore ?? false) {
-                    return TextButton(
-                      child: Text(
-                        'Show more'.i18n,
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(fontSize: 20.0),
-                      ),
-                      onPressed: () =>
-                          Navigator.of(context).push(MaterialPageRoute(
-                        builder: (context) => Scaffold(
-                          appBar: FreezerAppBar(section.title ?? ''),
-                          body: SingleChildScrollView(
-                              child: HomePageScreen(
-                                  channel:
-                                      DeezerChannel(target: section.pagePath))),
-                        ),
-                      )),
-                    );
-                  }
-                  return const SizedBox(height: 0, width: 0);
-                }
-
+              children: List.generate((section.items?.length ?? 0), (j) {
                 //Show item
                 HomePageItem item = section.items![j] ?? HomePageItem();
                 return HomePageItemWidget(item);

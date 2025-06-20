@@ -52,10 +52,10 @@ Get Alchemy running: Follow [these instructions](./HOWTO.md) to compile it yours
 ![](https://geps.dev/progress/100) Albums  
 ![](https://geps.dev/progress/100) Playlists  
 ![](https://geps.dev/progress/100) Shows  
-![](https://geps.dev/progress/95) Tracks (missing dislike feature)  
-![](https://geps.dev/progress/100) Search  
-![](https://geps.dev/progress/75) User (missing home, music quizzes, favorite tracks, top tracks, legacy lyrics)  
-![](https://geps.dev/progress/60) Miscellaneous (missing smart track lists, log listen, channel, games)  
+![](https://geps.dev/progress/95) Tracks (missing legacy lyrics)  
+![](https://geps.dev/progress/90) Search ("see more" buttons, tracks "on tap")  
+![](https://geps.dev/progress/100) User  
+![](https://geps.dev/progress/100) Miscellaneous  
 
 ## :building_construction: Upcoming Features
 
@@ -67,6 +67,7 @@ Get Alchemy running: Follow [these instructions](./HOWTO.md) to compile it yours
 
 ## :lady_beetle: Bugs
 
+*   There is an awkward display bug in details screen and with the player bar in landscape mode due to the use of SafeAreas and ListTiles;
 *   The handling of login errors is incomplete;
 *   Downloads that are stopped and restarted will not be saved in the database and therefore not be available;
 *   Skipping tracks on the player screen is not as fluid as it used to be and can be choppy;
