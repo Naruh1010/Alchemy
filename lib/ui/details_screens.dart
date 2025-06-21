@@ -2,6 +2,7 @@
 import 'package:alchemy/ui/blind_test.dart';
 import 'package:figma_squircle/figma_squircle.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:get_it/get_it.dart';
@@ -1845,7 +1846,7 @@ class _ArtistDetailsState extends State<ArtistDetails> {
                                                   12.0, 0.0, 1.0, 8.0),
                                               child: SizedBox(
                                                 height:
-                                                    200, // Adjust height as needed
+                                                    205, // Adjust height as needed
                                                 child: ListView.builder(
                                                   scrollDirection:
                                                       Axis.horizontal,
@@ -2397,7 +2398,7 @@ class _ArtistDetailsState extends State<ArtistDetails> {
                         if (artist.albums.isNotEmpty)
                           SliverToBoxAdapter(
                             child: SizedBox(
-                              height: 290,
+                              height: 300,
                               child: Column(children: [
                                 Padding(
                                   padding: const EdgeInsets.symmetric(
@@ -2572,7 +2573,7 @@ class _ArtistDetailsState extends State<ArtistDetails> {
                         if (artist.playlists?.isNotEmpty ?? false)
                           SliverToBoxAdapter(
                             child: SizedBox(
-                              height: 270,
+                              height: 275,
                               child: Column(children: [
                                 Padding(
                                   padding: const EdgeInsets.symmetric(
@@ -2744,10 +2745,18 @@ class DiscographyScreen extends StatefulWidget {
 }
 
 class _DiscographyScreenState extends State<DiscographyScreen> {
+  final TextEditingController _controller = TextEditingController();
+  final FocusNode _keyboardListenerFocusNode = FocusNode();
+  final FocusNode _textFieldFocusNode = FocusNode();
+  bool _hasFocus = false;
   late Artist artist;
   bool _isLoading = false;
   bool _error = false;
-  ScrollController _scrollController = ScrollController();
+  final ScrollController _scrollController = ScrollController();
+  String _filter = '';
+  bool _albums = false;
+  bool _eps = false;
+  bool _singles = false;
 
   Future _load() async {
     setState(() => _isLoading = true);
@@ -2796,6 +2805,7 @@ class _DiscographyScreenState extends State<DiscographyScreen> {
   @override
   void initState() {
     artist = widget.artist;
+    artist.albums = [];
 
     _load();
 
@@ -2812,148 +2822,406 @@ class _DiscographyScreenState extends State<DiscographyScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return DefaultTabController(
-        length: 3,
-        child: Builder(builder: (BuildContext context) {
-          final TabController tabController = DefaultTabController.of(context);
-          tabController.addListener(() {
-            if (!tabController.indexIsChanging) {
-              //Load data if empty tabs
-              int nSingles =
-                  artist.albums.where((a) => a.type == AlbumType.SINGLE).length;
-              int nEp =
-                  artist.albums.where((a) => a.type == AlbumType.EP).length;
-              int nAlbums =
-                  artist.albums.where((a) => a.type == AlbumType.ALBUM).length;
-              if ((nSingles == 0 || nEp == 0 || nAlbums == 0) && !_isLoading) {
-                _load();
-              }
-            }
-          });
-
-          List<Album> albums =
-              artist.albums.where((a) => a.type == AlbumType.ALBUM).toList();
-          List<Widget> albumsSection = [];
-          if (albums.isNotEmpty) {
-            albumsSection = [
-              Padding(
-                padding: EdgeInsets.symmetric(
-                    horizontal: MediaQuery.of(context).size.width * 0.05,
-                    vertical: 20.0),
-                child: Text(
-                  'Albums'.i18n,
-                  textAlign: TextAlign.left,
-                  style: const TextStyle(
-                      fontSize: 20.0, fontWeight: FontWeight.bold),
-                ),
-              ),
-              ...List.generate(albums.length, (i) {
-                return Padding(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: MediaQuery.of(context).size.width * 0.05,
-                  ),
-                  child: AlbumTile(
-                    albums[i],
-                    padding: EdgeInsets.zero,
-                    onTap: () => Navigator.of(context).push(MaterialPageRoute(
-                        builder: (context) => AlbumDetails(albums[i]))),
-                    onHold: () {
-                      MenuSheet m = MenuSheet();
-                      m.defaultAlbumMenu(albums[i], context: context);
-                    },
-                  ),
-                );
-              }),
-            ];
-          }
-
-          List<Album> singles =
-              artist.albums.where((a) => a.type == AlbumType.SINGLE).toList();
-          List<Widget> singlesSection = [];
-          if (singles.isNotEmpty) {
-            singlesSection = [
-              Padding(
-                padding: EdgeInsets.symmetric(
-                    horizontal: MediaQuery.of(context).size.width * 0.05,
-                    vertical: 20.0),
-                child: Text(
-                  'Singles'.i18n,
-                  textAlign: TextAlign.left,
-                  style: const TextStyle(
-                      fontSize: 20.0, fontWeight: FontWeight.bold),
-                ),
-              ),
-              ...List.generate(singles.length, (i) {
-                return Padding(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: MediaQuery.of(context).size.width * 0.05,
-                  ),
-                  child: AlbumTile(
-                    singles[i],
-                    padding: EdgeInsets.zero,
-                    onTap: () => Navigator.of(context).push(MaterialPageRoute(
-                        builder: (context) => AlbumDetails(singles[i]))),
-                    onHold: () {
-                      MenuSheet m = MenuSheet();
-                      m.defaultAlbumMenu(singles[i], context: context);
-                    },
-                  ),
-                );
-              }),
-            ];
-          }
-
-          List<Album> eps =
-              artist.albums.where((a) => a.type == AlbumType.EP).toList();
-          List<Widget> epsSection = [];
-          if (eps.isNotEmpty) {
-            epsSection = [
-              Padding(
-                padding: EdgeInsets.symmetric(
-                    horizontal: MediaQuery.of(context).size.width * 0.05,
-                    vertical: 20.0),
-                child: Text(
-                  'EPs'.i18n,
-                  textAlign: TextAlign.left,
-                  style: const TextStyle(
-                      fontSize: 20.0, fontWeight: FontWeight.bold),
-                ),
-              ),
-              ...List.generate(eps.length, (i) {
-                return Padding(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: MediaQuery.of(context).size.width * 0.05,
-                  ),
-                  child: AlbumTile(
-                    eps[i],
-                    padding: EdgeInsets.zero,
-                    onTap: () => Navigator.of(context).push(MaterialPageRoute(
-                        builder: (context) => AlbumDetails(eps[i]))),
-                    onHold: () {
-                      MenuSheet m = MenuSheet();
-                      m.defaultAlbumMenu(eps[i], context: context);
-                    },
-                  ),
-                );
-              }),
-            ];
-          }
-
-          return Scaffold(
-            appBar: FreezerAppBar(
-              'Discography'.i18n,
+    return Builder(builder: (BuildContext context) {
+      List<Album> albums = artist.albums
+          .where((a) => a.type == AlbumType.ALBUM)
+          .where((a) =>
+              a.title?.toLowerCase().contains(_filter.toLowerCase()) ?? false)
+          .toList();
+      List<Widget> albumsSection = [];
+      if (albums.isNotEmpty) {
+        albumsSection = [
+          Padding(
+            padding: EdgeInsets.symmetric(
+                horizontal: MediaQuery.of(context).size.width * 0.05,
+                vertical: 20.0),
+            child: Text(
+              'Albums'.i18n,
+              textAlign: TextAlign.left,
+              style:
+                  const TextStyle(fontSize: 20.0, fontWeight: FontWeight.bold),
             ),
-            body: ListView(
-              children: [
-                //Albums
-                ...albumsSection,
-                ...singlesSection,
-                ...epsSection,
-                _isLoadingWidget,
-              ],
+          ),
+          ...List.generate(albums.length, (i) {
+            return Padding(
+              padding: EdgeInsets.symmetric(
+                horizontal: MediaQuery.of(context).size.width * 0.05,
+              ),
+              child: AlbumTile(
+                albums[i],
+                padding: EdgeInsets.zero,
+                onTap: () => Navigator.of(context).push(MaterialPageRoute(
+                    builder: (context) => AlbumDetails(albums[i]))),
+                onHold: () {
+                  MenuSheet m = MenuSheet();
+                  m.defaultAlbumMenu(albums[i], context: context);
+                },
+              ),
+            );
+          }),
+        ];
+      }
+
+      List<Album> singles = artist.albums
+          .where((a) => a.type == AlbumType.SINGLE)
+          .where((a) =>
+              a.title?.toLowerCase().contains(_filter.toLowerCase()) ?? false)
+          .toList();
+      List<Widget> singlesSection = [];
+      if (singles.isNotEmpty) {
+        singlesSection = [
+          Padding(
+            padding: EdgeInsets.symmetric(
+                horizontal: MediaQuery.of(context).size.width * 0.05,
+                vertical: 20.0),
+            child: Text(
+              'Singles'.i18n,
+              textAlign: TextAlign.left,
+              style:
+                  const TextStyle(fontSize: 20.0, fontWeight: FontWeight.bold),
             ),
-          );
-        }));
+          ),
+          ...List.generate(singles.length, (i) {
+            return Padding(
+              padding: EdgeInsets.symmetric(
+                horizontal: MediaQuery.of(context).size.width * 0.05,
+              ),
+              child: AlbumTile(
+                singles[i],
+                padding: EdgeInsets.zero,
+                onTap: () => Navigator.of(context).push(MaterialPageRoute(
+                    builder: (context) => AlbumDetails(singles[i]))),
+                onHold: () {
+                  MenuSheet m = MenuSheet();
+                  m.defaultAlbumMenu(singles[i], context: context);
+                },
+              ),
+            );
+          }),
+        ];
+      }
+
+      List<Album> eps = artist.albums
+          .where((a) => a.type == AlbumType.EP)
+          .where((a) =>
+              a.title?.toLowerCase().contains(_filter.toLowerCase()) ?? false)
+          .toList();
+      List<Widget> epsSection = [];
+      if (eps.isNotEmpty) {
+        epsSection = [
+          Padding(
+            padding: EdgeInsets.symmetric(
+                horizontal: MediaQuery.of(context).size.width * 0.05,
+                vertical: 20.0),
+            child: Text(
+              'EPs'.i18n,
+              textAlign: TextAlign.left,
+              style:
+                  const TextStyle(fontSize: 20.0, fontWeight: FontWeight.bold),
+            ),
+          ),
+          ...List.generate(eps.length, (i) {
+            return Padding(
+              padding: EdgeInsets.symmetric(
+                horizontal: MediaQuery.of(context).size.width * 0.05,
+              ),
+              child: AlbumTile(
+                eps[i],
+                padding: EdgeInsets.zero,
+                onTap: () => Navigator.of(context).push(MaterialPageRoute(
+                    builder: (context) => AlbumDetails(eps[i]))),
+                onHold: () {
+                  MenuSheet m = MenuSheet();
+                  m.defaultAlbumMenu(eps[i], context: context);
+                },
+              ),
+            );
+          }),
+        ];
+      }
+
+      return Scaffold(
+        appBar: FreezerAppBar(
+          'Discography'.i18n,
+        ),
+        body: ListView(
+          controller: _scrollController,
+          children: [
+            Padding(
+              padding: EdgeInsets.symmetric(
+                horizontal: MediaQuery.of(context).size.width * 0.05,
+              ),
+              child: Row(
+                children: <Widget>[
+                  Expanded(
+                    child: KeyboardListener(
+                      focusNode: _keyboardListenerFocusNode,
+                      onKeyEvent: (event) {
+                        // For Android TV: quit search textfield
+                        if (event is KeyUpEvent) {
+                          if (event.logicalKey ==
+                              LogicalKeyboardKey.arrowDown) {
+                            _textFieldFocusNode.unfocus();
+                          }
+                        }
+                      },
+                      child: Container(
+                        clipBehavior: Clip.hardEdge,
+                        decoration: ShapeDecoration(
+                          shape: SmoothRectangleBorder(
+                            borderRadius: SmoothBorderRadius(
+                              cornerRadius: 20,
+                              cornerSmoothing: 0.4,
+                            ),
+                            side: _hasFocus
+                                ? BorderSide(
+                                    color: settings.theme == Themes.Light
+                                        ? Colors.black.withAlpha(100)
+                                        : Colors.white.withAlpha(100),
+                                    width: 1.5)
+                                : BorderSide.none,
+                          ),
+                        ),
+                        child: Focus(
+                          onFocusChange: (focused) {
+                            setState(() {
+                              _hasFocus = focused;
+                            });
+                          },
+                          focusNode: _textFieldFocusNode,
+                          child: TextField(
+                            onChanged: (String s) {
+                              if (mounted) {
+                                setState(
+                                  () {
+                                    _filter = s;
+                                  },
+                                );
+                              }
+                            },
+                            decoration: InputDecoration(
+                              hintText: 'Search',
+                              hintStyle: TextStyle(
+                                  color: settings.theme == Themes.Light
+                                      ? Colors.black.withAlpha(100)
+                                      : Colors.white.withAlpha(100)),
+                              prefixIcon: Icon(
+                                AlchemyIcons
+                                    .search, // Replace with AlchemyIcons.search if available
+                                color: settings.theme == Themes.Light
+                                    ? Colors.black.withAlpha(100)
+                                    : Colors.white.withAlpha(100),
+                                size: 16,
+                              ),
+                              suffixIcon: IconButton(
+                                // Added suffixIcon
+                                icon: Icon(Icons.clear,
+                                    color: _hasFocus
+                                        ? settings.theme == Themes.Light
+                                            ? Colors.black
+                                            : Colors.white
+                                        : settings.theme == Themes.Light
+                                            ? Colors.black.withAlpha(100)
+                                            : Colors.white.withAlpha(100),
+                                    size: 12),
+                                splashRadius:
+                                    16, // Adjust splash radius as needed
+                                onPressed: () {
+                                  _controller.clear(); // Clear text field
+                                  _textFieldFocusNode
+                                      .unfocus(); // Release focus
+                                  setState(() {
+                                    _hasFocus = false;
+                                    _filter = '';
+                                  });
+                                },
+                              ),
+                              fillColor: settings.theme == Themes.Light
+                                  ? Colors.black.withAlpha(30)
+                                  : Colors.white.withAlpha(30),
+                              filled: true,
+                              focusedBorder: InputBorder.none,
+                              enabledBorder: InputBorder.none,
+                              contentPadding: EdgeInsets.symmetric(
+                                  vertical: 14.0,
+                                  horizontal: 16.0), // Added contentPadding
+                            ),
+                            controller: _controller,
+                            textInputAction: TextInputAction.search,
+                            onSubmitted: (String s) {
+                              _textFieldFocusNode.unfocus();
+                            },
+                            style: TextStyle(
+                                color: settings.theme == Themes.Light
+                                    ? Colors.black
+                                    : Colors.white),
+                            cursorColor: settings.theme == Themes.Light
+                                ? Colors.black
+                                : Colors.white,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Padding(
+              padding: EdgeInsets.symmetric(
+                  horizontal: MediaQuery.of(context).size.width * 0.05,
+                  vertical: 10),
+              child: Row(
+                mainAxisSize: MainAxisSize.max,
+                mainAxisAlignment: MainAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                spacing: 10,
+                children: [
+                  if (albumsSection.isNotEmpty)
+                    Container(
+                      decoration: BoxDecoration(
+                        border: Border.all(
+                            color: _albums
+                                ? Theme.of(context).primaryColor
+                                : settings.theme == Themes.Light
+                                    ? Colors.black.withAlpha(100)
+                                    : Colors.white.withAlpha(100),
+                            width: 1.5),
+                        borderRadius: BorderRadius.circular(20),
+                        color: settings.theme == Themes.Light
+                            ? Colors.black.withAlpha(30)
+                            : Colors.white.withAlpha(30),
+                      ),
+                      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      child: InkWell(
+                        onTap: () {
+                          if (mounted) {
+                            setState(() {
+                              _albums = !_albums;
+                            });
+                          }
+                        },
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          spacing: 4,
+                          children: [
+                            if (_albums)
+                              Icon(
+                                AlchemyIcons.cross,
+                                size: 10,
+                              ),
+                            Text(
+                              'Albums',
+                              style: TextStyle(fontSize: 12),
+                            )
+                          ],
+                        ),
+                      ),
+                    ),
+                  if (singlesSection.isNotEmpty)
+                    Container(
+                      decoration: BoxDecoration(
+                        border: Border.all(
+                            color: _singles
+                                ? Theme.of(context).primaryColor
+                                : settings.theme == Themes.Light
+                                    ? Colors.black.withAlpha(100)
+                                    : Colors.white.withAlpha(100),
+                            width: 1.5),
+                        borderRadius: BorderRadius.circular(20),
+                        color: settings.theme == Themes.Light
+                            ? Colors.black.withAlpha(30)
+                            : Colors.white.withAlpha(30),
+                      ),
+                      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      child: InkWell(
+                        onTap: () {
+                          if (mounted) {
+                            setState(() {
+                              _singles = !_singles;
+                            });
+                          }
+                        },
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          spacing: 4,
+                          children: [
+                            if (_singles)
+                              Icon(
+                                AlchemyIcons.cross,
+                                size: 10,
+                              ),
+                            Text(
+                              'Singles',
+                              style: TextStyle(fontSize: 12),
+                            )
+                          ],
+                        ),
+                      ),
+                    ),
+                  if (epsSection.isNotEmpty)
+                    Container(
+                      decoration: BoxDecoration(
+                        border: Border.all(
+                            color: _eps
+                                ? Theme.of(context).primaryColor
+                                : settings.theme == Themes.Light
+                                    ? Colors.black.withAlpha(100)
+                                    : Colors.white.withAlpha(100),
+                            width: 1.5),
+                        borderRadius: BorderRadius.circular(20),
+                        color: settings.theme == Themes.Light
+                            ? Colors.black.withAlpha(30)
+                            : Colors.white.withAlpha(30),
+                      ),
+                      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      child: InkWell(
+                        onTap: () {
+                          if (mounted) {
+                            setState(() {
+                              _eps = !_eps;
+                            });
+                          }
+                        },
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          spacing: 4,
+                          children: [
+                            if (_eps)
+                              Icon(
+                                AlchemyIcons.cross,
+                                size: 10,
+                              ),
+                            Text(
+                              'EPs',
+                              style: TextStyle(fontSize: 12),
+                            )
+                          ],
+                        ),
+                      ),
+                    )
+                ],
+              ),
+            ),
+            //Albums
+            if (!_albums && !_eps && !_singles) ...[
+              ...albumsSection,
+              ...singlesSection,
+              ...epsSection,
+            ],
+            if (_albums) ...albumsSection,
+            if (_singles) ...singlesSection,
+            if (_eps) ...epsSection,
+            _isLoadingWidget,
+          ],
+        ),
+      );
+    });
   }
 }
 

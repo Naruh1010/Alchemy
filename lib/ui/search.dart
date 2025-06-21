@@ -12,6 +12,7 @@ import 'package:get_it/get_it.dart';
 import 'package:alchemy/fonts/alchemy_icons.dart';
 import 'package:alchemy/main.dart';
 import 'package:figma_squircle/figma_squircle.dart';
+import 'package:logging/logging.dart';
 
 import '../api/cache.dart';
 import '../api/deezer.dart';
@@ -778,17 +779,19 @@ class _SearchScreenState extends State<SearchScreen> {
                         }),
                         ViewAllButton(
                           onTap: () async {
-                            InstantSearchResults trackResults =
-                                await deezerAPI.instantSearch(_query ?? '',
-                                    includeTracks: true, count: 100);
                             if (context.mounted) {
                               Navigator.of(context).push(
                                 MaterialPageRoute(
                                   builder: (context) => TrackListScreen(
-                                    trackResults.tracks ?? [],
+                                    results.tracks ?? [],
+                                    load: deezerAPI
+                                        .instantSearch(_query ?? '',
+                                            includeTracks: true, count: 100)
+                                        .then((InstantSearchResults s) =>
+                                            s.tracks ?? []),
                                     QueueSource(
                                         id: _query,
-                                        source: 'search',
+                                        source: 'track',
                                         text: 'Search'.i18n),
                                   ),
                                 ),
@@ -846,14 +849,16 @@ class _SearchScreenState extends State<SearchScreen> {
                         }),
                         ViewAllButton(
                           onTap: () async {
-                            InstantSearchResults trackResults =
-                                await deezerAPI.instantSearch(_query ?? '',
-                                    includeAlbums: true, count: 25);
                             if (context.mounted) {
                               Navigator.of(context).push(
                                 MaterialPageRoute(
                                   builder: (context) => AlbumListScreen(
-                                    trackResults.albums ?? [],
+                                    results.albums ?? [],
+                                    load: deezerAPI
+                                        .instantSearch(_query ?? '',
+                                            includeAlbums: true, count: 25)
+                                        .then((InstantSearchResults s) =>
+                                            s.albums ?? []),
                                   ),
                                 ),
                               );
@@ -870,9 +875,9 @@ class _SearchScreenState extends State<SearchScreen> {
                       artists = [
                         Padding(
                           padding: EdgeInsets.symmetric(
-                              vertical: 20,
                               horizontal:
-                                  MediaQuery.of(context).size.width * 0.05),
+                                  MediaQuery.of(context).size.width * 0.05,
+                              vertical: 20),
                           child: Text(
                             'Artists'.i18n,
                             textAlign: TextAlign.left,
@@ -880,37 +885,52 @@ class _SearchScreenState extends State<SearchScreen> {
                                 fontSize: 20.0, fontWeight: FontWeight.bold),
                           ),
                         ),
-                        Container(height: 4),
-                        Padding(
-                          padding: EdgeInsets.only(
-                              left: MediaQuery.of(context).size.width * 0.05),
-                          child: SingleChildScrollView(
-                            scrollDirection: Axis.horizontal,
-                            child: Row(
-                              children: List.generate(
-                                results.artists!.length,
-                                (int i) {
-                                  Artist a = results.artists![i];
-                                  return ArtistTile(
-                                    a,
-                                    onTap: () {
-                                      cache.addToSearchHistory(a);
-                                      deezerAPI.logSuccessfullSearchResult(a);
-                                      Navigator.of(context).push(
-                                          MaterialPageRoute(
-                                              builder: (context) =>
-                                                  ArtistDetails(a)));
-                                    },
-                                    onHold: () {
-                                      MenuSheet m = MenuSheet();
-                                      m.defaultArtistMenu(a, context: context);
-                                    },
-                                    size: MediaQuery.of(context).size.width / 4,
-                                  );
-                                },
-                              ),
+                        ...List.generate(3, (i) {
+                          if (results.artists!.length <= i) {
+                            return const SizedBox(
+                              height: 0,
+                              width: 0,
+                            );
+                          }
+                          Artist a = results.artists![i];
+                          return Padding(
+                            padding: EdgeInsets.symmetric(
+                              horizontal:
+                                  MediaQuery.of(context).size.width * 0.05,
                             ),
-                          ),
+                            child: ArtistHorizontalTile(
+                              a,
+                              padding: EdgeInsets.zero,
+                              onHold: () {
+                                MenuSheet m = MenuSheet();
+                                m.defaultArtistMenu(a, context: context);
+                              },
+                              onTap: () {
+                                cache.addToSearchHistory(a);
+                                deezerAPI.logSuccessfullSearchResult(a);
+                                Navigator.of(context).push(MaterialPageRoute(
+                                    builder: (context) => ArtistDetails(a)));
+                              },
+                            ),
+                          );
+                        }),
+                        ViewAllButton(
+                          onTap: () async {
+                            if (context.mounted) {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (context) => ArtistListScreen(
+                                    results.artists ?? [],
+                                    load: deezerAPI
+                                        .instantSearch(_query ?? '',
+                                            includeArtists: true, count: 25)
+                                        .then((InstantSearchResults s) =>
+                                            s.artists ?? []),
+                                  ),
+                                ),
+                              );
+                            }
+                          },
                         ),
                       ];
                     }
@@ -960,22 +980,22 @@ class _SearchScreenState extends State<SearchScreen> {
                             ),
                           );
                         }),
-                        ViewAllButton(
-                          onTap: () async {
-                            InstantSearchResults trackResults =
-                                await deezerAPI.instantSearch(_query ?? '',
-                                    includePlaylists: true, count: 25);
-                            if (context.mounted) {
+                        if ((results.playlists?.length ?? 0) >= 2)
+                          ViewAllButton(
+                            onTap: () {
                               Navigator.of(context).push(
                                 MaterialPageRoute(
-                                  builder: (context) => SearchResultPlaylists(
-                                    trackResults.playlists ?? [],
+                                  builder: (context) => PlaylistListScreen(
+                                    results.playlists ?? [],
+                                    load: deezerAPI
+                                        .instantSearch(_query ?? '',
+                                            includePlaylists: true, count: 100)
+                                        .then((s) => s.playlists ?? []),
                                   ),
                                 ),
                               );
-                            }
-                          },
-                        ),
+                            },
+                          ),
                       ];
                     }
 
@@ -1018,22 +1038,22 @@ class _SearchScreenState extends State<SearchScreen> {
                             ),
                           );
                         }),
-                        ViewAllButton(
-                          onTap: () async {
-                            InstantSearchResults trackResults =
-                                await deezerAPI.instantSearch(_query ?? '',
-                                    includePodcasts: true, count: 25);
-                            if (context.mounted) {
+                        if ((results.shows?.length ?? 0) >= 2)
+                          ViewAllButton(
+                            onTap: () {
                               Navigator.of(context).push(
                                 MaterialPageRoute(
                                   builder: (context) => ShowListScreen(
-                                    trackResults.shows ?? [],
+                                    results.shows ?? [],
+                                    load: deezerAPI
+                                        .instantSearch(_query ?? '',
+                                            includePodcasts: true, count: 100)
+                                        .then((s) => s.shows ?? []),
                                   ),
                                 ),
                               );
-                            }
-                          },
-                        ),
+                            },
+                          ),
                       ];
                     }
 
@@ -1099,22 +1119,23 @@ class _SearchScreenState extends State<SearchScreen> {
                             ),
                           );
                         }),
-                        ViewAllButton(
-                          onTap: () async {
-                            InstantSearchResults trackResults =
-                                await deezerAPI.instantSearch(_query ?? '',
-                                    includePodcastEpisodes: true, count: 25);
-                            if (context.mounted) {
+                        if ((results.episodes?.length ?? 0) >= 2)
+                          ViewAllButton(
+                            onTap: () {
                               Navigator.of(context).push(
                                 MaterialPageRoute(
                                   builder: (context) => EpisodeListScreen(
-                                    trackResults.episodes ?? [],
+                                    results.episodes ?? [],
+                                    load: deezerAPI
+                                        .instantSearch(_query ?? '',
+                                            includePodcastEpisodes: true,
+                                            count: 100)
+                                        .then((s) => s.episodes ?? []),
                                   ),
                                 ),
                               );
-                            }
-                          },
-                        )
+                            },
+                          )
                       ];
                     }
 
@@ -1428,6 +1449,12 @@ class _TrackListScreenState extends State<TrackListScreen> {
   void initState() {
     if (mounted && widget.load != null) {
       _parentLoader();
+    } else {
+      if (mounted) {
+        setState(() {
+          _tracks = widget.tracks;
+        });
+      }
     }
     super.initState();
   }
@@ -1459,127 +1486,359 @@ class _TrackListScreenState extends State<TrackListScreen> {
   }
 }
 
-//List all albums
-class AlbumListScreen extends StatelessWidget {
-  final List<Album> albums;
-  const AlbumListScreen(this.albums, {super.key});
+// list all artists
+class ArtistListScreen extends StatefulWidget {
+  final List<Artist> artists;
+  final Future<List<Artist>>? load;
+
+  const ArtistListScreen(this.artists, {this.load, super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: FreezerAppBar('Albums'.i18n),
-      body: ListView.builder(
-        itemCount: albums.length,
-        itemBuilder: (context, i) {
-          Album a = albums[i];
-          return AlbumTile(
-            a,
-            onTap: () {
-              Navigator.of(context).push(
-                  MaterialPageRoute(builder: (context) => AlbumDetails(a)));
-            },
-            onHold: () {
-              MenuSheet m = MenuSheet();
-              m.defaultAlbumMenu(a, context: context);
-            },
-          );
-        },
-      ),
-    );
-  }
+  _ArtistListScreenState createState() => _ArtistListScreenState();
 }
 
-class SearchResultPlaylists extends StatelessWidget {
-  final List<Playlist> playlists;
-  const SearchResultPlaylists(this.playlists, {super.key});
+class _ArtistListScreenState extends State<ArtistListScreen> {
+  bool _isLoading = false;
+  List<Artist> _artists = [];
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: FreezerAppBar('Playlists'.i18n),
-      body: ListView.builder(
-        itemCount: playlists.length,
-        itemBuilder: (context, i) {
-          Playlist p = playlists[i];
-          return PlaylistTile(
-            p,
-            onTap: () {
-              Navigator.of(context).push(
-                  MaterialPageRoute(builder: (context) => PlaylistDetails(p)));
-            },
-            onHold: () {
-              MenuSheet m = MenuSheet();
-              m.defaultPlaylistMenu(p, context: context);
-            },
-          );
-        },
-      ),
-    );
+  void _parentLoader() async {
+    if (mounted) {
+      setState(() {
+        _isLoading = true;
+      });
+    }
+
+    List<Artist> fetchedArtists = await widget.load!;
+
+    if (mounted) {
+      setState(() {
+        _artists = fetchedArtists;
+        _isLoading = false;
+      });
+    }
   }
-}
-
-class ShowListScreen extends StatelessWidget {
-  final List<Show> shows;
-  const ShowListScreen(this.shows, {super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: FreezerAppBar('Shows'.i18n),
-      body: ListView.builder(
-        itemCount: shows.length,
-        itemBuilder: (context, i) {
-          Show s = shows[i];
-          return ShowTile(
-            s,
-            onTap: () {
-              Navigator.of(context)
-                  .push(MaterialPageRoute(builder: (context) => ShowScreen(s)));
-            },
-          );
-        },
-      ),
-    );
+  void initState() {
+    if (mounted && widget.load != null) {
+      _parentLoader();
+    } else {
+      if (mounted) {
+        setState(() {
+          _artists = widget.artists;
+        });
+      }
+    }
+    super.initState();
   }
-}
-
-class EpisodeListScreen extends StatelessWidget {
-  final List<ShowEpisode> episodes;
-  const EpisodeListScreen(this.episodes, {super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-        appBar: FreezerAppBar('Episodes'.i18n),
-        body: ListView.builder(
-          itemCount: episodes.length,
-          itemBuilder: (context, i) {
-            ShowEpisode e = episodes[i];
-            return ShowEpisodeTile(
-              e,
-              trailing: IconButton(
-                icon: Icon(
-                  Icons.more_vert,
-                  semanticLabel: 'Options'.i18n,
-                ),
-                onPressed: () {
-                  MenuSheet m = MenuSheet();
-                  m.defaultShowEpisodeMenu(e.show!, e, context: context);
-                },
-              ),
-              onTap: () async {
-                //Load entire show, then play
-                Show show = await deezerAPI.show(e.show?.id ?? '');
-                await GetIt.I<AudioPlayerHandler>().playShowEpisode(
-                  show,
-                  show.episodes ?? [],
-                  index: show.episodes
-                          ?.indexWhere((ShowEpisode ep) => e.id == ep.id) ??
-                      0,
+    return _isLoading
+        ? SplashScreen()
+        : Scaffold(
+            appBar: FreezerAppBar('Artists'.i18n),
+            body: ListView.builder(
+              itemCount: _artists.length,
+              itemBuilder: (BuildContext context, int i) {
+                Artist a = _artists[i];
+                return ArtistHorizontalTile(
+                  a,
+                  onHold: () {
+                    MenuSheet m = MenuSheet();
+                    m.defaultArtistMenu(a, context: context);
+                  },
+                  onTap: () {
+                    cache.addToSearchHistory(a);
+                    deezerAPI.logSuccessfullSearchResult(a);
+                    Navigator.of(context).push(MaterialPageRoute(
+                        builder: (context) => ArtistDetails(a)));
+                  },
                 );
               },
-            );
-          },
-        ));
+            ),
+          );
+  }
+}
+
+//List all albums
+class AlbumListScreen extends StatefulWidget {
+  final List<Album> albums;
+  final Future<List<Album>>? load;
+
+  const AlbumListScreen(this.albums, {this.load, super.key});
+
+  @override
+  _AlbumListScreenState createState() => _AlbumListScreenState();
+}
+
+class _AlbumListScreenState extends State<AlbumListScreen> {
+  bool _isLoading = false;
+  List<Album> _albums = [];
+
+  void _parentLoader() async {
+    if (mounted) {
+      setState(() {
+        _isLoading = true;
+      });
+    }
+
+    List<Album> fetchedAlbums = await widget.load!;
+
+    if (mounted) {
+      setState(() {
+        _albums = fetchedAlbums;
+        _isLoading = false;
+      });
+    }
+  }
+
+  @override
+  void initState() {
+    if (mounted && widget.load != null) {
+      _parentLoader();
+    } else {
+      if (mounted) {
+        setState(() {
+          _albums = widget.albums;
+        });
+      }
+    }
+    super.initState();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return _isLoading
+        ? SplashScreen()
+        : Scaffold(
+            appBar: FreezerAppBar('Albums'.i18n),
+            body: ListView.builder(
+              itemCount: _albums.length,
+              itemBuilder: (BuildContext context, int i) {
+                Album a = _albums[i];
+                return AlbumTile(
+                  a,
+                  onTap: () {
+                    Navigator.of(context).push(MaterialPageRoute(
+                        builder: (context) => AlbumDetails(a)));
+                  },
+                  onHold: () {
+                    MenuSheet m = MenuSheet();
+                    m.defaultAlbumMenu(a, context: context);
+                  },
+                );
+              },
+            ),
+          );
+  }
+}
+
+class PlaylistListScreen extends StatefulWidget {
+  final List<Playlist> playlists;
+  final Future<List<Playlist>>? load;
+
+  const PlaylistListScreen(this.playlists, {this.load, super.key});
+
+  @override
+  _PlaylistListScreenState createState() => _PlaylistListScreenState();
+}
+
+class _PlaylistListScreenState extends State<PlaylistListScreen> {
+  bool _isLoading = false;
+  List<Playlist> _playlists = [];
+
+  void _parentLoader() async {
+    if (mounted) {
+      setState(() {
+        _isLoading = true;
+      });
+    }
+
+    List<Playlist> fetchedPlaylists = await widget.load!;
+
+    if (mounted) {
+      setState(() {
+        _playlists = fetchedPlaylists;
+        _isLoading = false;
+      });
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _playlists = widget.playlists;
+    if (widget.load != null) {
+      _parentLoader();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return _isLoading
+        ? SplashScreen()
+        : Scaffold(
+            appBar: FreezerAppBar('Playlists'.i18n),
+            body: ListView.builder(
+              itemCount: _playlists.length,
+              itemBuilder: (context, i) {
+                Playlist p = _playlists[i];
+                return PlaylistTile(
+                  p,
+                  onTap: () {
+                    Navigator.of(context).push(MaterialPageRoute(
+                        builder: (context) => PlaylistDetails(p)));
+                  },
+                  onHold: () {
+                    MenuSheet m = MenuSheet();
+                    m.defaultPlaylistMenu(p, context: context);
+                  },
+                );
+              },
+            ),
+          );
+  }
+}
+
+class ShowListScreen extends StatefulWidget {
+  final List<Show> shows;
+  final Future<List<Show>>? load;
+
+  const ShowListScreen(this.shows, {this.load, super.key});
+
+  @override
+  _ShowListScreenState createState() => _ShowListScreenState();
+}
+
+class _ShowListScreenState extends State<ShowListScreen> {
+  bool _isLoading = false;
+  List<Show> _shows = [];
+
+  void _parentLoader() async {
+    if (mounted) {
+      setState(() {
+        _isLoading = true;
+      });
+    }
+
+    List<Show> fetchedShows = await widget.load!;
+
+    if (mounted) {
+      setState(() {
+        _shows = fetchedShows;
+        _isLoading = false;
+      });
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _shows = widget.shows;
+    if (widget.load != null) {
+      _parentLoader();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return _isLoading
+        ? SplashScreen()
+        : Scaffold(
+            appBar: FreezerAppBar('Shows'.i18n),
+            body: ListView.builder(
+              itemCount: _shows.length,
+              itemBuilder: (context, i) {
+                Show s = _shows[i];
+                return ShowTile(
+                  s,
+                  onTap: () {
+                    Navigator.of(context).push(
+                        MaterialPageRoute(builder: (context) => ShowScreen(s)));
+                  },
+                );
+              },
+            ),
+          );
+  }
+}
+
+class EpisodeListScreen extends StatefulWidget {
+  final List<ShowEpisode> episodes;
+  final Future<List<ShowEpisode>>? load;
+
+  const EpisodeListScreen(this.episodes, {this.load, super.key});
+
+  @override
+  _EpisodeListScreenState createState() => _EpisodeListScreenState();
+}
+
+class _EpisodeListScreenState extends State<EpisodeListScreen> {
+  bool _isLoading = false;
+  List<ShowEpisode> _episodes = [];
+
+  void _parentLoader() async {
+    if (mounted) {
+      setState(() {
+        _isLoading = true;
+      });
+    }
+
+    List<ShowEpisode> fetchedEpisodes = await widget.load!;
+
+    if (mounted) {
+      setState(() {
+        _episodes = fetchedEpisodes;
+        _isLoading = false;
+      });
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _episodes = widget.episodes;
+    if (widget.load != null) {
+      _parentLoader();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return _isLoading
+        ? SplashScreen()
+        : Scaffold(
+            appBar: FreezerAppBar('Episodes'.i18n),
+            body: ListView.builder(
+              itemCount: _episodes.length,
+              itemBuilder: (context, i) {
+                ShowEpisode e = _episodes[i];
+                return ShowEpisodeTile(
+                  e,
+                  trailing: IconButton(
+                    icon: Icon(
+                      Icons.more_vert,
+                      semanticLabel: 'Options'.i18n,
+                    ),
+                    onPressed: () {
+                      MenuSheet m = MenuSheet();
+                      m.defaultShowEpisodeMenu(e.show!, e, context: context);
+                    },
+                  ),
+                  onTap: () async {
+                    //Load entire show, then play
+                    Show show = await deezerAPI.show(e.show?.id ?? '');
+                    await GetIt.I<AudioPlayerHandler>().playShowEpisode(
+                      show,
+                      show.episodes ?? [],
+                      index: show.episodes
+                              ?.indexWhere((ShowEpisode ep) => e.id == ep.id) ??
+                          0,
+                    );
+                  },
+                );
+              },
+            ));
   }
 }

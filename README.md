@@ -48,12 +48,12 @@ Get Alchemy running: Follow [these instructions](./HOWTO.md) to compile it yours
 
 *   Moving gateway light API calls to the mobile gateway API  
 ![](https://geps.dev/progress/80) Login (missing error handling)  
-![](https://geps.dev/progress/95) Artists (partial discography)  
+![](https://geps.dev/progress/100) Artists  
 ![](https://geps.dev/progress/100) Albums  
 ![](https://geps.dev/progress/100) Playlists  
 ![](https://geps.dev/progress/100) Shows  
 ![](https://geps.dev/progress/95) Tracks (missing legacy lyrics)  
-![](https://geps.dev/progress/90) Search ("see more" buttons, episodes "on tap")  
+![](https://geps.dev/progress/100) Search  
 ![](https://geps.dev/progress/100) User  
 ![](https://geps.dev/progress/100) Miscellaneous  
 
@@ -67,6 +67,7 @@ Get Alchemy running: Follow [these instructions](./HOWTO.md) to compile it yours
 
 ## :lady_beetle: Bugs
 
+*   Artists discography may appear incomplete in specific scenarios;
 *   There is an awkward display bug in details screen and with the player bar in landscape mode due to the use of SafeAreas and ListTiles;
 *   The handling of login errors is incomplete;
 *   Downloads that are stopped and restarted will not be saved in the database and therefore not be available;
