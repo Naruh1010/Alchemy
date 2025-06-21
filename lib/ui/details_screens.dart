@@ -2747,21 +2747,16 @@ class _DiscographyScreenState extends State<DiscographyScreen> {
   late Artist artist;
   bool _isLoading = false;
   bool _error = false;
-  final List<ScrollController> _controllers = [
-    ScrollController(),
-    ScrollController(),
-    ScrollController()
-  ];
+  ScrollController _scrollController = ScrollController();
 
   Future _load() async {
-    if (!(artist.hasNextPage ?? true) || _isLoading) return;
     setState(() => _isLoading = true);
 
     //Fetch data
     List<Album> data;
     try {
       data = await deezerAPI.discographyPage(artist.id ?? '',
-          start: artist.albums.length);
+          start: artist.albums.length, nb: 100);
     } catch (e) {
       setState(() {
         _error = true;
@@ -2774,22 +2769,10 @@ class _DiscographyScreenState extends State<DiscographyScreen> {
     if (mounted) {
       setState(() {
         artist.albums.addAll(data);
-        artist.hasNextPage = false;
         _isLoading = false;
       });
     }
   }
-
-  //Get album tile
-  Widget _tile(Album a) => AlbumTile(
-        a,
-        onTap: () => Navigator.of(context)
-            .push(MaterialPageRoute(builder: (context) => AlbumDetails(a))),
-        onHold: () {
-          MenuSheet m = MenuSheet();
-          m.defaultAlbumMenu(a, context: context);
-        },
-      );
 
   Widget get _isLoadingWidget {
     if (_isLoading) {
@@ -2817,12 +2800,12 @@ class _DiscographyScreenState extends State<DiscographyScreen> {
     _load();
 
     //Lazy loading scroll
-    for (var c in _controllers) {
-      c.addListener(() {
-        double off = c.position.maxScrollExtent * 0.85;
-        if (c.position.pixels > off) _load();
-      });
-    }
+    _scrollController.addListener(() {
+      double off = _scrollController.position.maxScrollExtent * 0.90;
+      if (_scrollController.position.pixels > off) {
+        _load();
+      }
+    });
 
     super.initState();
   }
@@ -2838,82 +2821,135 @@ class _DiscographyScreenState extends State<DiscographyScreen> {
               //Load data if empty tabs
               int nSingles =
                   artist.albums.where((a) => a.type == AlbumType.SINGLE).length;
-              int nFeatures = artist.albums
-                  .where((a) => a.type == AlbumType.FEATURED)
-                  .length;
-              if ((nSingles == 0 || nFeatures == 0) && !_isLoading) _load();
+              int nEp =
+                  artist.albums.where((a) => a.type == AlbumType.EP).length;
+              int nAlbums =
+                  artist.albums.where((a) => a.type == AlbumType.ALBUM).length;
+              if ((nSingles == 0 || nEp == 0 || nAlbums == 0) && !_isLoading) {
+                _load();
+              }
             }
           });
+
+          List<Album> albums =
+              artist.albums.where((a) => a.type == AlbumType.ALBUM).toList();
+          List<Widget> albumsSection = [];
+          if (albums.isNotEmpty) {
+            albumsSection = [
+              Padding(
+                padding: EdgeInsets.symmetric(
+                    horizontal: MediaQuery.of(context).size.width * 0.05,
+                    vertical: 20.0),
+                child: Text(
+                  'Albums'.i18n,
+                  textAlign: TextAlign.left,
+                  style: const TextStyle(
+                      fontSize: 20.0, fontWeight: FontWeight.bold),
+                ),
+              ),
+              ...List.generate(albums.length, (i) {
+                return Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: MediaQuery.of(context).size.width * 0.05,
+                  ),
+                  child: AlbumTile(
+                    albums[i],
+                    padding: EdgeInsets.zero,
+                    onTap: () => Navigator.of(context).push(MaterialPageRoute(
+                        builder: (context) => AlbumDetails(albums[i]))),
+                    onHold: () {
+                      MenuSheet m = MenuSheet();
+                      m.defaultAlbumMenu(albums[i], context: context);
+                    },
+                  ),
+                );
+              }),
+            ];
+          }
+
+          List<Album> singles =
+              artist.albums.where((a) => a.type == AlbumType.SINGLE).toList();
+          List<Widget> singlesSection = [];
+          if (singles.isNotEmpty) {
+            singlesSection = [
+              Padding(
+                padding: EdgeInsets.symmetric(
+                    horizontal: MediaQuery.of(context).size.width * 0.05,
+                    vertical: 20.0),
+                child: Text(
+                  'Singles'.i18n,
+                  textAlign: TextAlign.left,
+                  style: const TextStyle(
+                      fontSize: 20.0, fontWeight: FontWeight.bold),
+                ),
+              ),
+              ...List.generate(singles.length, (i) {
+                return Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: MediaQuery.of(context).size.width * 0.05,
+                  ),
+                  child: AlbumTile(
+                    singles[i],
+                    padding: EdgeInsets.zero,
+                    onTap: () => Navigator.of(context).push(MaterialPageRoute(
+                        builder: (context) => AlbumDetails(singles[i]))),
+                    onHold: () {
+                      MenuSheet m = MenuSheet();
+                      m.defaultAlbumMenu(singles[i], context: context);
+                    },
+                  ),
+                );
+              }),
+            ];
+          }
+
+          List<Album> eps =
+              artist.albums.where((a) => a.type == AlbumType.EP).toList();
+          List<Widget> epsSection = [];
+          if (eps.isNotEmpty) {
+            epsSection = [
+              Padding(
+                padding: EdgeInsets.symmetric(
+                    horizontal: MediaQuery.of(context).size.width * 0.05,
+                    vertical: 20.0),
+                child: Text(
+                  'EPs'.i18n,
+                  textAlign: TextAlign.left,
+                  style: const TextStyle(
+                      fontSize: 20.0, fontWeight: FontWeight.bold),
+                ),
+              ),
+              ...List.generate(eps.length, (i) {
+                return Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: MediaQuery.of(context).size.width * 0.05,
+                  ),
+                  child: AlbumTile(
+                    eps[i],
+                    padding: EdgeInsets.zero,
+                    onTap: () => Navigator.of(context).push(MaterialPageRoute(
+                        builder: (context) => AlbumDetails(eps[i]))),
+                    onHold: () {
+                      MenuSheet m = MenuSheet();
+                      m.defaultAlbumMenu(eps[i], context: context);
+                    },
+                  ),
+                );
+              }),
+            ];
+          }
 
           return Scaffold(
             appBar: FreezerAppBar(
               'Discography'.i18n,
-              bottom: TabBar(
-                tabs: [
-                  Tab(
-                      icon: Icon(
-                    Icons.album,
-                    semanticLabel: 'Albums'.i18n,
-                  )),
-                  Tab(
-                      icon: Icon(Icons.audiotrack,
-                          semanticLabel: 'Singles'.i18n)),
-                  Tab(
-                      icon: Icon(
-                    Icons.recent_actors,
-                    semanticLabel: 'Featured'.i18n,
-                  ))
-                ],
-              ),
-              height: 100.0,
             ),
-            body: TabBarView(
+            body: ListView(
               children: [
                 //Albums
-                ListView.builder(
-                  controller: _controllers[0],
-                  itemCount: artist.albums.length + 1,
-                  itemBuilder: (context, i) {
-                    if (i == artist.albums.length) return _isLoadingWidget;
-                    if (artist.albums[i].type == AlbumType.ALBUM) {
-                      return _tile(artist.albums[i]);
-                    }
-                    return const SizedBox(
-                      width: 0,
-                      height: 0,
-                    );
-                  },
-                ),
-                //Singles
-                ListView.builder(
-                  controller: _controllers[1],
-                  itemCount: artist.albums.length + 1,
-                  itemBuilder: (context, i) {
-                    if (i == artist.albums.length) return _isLoadingWidget;
-                    if (artist.albums[i].type == AlbumType.SINGLE) {
-                      return _tile(artist.albums[i]);
-                    }
-                    return const SizedBox(
-                      width: 0,
-                      height: 0,
-                    );
-                  },
-                ),
-                //Featured
-                ListView.builder(
-                  controller: _controllers[2],
-                  itemCount: artist.albums.length + 1,
-                  itemBuilder: (context, i) {
-                    if (i == artist.albums.length) return _isLoadingWidget;
-                    if (artist.albums[i].type == AlbumType.FEATURED) {
-                      return _tile(artist.albums[i]);
-                    }
-                    return const SizedBox(
-                      width: 0,
-                      height: 0,
-                    );
-                  },
-                ),
+                ...albumsSection,
+                ...singlesSection,
+                ...epsSection,
+                _isLoadingWidget,
               ],
             ),
           );

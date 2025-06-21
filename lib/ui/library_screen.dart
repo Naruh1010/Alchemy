@@ -112,7 +112,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
             topTracks ?? onlineFavPlaylist?.tracks ?? favPlaylist?.tracks ?? [];
         topPlaylist = topTracks != null
             ? Playlist(
-                id: '0',
+                id: '1',
                 title: 'Your top tracks',
                 image: ImageDetails.fromJson(cache.userPicture),
                 duration: Duration.zero,

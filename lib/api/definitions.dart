@@ -124,7 +124,7 @@ class Track {
         duration: mi.duration ?? Duration.zero,
         playbackDetails: playbackDetails,
         lyrics: LyricsFull.fromJson(
-            jsonDecode(((mi.extras ?? {})['lyrics']) ?? '{}')),
+            jsonDecode(((mi.extras ?? {})['lyrics']) ?? '{}') ?? {}),
         fallback: fallback,
         playbackDetailsFallback: playbackDetailsFallback);
   }
@@ -235,7 +235,12 @@ class Track {
   Map<String, dynamic> toJson() => _$TrackToJson(this);
 }
 
-enum AlbumType { ALBUM, SINGLE, FEATURED }
+enum AlbumType {
+  ALBUM,
+  SINGLE,
+  FEATURED,
+  EP,
+}
 
 @JsonSerializable()
 class Album {
@@ -309,9 +314,18 @@ class Album {
   factory Album.fromPipeJson(Map<dynamic, dynamic> json,
       {Map<dynamic, dynamic> songsJson = const {}, bool? library}) {
     AlbumType type = AlbumType.ALBUM;
-    if (json['TYPE'] != null && json['TYPE'].toString() == '0') {
-      type = AlbumType.SINGLE;
+
+    switch (json['type']) {
+      case 'ALBUM':
+        type = AlbumType.ALBUM;
+      case 'EP':
+        type = AlbumType.EP;
+      case 'SINGLES':
+        type = AlbumType.SINGLE;
+      default:
+        type = AlbumType.ALBUM;
     }
+
     List<Artist> artists = (json['contributors']?['edges'] ?? [])
         .map<Artist>((dynamic art) => Artist.fromPipeJson(art['node'] ?? {}))
         .toList();

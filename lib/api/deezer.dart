@@ -1658,16 +1658,48 @@ class DeezerAPI {
   //Get part of discography
   Future<List<Album>> discographyPage(String artistId,
       {int start = 0, int nb = 50}) async {
-    Map data = await callGwLightApi('album.getDiscography', params: {
-      'art_id': int.parse(artistId),
-      'discography_mode': 'all',
-      'nb': nb,
-      'start': start,
-      'nb_songs': 30
+    Map albumRawIds = await callPipeApi(params: {
+      'operationName': 'GetArtistRawDiscography',
+      'variables': {
+        'artistId': artistId,
+        'albumTypes': ['ALBUM', 'EP', 'SINGLES'],
+        'mode': 'OFFICIAL',
+        'roles': ['MAIN'],
+        'order': 'NONE',
+        'onlyCanonical': true
+      },
+      'query':
+          'query GetArtistRawDiscography(\$artistId: String!, \$albumTypes: [AlbumTypeInput!]!, \$mode: DiscographyMode!, \$roles: [ContributorRoles!]!, \$order: AlbumOrder!, \$onlyCanonical: Boolean!) { artist(artistId: \$artistId) { __typename id rawAlbums(types: \$albumTypes, mode: \$mode, order: \$order, roles: \$roles, onlyCanonical: \$onlyCanonical) { __typename albumId } } }'
     });
 
-    return data['results']['data']
-        .map<Album>((a) => Album.fromPrivateJson(a))
+    List<String> albumIds = List.generate(
+        albumRawIds['data']?['artist']?['rawAlbums'].length ?? 0,
+        (int i) =>
+            albumRawIds['data']?['artist']?['rawAlbums']?[i]?['albumId']);
+
+    if (start >= albumIds.length) {
+      albumIds = [];
+    } else if (nb + start > albumIds.length) {
+      albumIds = albumIds.skip(start).take(albumIds.length - start).toList();
+    } else {
+      albumIds = albumIds.skip(start).take(nb).toList();
+    }
+
+    if (albumIds.isEmpty) {
+      return [];
+    }
+
+    Map rawAlbums = await callPipeApi(params: {
+      'operationName': 'GetAlbumsCollectionByIdsWithSubtypes',
+      'variables': {
+        'ids': albumIds,
+      },
+      'query':
+          'query GetAlbumsCollectionByIdsWithSubtypes(\$ids: [String!]!) { albumsByIds(ids: \$ids) { __typename ...AlbumCollectionFragment subtypes { __typename ...AlbumSubtypeFragment } cover { __typename ...PictureMD5Fragment } contributors(first: 1) { __typename edges { __typename roles node { __typename ...ArtistMinimalFragment } } } } }  fragment AlbumCollectionFragment on Album { __typename id displayTitle type albumReleaseDate: releaseDate albumIsExplicit: isExplicit albumIsFavorite: isFavorite tracksCount rank }  fragment AlbumSubtypeFragment on AlbumSubtype { __typename isStudio isLive isCompilation isKaraoke }  fragment PictureMD5Fragment on Picture { __typename id md5 explicitStatus }  fragment ArtistMinimalFragment on Artist { __typename id name }'
+    });
+
+    return rawAlbums['data']['albumsByIds']
+        .map<Album>((a) => Album.fromPipeJson(a))
         .toList();
   }
 

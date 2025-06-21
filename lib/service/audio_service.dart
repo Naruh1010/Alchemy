@@ -680,6 +680,7 @@ class AudioPlayerHandler extends BaseAudioHandler
   Future<void> _addToHistory(MediaItem item) async {
     // Id = '0' is a blindtestpreview track which should not be logged to history
     if (!_player.playing || item.id == '0') return;
+    if (item.extras?['showUrl'] != null) return;
 
     // Scrobble to LastFM
     if (_scrobblenautReady && !(_loggedTrackId == item.id)) {

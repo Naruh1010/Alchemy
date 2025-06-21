@@ -757,16 +757,17 @@ class _SearchScreenState extends State<SearchScreen> {
                             child: TrackTile(
                               t,
                               padding: EdgeInsets.zero,
-                              onTap: () {
+                              onTap: () async {
                                 cache.addToSearchHistory(t);
                                 deezerAPI.logSuccessfullSearchResult(t);
+                                Track track = await deezerAPI.track(t.id ?? '');
                                 GetIt.I<AudioPlayerHandler>().playFromTrackList(
-                                    results.tracks!,
-                                    t.id ?? '',
+                                    [track],
+                                    track.id ?? '',
                                     QueueSource(
                                         text: 'Search'.i18n,
-                                        id: _query,
-                                        source: 'search'));
+                                        id: track.id,
+                                        source: 'track'));
                               },
                               onHold: () {
                                 MenuSheet m = MenuSheet();
@@ -779,7 +780,7 @@ class _SearchScreenState extends State<SearchScreen> {
                           onTap: () async {
                             InstantSearchResults trackResults =
                                 await deezerAPI.instantSearch(_query ?? '',
-                                    includeTracks: true, count: 25);
+                                    includeTracks: true, count: 100);
                             if (context.mounted) {
                               Navigator.of(context).push(
                                 MaterialPageRoute(
@@ -1084,12 +1085,14 @@ class _SearchScreenState extends State<SearchScreen> {
                                 deezerAPI.logSuccessfullSearchResult(e);
                                 Show show =
                                     await deezerAPI.show(e.show?.id ?? '');
-                                await GetIt.I<AudioPlayerHandler>()
-                                    .playShowEpisode(
+                                ShowEpisode ep =
+                                    await deezerAPI.showEpisode(e.id ?? '');
+                                GetIt.I<AudioPlayerHandler>().playShowEpisode(
                                   show,
                                   show.episodes ?? [],
                                   index: show.episodes?.indexWhere(
-                                          (ShowEpisode ep) => e.id == ep.id) ??
+                                          (ShowEpisode ep_) =>
+                                              ep.id == ep_.id) ??
                                       0,
                                 );
                               },
