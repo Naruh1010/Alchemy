@@ -12,7 +12,6 @@ import 'package:get_it/get_it.dart';
 import 'package:alchemy/fonts/alchemy_icons.dart';
 import 'package:alchemy/main.dart';
 import 'package:figma_squircle/figma_squircle.dart';
-import 'package:logging/logging.dart';
 
 import '../api/cache.dart';
 import '../api/deezer.dart';
@@ -789,7 +788,7 @@ class _SearchScreenState extends State<SearchScreen> {
                                             includeTracks: true, count: 100)
                                         .then((InstantSearchResults s) =>
                                             s.tracks ?? []),
-                                    QueueSource(
+                                    queueSource: QueueSource(
                                         id: _query,
                                         source: 'track',
                                         text: 'Search'.i18n),
@@ -1103,13 +1102,13 @@ class _SearchScreenState extends State<SearchScreen> {
                               onTap: () async {
                                 //Load entire show, then play
                                 deezerAPI.logSuccessfullSearchResult(e);
-                                Show show =
-                                    await deezerAPI.show(e.show?.id ?? '');
                                 ShowEpisode ep =
                                     await deezerAPI.showEpisode(e.id ?? '');
+                                Show? show = await deezerAPI
+                                    .show(ep.show?.id ?? e.show?.id ?? '');
                                 GetIt.I<AudioPlayerHandler>().playShowEpisode(
                                   show,
-                                  show.episodes ?? [],
+                                  show.episodes ?? [ep],
                                   index: show.episodes?.indexWhere(
                                           (ShowEpisode ep_) =>
                                               ep.id == ep_.id) ??
@@ -1414,11 +1413,11 @@ class SearchBrowseCard extends StatelessWidget {
 
 //List all tracks
 class TrackListScreen extends StatefulWidget {
-  final QueueSource queueSource;
+  final QueueSource? queueSource;
   final List<Track> tracks;
   final Future<List<Track>>? load;
 
-  const TrackListScreen(this.tracks, this.queueSource, {this.load, super.key});
+  const TrackListScreen(this.tracks, {this.queueSource, this.load, super.key});
 
   @override
   _TrackListScreenState createState() => _TrackListScreenState();
@@ -1473,7 +1472,13 @@ class _TrackListScreenState extends State<TrackListScreen> {
                   t,
                   onTap: () {
                     GetIt.I<AudioPlayerHandler>().playFromTrackList(
-                        _tracks, t.id ?? '', widget.queueSource);
+                        _tracks,
+                        t.id ?? '',
+                        widget.queueSource ??
+                            QueueSource(
+                                id: t.id ?? '0',
+                                text: 'Search',
+                                source: 'track'));
                   },
                   onHold: () {
                     MenuSheet m = MenuSheet();

@@ -95,6 +95,7 @@ const _$AlbumTypeEnumMap = {
   AlbumType.ALBUM: 'ALBUM',
   AlbumType.SINGLE: 'SINGLE',
   AlbumType.FEATURED: 'FEATURED',
+  AlbumType.EP: 'EP',
 };
 
 ArtistHighlight _$ArtistHighlightFromJson(Map<String, dynamic> json) =>

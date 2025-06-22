@@ -1507,7 +1507,7 @@ class _ArtistDetailsState extends State<ArtistDetails> {
                                         MaterialPageRoute(
                                           builder: (context) => TrackListScreen(
                                             artist.topTracks,
-                                            QueueSource(
+                                            queueSource: QueueSource(
                                                 id: artist.id,
                                                 text: 'Top'.i18n +
                                                     '${artist.name}',
@@ -2263,7 +2263,7 @@ class _ArtistDetailsState extends State<ArtistDetails> {
                                 MaterialPageRoute(
                                   builder: (context) => TrackListScreen(
                                     artist.topTracks,
-                                    QueueSource(
+                                    queueSource: QueueSource(
                                         id: artist.id,
                                         text: 'Top'.i18n + '${artist.name}',
                                         source: 'topTracks'),
