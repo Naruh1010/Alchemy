@@ -264,6 +264,36 @@ Map<String, dynamic> _$LogoDetailsToJson(LogoDetails instance) =>
       'imageHash': instance.imageHash,
     };
 
+Lyrics _$LyricsFromJson(Map<String, dynamic> json) => Lyrics(
+      id: json['id'] as String?,
+      writers: json['writers'] as String?,
+      syncedLyrics: (json['syncedLyrics'] as List<dynamic>?)
+          ?.map((e) => SynchronizedLyric.fromJson(e as Map<String, dynamic>))
+          .toList(),
+      unsyncedLyrics: json['unsyncedLyrics'] as String?,
+      errorMessage: json['errorMessage'] as String?,
+      isExplicit: json['isExplicit'] as bool?,
+      copyright: json['copyright'] as String?,
+      provider: $enumDecodeNullable(_$LyricsProviderEnumMap, json['provider']),
+    );
+
+Map<String, dynamic> _$LyricsToJson(Lyrics instance) => <String, dynamic>{
+      'id': instance.id,
+      'writers': instance.writers,
+      'syncedLyrics': instance.syncedLyrics,
+      'errorMessage': instance.errorMessage,
+      'unsyncedLyrics': instance.unsyncedLyrics,
+      'isExplicit': instance.isExplicit,
+      'copyright': instance.copyright,
+      'provider': _$LyricsProviderEnumMap[instance.provider],
+    };
+
+const _$LyricsProviderEnumMap = {
+  LyricsProvider.DEEZER: 'DEEZER',
+  LyricsProvider.LRCLIB: 'LRCLIB',
+  LyricsProvider.LYRICFIND: 'LYRICFIND',
+};
+
 LyricsClassic _$LyricsClassicFromJson(Map<String, dynamic> json) =>
     LyricsClassic(
       id: json['id'] as String?,
@@ -290,12 +320,6 @@ Map<String, dynamic> _$LyricsClassicToJson(LyricsClassic instance) =>
       'copyright': instance.copyright,
       'provider': _$LyricsProviderEnumMap[instance.provider],
     };
-
-const _$LyricsProviderEnumMap = {
-  LyricsProvider.DEEZER: 'DEEZER',
-  LyricsProvider.LRCLIB: 'LRCLIB',
-  LyricsProvider.LYRICFIND: 'LYRICFIND',
-};
 
 LyricsFull _$LyricsFullFromJson(Map<String, dynamic> json) => LyricsFull(
       id: json['id'] as String?,

@@ -52,7 +52,7 @@ Get Alchemy running: Follow [these instructions](./HOWTO.md) to compile it yours
 ![](https://geps.dev/progress/100) Albums  
 ![](https://geps.dev/progress/100) Playlists  
 ![](https://geps.dev/progress/100) Shows  
-![](https://geps.dev/progress/95) Tracks (missing legacy lyrics)  
+![](https://geps.dev/progress/100) Tracks  
 ![](https://geps.dev/progress/100) Search  
 ![](https://geps.dev/progress/100) User  
 ![](https://geps.dev/progress/100) Miscellaneous  
@@ -62,8 +62,7 @@ Get Alchemy running: Follow [these instructions](./HOWTO.md) to compile it yours
 *   Create notification settings;
 *   Remove the See All / View More button when it is not required;
 *   Implement a profile editing screen;
-*   Prefetch lyrics for tracks in the queue;
-*   Add lyrics to the downloaded tracks.
+*   Prefetch lyrics for tracks in the queue.
 
 ## :lady_beetle: Bugs
 

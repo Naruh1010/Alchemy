@@ -981,6 +981,7 @@ class InstantSearchResults {
   }
 }
 
+@JsonSerializable()
 class Lyrics {
   String? id;
   String? writers;

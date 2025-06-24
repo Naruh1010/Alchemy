@@ -17,7 +17,6 @@ import 'package:alchemy/api/download.dart';
 import '../api/definitions.dart';
 import '../api/spotify.dart';
 import '../settings.dart';
-import '../ui/home_screen.dart';
 
 DeezerAPI deezerAPI = DeezerAPI();
 
@@ -65,9 +64,6 @@ class DeezerAPI {
   Future? _authorizing;
 
   Future testFunction(BuildContext context) async {
-    Navigator.of(context)
-        .push(MaterialPageRoute(builder: (context) => GamePageScreen()));
-
 /*    ImagePicker picker = ImagePicker();
     XFile? imageFile = await picker.pickImage(source: ImageSource.gallery);
     if (imageFile == null) return;
@@ -1230,8 +1226,7 @@ class DeezerAPI {
 
   //Get lyrics by track id from legacy GW api
   Future<Lyrics> lyricsLegacy(String trackId) async {
-    Map data =
-        await callGwLightApi('song.getLyrics', params: {'sng_id': trackId});
+    Map data = await callGwApi('song.getLyrics', params: {'sng_id': trackId});
     if (data['error'] != null && data['error'].length > 0) {
       return Lyrics.error(data['error']['DATA_ERROR']);
     }

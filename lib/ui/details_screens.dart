@@ -4783,9 +4783,9 @@ class _ShowScreenState extends State<ShowScreen> {
     setState(() => _isLoadingTracks = true);
     int pos = _episodes.length;
     //Get another page of tracks
-    Show _show;
+    Show tmpShow;
     try {
-      _show = await deezerAPI.show(show.id ?? '', page: (pos / 1000).round());
+      tmpShow = await deezerAPI.show(show.id ?? '', page: (pos / 1000).round());
     } catch (e) {
       if (mounted) {
         setState(() {
@@ -4798,7 +4798,7 @@ class _ShowScreenState extends State<ShowScreen> {
     }
 
     setState(() {
-      _episodes.addAll(_show.episodes ?? []);
+      _episodes.addAll(tmpShow.episodes ?? []);
       _isLoadingTracks = false;
     });
   }

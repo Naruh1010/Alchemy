@@ -463,6 +463,7 @@ class _SearchScreenState extends State<SearchScreen> {
               //History
               if (!_showCards &&
                   _recentlySearched.isNotEmpty &&
+                  _historyDisplayLength > 0 &&
                   ((_query ?? '').length < 2 &&
                       ((_searchResults?.empty ?? true) || _query == ''))) ...[
                 ListTile(

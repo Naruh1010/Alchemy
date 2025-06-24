@@ -59,13 +59,13 @@ class DownloadManager {
       b.execute('''CREATE TABLE Albums (
         id TEXT PRIMARY KEY, title TEXT, artists TEXT, tracks TEXT, image TEXT, fans INTEGER, offline INTEGER, library INTEGER, type INTEGER, releaseDate TEXT)''');
       b.execute('''CREATE TABLE Artists (
-        id TEXT PRIMARY KEY, name TEXT, albums TEXT, topTracks TEXT, picture TEXT, fans INTEGER, hasNextPage INTEGER, offline INTEGER, library INTEGER, radio INTEGER)''');
+        id TEXT PRIMARY KEY, name TEXT, albums TEXT, topTracks TEXT, image TEXT, fans INTEGER, hasNextPage INTEGER, offline INTEGER, library INTEGER, radio INTEGER)''');
       b.execute('''CREATE TABLE Playlists (
         id TEXT PRIMARY KEY, title TEXT, tracks TEXT, image TEXT, duration INTEGER, userId TEXT, userName TEXT, fans INTEGER, library INTEGER, description TEXT)''');
       b.execute('''CREATE TABLE Shows (
         id TEXT PRIMARY KEY, name TEXT, authors TEXT, description TEXT, fans INTEGER, isExplicit INTEGER, isLibrary INTEGER, offline INTEGER, image TEXT)''');
       b.execute('''CREATE TABLE Episodes (
-        id TEXT PRIMARY KEY, title TEXT, description TEXT, url TEXT, duration INTEGER, publishedDate TEXT, episodeCover TEXT, isExplicit INTEGER, offline INTEGER, showId TEXT)''');
+        id TEXT PRIMARY KEY, title TEXT, description TEXT, url TEXT, duration INTEGER, publishedDate TEXT, image TEXT, isExplicit INTEGER, offline INTEGER, showId TEXT)''');
       await b.commit();
     });
 
@@ -277,6 +277,20 @@ class DownloadManager {
     //Fetch track if missing meta
     if (track.artists == null || track.artists!.isEmpty) {
       track = await deezerAPI.track(track.id!);
+    }
+
+    //Fetch lyrics
+    try {
+      LyricsFull lyrics = await deezerAPI.lyrics(track);
+      if (lyrics.errorMessage == null) {
+        track.lyrics = lyrics;
+      } else {
+        Logger.root.info(
+            'Failed to load lyrics for track ${track.id} : ${lyrics.errorMessage}');
+      }
+    } catch (e) {
+      Logger.root.info(
+          'An error occured while fetching lyrics for track ${track.id} : $e');
     }
 
     //Get path
@@ -740,7 +754,9 @@ class DownloadManager {
 
       //Remove file
       try {
-        File(p.join(offlinePath!, t.id)).delete();
+        if (await File(p.join(offlinePath!, t.id)).exists()) {
+          File(p.join(offlinePath!, t.id)).delete();
+        }
       } catch (e) {
         Logger.root.severe('Error deleting offline track: ${t.id}', e);
       }
