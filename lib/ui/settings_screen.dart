@@ -985,7 +985,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ]),
           ),
           ListTile(
-              title: Text('Download .LRC lyrics'.i18n),
+              title: Text('Save lyrics'.i18n),
               trailing: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.center,

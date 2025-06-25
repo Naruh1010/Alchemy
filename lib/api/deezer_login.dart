@@ -40,7 +40,9 @@ class DeezerLogin {
       return http.Response('', 200);
     });
 
-    String? token = jsonDecode(tokenResponse.body)['results']['TOKEN'];
+    String? token =
+        jsonDecode(tokenResponse.body.isNotEmpty ? tokenResponse.body : '{}')?[
+            'results']?['TOKEN'];
 
     if (token == null) return null;
 

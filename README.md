@@ -44,21 +44,9 @@ Get Alchemy running: Follow [these instructions](./HOWTO.md) to compile it yours
 *   Lyrics provided by [LRCLIB](https://github.com/tranxuanthang/lrclib) by @tranxuanthang;
 *   Design inspired by [Mallari Kishor's Spotify Redesign](https://www.behance.net/gallery/194018249/Spotify-App-Redesign).
 
-## :running: Ongoing Development
-
-*   Moving gateway light API calls to the mobile gateway API  
-![](https://geps.dev/progress/80) Login (missing error handling)  
-![](https://geps.dev/progress/100) Artists  
-![](https://geps.dev/progress/100) Albums  
-![](https://geps.dev/progress/100) Playlists  
-![](https://geps.dev/progress/100) Shows  
-![](https://geps.dev/progress/100) Tracks  
-![](https://geps.dev/progress/100) Search  
-![](https://geps.dev/progress/100) User  
-![](https://geps.dev/progress/100) Miscellaneous  
-
 ## :building_construction: Upcoming Features
 
+*   Make artists available offline;
 *   Create notification settings;
 *   Remove the See All / View More button when it is not required;
 *   Implement a profile editing screen;
@@ -66,9 +54,8 @@ Get Alchemy running: Follow [these instructions](./HOWTO.md) to compile it yours
 
 ## :lady_beetle: Bugs
 
-*   Artists discography may appear incomplete in specific scenarios;
-*   There is an awkward display bug in details screen and with the player bar in landscape mode due to the use of SafeAreas and ListTiles;
-*   The handling of login errors is incomplete;
+*   The download monitoring screen is bugged and some buttons have unintended behaviors;
+*   There is an awkward display bug in the details screen and with the player bar in landscape mode due to the use of SafeAreas and ListTiles;
 *   Downloads that are stopped and restarted will not be saved in the database and therefore not be available;
 *   Skipping tracks on the player screen is not as fluid as it used to be and can be choppy;
 *   Some home tiles are not and will not be implemented (Concerts, Did you know, Original videos, ...);

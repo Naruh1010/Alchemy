@@ -149,7 +149,7 @@ class _SearchScreenState extends State<SearchScreen> {
         _query = query;
       });
     }
-    if (!_online && mounted) {
+    if (!(await isConnected()) && mounted) {
       InstantSearchResults instantSearchResults =
           await downloadManager.search(query);
       setState(() {
@@ -1429,6 +1429,13 @@ class _TrackListScreenState extends State<TrackListScreen> {
   List<Track> _tracks = [];
 
   void _parentLoader() async {
+    if (!(await isConnected()) && mounted) {
+      setState(() {
+        _tracks = widget.tracks;
+      });
+      return;
+    }
+
     if (mounted) {
       setState(() {
         _isLoading = true;
@@ -1508,6 +1515,13 @@ class _ArtistListScreenState extends State<ArtistListScreen> {
   List<Artist> _artists = [];
 
   void _parentLoader() async {
+    if (!(await isConnected()) && mounted) {
+      setState(() {
+        _artists = widget.artists;
+      });
+      return;
+    }
+
     if (mounted) {
       setState(() {
         _isLoading = true;
@@ -1583,6 +1597,13 @@ class _AlbumListScreenState extends State<AlbumListScreen> {
   List<Album> _albums = [];
 
   void _parentLoader() async {
+    if (!(await isConnected()) && mounted) {
+      setState(() {
+        _albums = widget.albums;
+      });
+      return;
+    }
+
     if (mounted) {
       setState(() {
         _isLoading = true;
@@ -1655,6 +1676,13 @@ class _PlaylistListScreenState extends State<PlaylistListScreen> {
   List<Playlist> _playlists = [];
 
   void _parentLoader() async {
+    if (!(await isConnected()) && mounted) {
+      setState(() {
+        _playlists = widget.playlists;
+      });
+      return;
+    }
+
     if (mounted) {
       setState(() {
         _isLoading = true;
@@ -1722,6 +1750,13 @@ class _ShowListScreenState extends State<ShowListScreen> {
   List<Show> _shows = [];
 
   void _parentLoader() async {
+    if (!(await isConnected()) && mounted) {
+      setState(() {
+        _shows = widget.shows;
+      });
+      return;
+    }
+
     if (mounted) {
       setState(() {
         _isLoading = true;
@@ -1785,6 +1820,13 @@ class _EpisodeListScreenState extends State<EpisodeListScreen> {
   List<ShowEpisode> _episodes = [];
 
   void _parentLoader() async {
+    if (!(await isConnected()) && mounted) {
+      setState(() {
+        _episodes = widget.episodes;
+      });
+      return;
+    }
+
     if (mounted) {
       setState(() {
         _isLoading = true;

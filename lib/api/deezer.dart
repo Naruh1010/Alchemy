@@ -64,6 +64,9 @@ class DeezerAPI {
   Future? _authorizing;
 
   Future testFunction(BuildContext context) async {
+    for (Track t in await downloadManager.allOfflineTracks()) {
+      Logger.root.info(t.lyrics?.toJson());
+    }
 /*    ImagePicker picker = ImagePicker();
     XFile? imageFile = await picker.pickImage(source: ImageSource.gallery);
     if (imageFile == null) return;
@@ -1301,7 +1304,7 @@ class DeezerAPI {
     return LyricsFull.fromPrivateJson(data['data']);
   }
 
-  Future<List<Track?>> userTracks({int? limit}) async {
+  Future<List<Track>?> userTracks({int? limit}) async {
     Map data = await callGwApi('charts.getUserSongs', params: {
       'USER_ID': userId,
       'START': '0',

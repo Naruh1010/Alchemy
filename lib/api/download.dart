@@ -115,6 +115,22 @@ class DownloadManager {
 
   //Insert track and metadata to DB
   Future _addTrackToDB(Batch batch, Track track, bool overwriteTrack) async {
+    //Fetch lyrics
+    try {
+      if (settings.downloadLyrics) {
+        LyricsFull lyrics = await deezerAPI.lyrics(track);
+        if (lyrics.errorMessage == null) {
+          track.lyrics = lyrics;
+        } else {
+          Logger.root.info(
+              'Failed to load lyrics for track ${track.id} : ${lyrics.errorMessage}');
+        }
+      }
+    } catch (e) {
+      Logger.root.info(
+          'An error occured while fetching lyrics for track ${track.id} : $e');
+    }
+
     batch.insert('Tracks', track.toSQL(off: true),
         conflictAlgorithm: overwriteTrack
             ? ConflictAlgorithm.replace
@@ -277,20 +293,6 @@ class DownloadManager {
     //Fetch track if missing meta
     if (track.artists == null || track.artists!.isEmpty) {
       track = await deezerAPI.track(track.id!);
-    }
-
-    //Fetch lyrics
-    try {
-      LyricsFull lyrics = await deezerAPI.lyrics(track);
-      if (lyrics.errorMessage == null) {
-        track.lyrics = lyrics;
-      } else {
-        Logger.root.info(
-            'Failed to load lyrics for track ${track.id} : ${lyrics.errorMessage}');
-      }
-    } catch (e) {
-      Logger.root.info(
-          'An error occured while fetching lyrics for track ${track.id} : $e');
     }
 
     //Get path

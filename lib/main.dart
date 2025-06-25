@@ -284,8 +284,8 @@ class _MainScreenState extends State<MainScreen>
   Future<void> _init() async {
     await Future.wait<dynamic>([
       _setDisplayMode(),
-      compute<DeezerAPI, List<String>?>(
-          _preloadFavoriteTracksToCache, deezerAPI),
+      compute<String?, List<String>?>(
+          _preloadFavoriteTracksToCache, settings.arl),
       Future.microtask(() => _initDownloadManager()),
       Future.microtask(() => _startStreamingServer()),
       _setupServiceLocator(),
@@ -313,9 +313,17 @@ class _MainScreenState extends State<MainScreen>
   }
 
   static Future<List<String>?> _preloadFavoriteTracksToCache(
-      DeezerAPI api) async {
+      String? arl) async {
+    if (arl == null) return null;
     try {
-      final trackIds = await api.getFavoriteTrackIds();
+      final isoApi = DeezerAPI();
+      isoApi.keyBag.arl = arl;
+      if (!await isoApi.authorize()) {
+        Logger.root.warning(
+            'Could not authorize in background isolate for preloading favorites');
+        return null;
+      }
+      final trackIds = await isoApi.getFavoriteTrackIds();
       Logger.root.info('Cached favorite trackIds: ${trackIds?.length}');
       return trackIds;
     } catch (e, st) {
