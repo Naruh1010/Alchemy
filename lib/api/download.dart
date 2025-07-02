@@ -81,13 +81,24 @@ class DownloadManager {
 
     //Listen to state change event
     eventChannel.receiveBroadcastStream().listen((e) {
-      if (e['action'] == 'onStateChange') {
-        running = e['running'];
-        queueSize = e['queueSize'];
-      }
+      final event = e as Map<dynamic, dynamic>;
+      final String? eventType = event['eventType'] as String?;
 
-      //Forward
-      serviceEvents.add(e);
+      if (eventType == 'downloadState') {
+        final data = event['data'] as Map<dynamic, dynamic>;
+        running = data['running'] as bool;
+        queueSize = data['queueSize'] as int;
+        serviceEvents.add({
+          'action': 'onStateChange',
+          'running': running,
+          'queueSize': queueSize
+        });
+      } else if (eventType == 'downloadProgress') {
+        serviceEvents.add({'action': 'onProgress', 'data': event['data']});
+      } else {
+        //Forward other/unknown events
+        serviceEvents.add(e);
+      }
     });
 
     await platform.invokeMethod('loadDownloads');

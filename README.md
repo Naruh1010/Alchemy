@@ -54,10 +54,8 @@ Get Alchemy running: Follow [these instructions](./HOWTO.md) to compile it yours
 
 ## :lady_beetle: Bugs
 
-*   The download monitoring screen is bugged and some buttons have unintended behaviors;
+*   Playlist and album downloads seem to not be working. This is because lyrics are fetched for everytrack before the downloads actually start. This will be fixed in the next commit.
 *   There is an awkward display bug in the details screen and with the player bar in landscape mode due to the use of SafeAreas and ListTiles;
-*   Downloads that are stopped and restarted will not be saved in the database and therefore not be available;
-*   Skipping tracks on the player screen is not as fluid as it used to be and can be choppy;
 *   Some home tiles are not and will not be implemented (Concerts, Did you know, Original videos, ...);
 *   [Tell me!](https://github.com/PetitPrinc3/Deezer/issues)
 

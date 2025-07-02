@@ -9,6 +9,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:alchemy/fonts/alchemy_icons.dart';
 import 'package:alchemy/utils/navigator_keys.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:fluttertoast/fluttertoast.dart';
@@ -125,9 +126,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
 
     return Scaffold(
       body: Container(
-        padding: EdgeInsets.only(
-            top: MediaQuery.of(context).padding.top,
-            bottom: MediaQuery.of(context).padding.bottom),
+        padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top),
         decoration: BoxDecoration(
             gradient: settings.blurPlayerBackground ? null : _bgGradient),
         child: Stack(
@@ -997,7 +996,7 @@ class _BigAlbumArtState extends State<BigAlbumArt> with WidgetsBindingObserver {
   late PageController _pageController;
   StreamSubscription? _currentItemAndQueueSub;
   bool _isVisible = false;
-  bool _changeTrackOnPageChange = true;
+  bool _isUserSwiping = false, _isSwipeSkipping = false;
 
   @override
   void initState() {
@@ -1049,6 +1048,7 @@ class _BigAlbumArtState extends State<BigAlbumArt> with WidgetsBindingObserver {
   }
 
   void _handleMediaItemChange(MediaItem? item) async {
+    if (_isUserSwiping || _isSwipeSkipping) return;
     final targetItemId = item?.id ?? '';
     final targetPage =
         audioHandler.queue.value.indexWhere((item) => item.id == targetItemId);
@@ -1059,21 +1059,14 @@ class _BigAlbumArtState extends State<BigAlbumArt> with WidgetsBindingObserver {
 
     if (_isVisible) {
       // Widget is visible, animate to the target page
-      _changeTrackOnPageChange = false;
-      await _pageController
-          .animateToPage(
+      await _pageController.animateToPage(
         targetPage,
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOut,
-      )
-          .then((_) {
-        _changeTrackOnPageChange = true;
-      });
+      );
     } else {
       // Widget is not visible, jump to the target page without animation
-      _changeTrackOnPageChange = false;
       _pageController.jumpToPage(targetPage);
-      _changeTrackOnPageChange = true;
     }
   }
 
@@ -1104,21 +1097,47 @@ class _BigAlbumArtState extends State<BigAlbumArt> with WidgetsBindingObserver {
           });
         }
       },
-      child: GestureDetector(
-        onVerticalDragUpdate: (DragUpdateDetails details) {
-          if (details.delta.dy > 16) {
-            Navigator.of(context).pop();
+      child: NotificationListener<ScrollNotification>(
+        onNotification: (notification) {
+          if (notification is ScrollStartNotification &&
+              notification.dragDetails != null) {
+            setState(() {
+              _isUserSwiping = true;
+            });
+          } else if (notification is UserScrollNotification) {
+            if (notification.direction == ScrollDirection.idle &&
+                _isUserSwiping) {
+              setState(() {
+                _isUserSwiping = false;
+              });
+              final targetPage = _pageController.page!.round();
+              if (audioHandler.currentIndex != targetPage) {
+                () async {
+                  setState(() => _isSwipeSkipping = true);
+                  try {
+                    await audioHandler.skipToQueueItem(targetPage);
+                  } finally {
+                    if (mounted) {
+                      setState(() => _isSwipeSkipping = false);
+                    }
+                  }
+                }();
+              }
+            }
           }
+          return false;
         },
-        child: PageView(
-          controller: _pageController,
-          onPageChanged: (int index) {
-            if (_changeTrackOnPageChange) {
-              // Only trigger if the page change is caused by user swiping
-              audioHandler.skipToQueueItem(index);
+        child: GestureDetector(
+          onVerticalDragUpdate: (DragUpdateDetails details) {
+            if (details.delta.dy > 16) {
+              Navigator.of(context).pop();
             }
           },
-          children: _imageList,
+          child: PageView(
+            controller: _pageController,
+            onPageChanged: (int index) {},
+            children: _imageList,
+          ),
         ),
       ),
     );

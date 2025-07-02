@@ -49,110 +49,135 @@ class _LibraryScreenState extends State<LibraryScreen> {
   }
 
   Future<void> _load() async {
-    setState(() => _loading = true);
+    if (mounted) setState(() => _loading = true);
 
-    // Load cached playlist and tracks (initial fast load)
+    // --- Initial fast load from cache ---
     if (cache.favoritePlaylists.isNotEmpty &&
         cache.favoritePlaylists[0].id != null) {
-      setState(() {
-        _playlists = cache.favoritePlaylists;
-      });
+      _playlists = cache.favoritePlaylists;
     }
     if (cache.favoriteTracks.isNotEmpty) {
       tracks = cache.favoriteTracks;
+      trackCount = tracks.length;
     }
+    // Immediate UI update with cached data
+    if (mounted) setState(() {});
 
-    // Load offline and online data concurrently
+    // --- Fetch data from sources ---
     final isOnline = await isConnected();
-    final favPlaylistFuture =
-        downloadManager.getOfflinePlaylist(cache.favoritesPlaylistId);
-    final offlinePlaylistsFuture = downloadManager.getOfflinePlaylists();
-    final offlineAlbumsFuture = downloadManager.getOfflineAlbums();
-    final offlinePodcastsFuture = downloadManager.getOfflineShows();
-    final onlineFutures = isOnline
-        ? [
-            deezerAPI.fullPlaylist(cache.favoritesPlaylistId),
-            deezerAPI.getPlaylists(),
-            deezerAPI.getArtists(),
-            deezerAPI.getAlbums(),
-            deezerAPI.userTracks(),
-            deezerAPI.getUserShows(),
-          ]
-        : [];
+    List<Future> futures = [];
 
-    final results = await Future.wait<Object?>([
-      // Explicit type parameter <Object?>
-      offlinePodcastsFuture,
-      favPlaylistFuture,
-      offlinePlaylistsFuture,
-      offlineAlbumsFuture,
-      ...onlineFutures,
-    ]);
-
-    List<Show> shows = results[0] as List<Show>;
-    Playlist? favPlaylist = results[1] as Playlist?;
-    List<Playlist> playlists = results[2] as List<Playlist>;
-    List<Album> albums = results[3] as List<Album>;
-    Playlist? onlineFavPlaylist =
-        isOnline && results.length > 4 ? results[4] as Playlist? : null;
-    List<Playlist>? onlinePlaylists =
-        isOnline && results.length > 5 ? results[5] as List<Playlist>? : null;
-    List<Artist>? userArtists =
-        isOnline && results.length > 6 ? results[6] as List<Artist> : null;
-    List<Album>? userAlbums =
-        isOnline && results.length > 7 ? results[7] as List<Album> : null;
-    List<Track>? topTracks =
-        isOnline && results.length > 8 ? results[8] as List<Track>? : null;
-    List<Show>? userShows =
-        isOnline && results.length > 9 ? results[9] as List<Show> : null;
-
-    if (mounted) {
-      setState(() {
-        tracks =
-            topTracks ?? onlineFavPlaylist?.tracks ?? favPlaylist?.tracks ?? [];
-        topPlaylist = topTracks != null
-            ? Playlist(
-                id: '1',
-                title: 'Your top tracks',
-                image: ImageDetails.fromJson(cache.userPicture),
-                duration: Duration.zero,
-                user: User(id: '0', name: 'Deezer'),
-                tracks: topTracks,
-              )
-            : onlineFavPlaylist ?? favPlaylist;
-        cache.favoriteTracks = tracks;
-        if (onlineFavPlaylist?.id != null) {
-          favoritesPlaylist = onlineFavPlaylist;
-          trackCount = onlineFavPlaylist?.tracks?.length;
-        } else if (favPlaylist?.id != null) {
-          favoritesPlaylist = favPlaylist;
-          trackCount = favPlaylist?.tracks?.length;
-          _makeFavorite();
-        } else {
-          downloadManager.allOfflineTracks().then((offlineTracks) {
+    if (!isOnline) {
+      futures.add(downloadManager
+          .getOfflinePlaylist(cache.favoritesPlaylistId)
+          .then((favPlaylist) {
+        if (mounted && favPlaylist != null) {
+          setState(() {
+            tracks = favPlaylist.tracks ?? [];
+            favoritesPlaylist = favPlaylist;
+            trackCount = favPlaylist.tracks?.length;
+            _makeFavorite();
+          });
+        } else if (mounted) {
+          // Fallback to all offline tracks if favorites playlist is not downloaded
+          futures.add(downloadManager.allOfflineTracks().then((offlineTracks) {
             if (mounted) {
               setState(() {
                 tracks = offlineTracks;
                 trackCount = offlineTracks.length;
                 favoritesPlaylist = Playlist(
                     id: '0',
-                    title: 'Offline tracks',
+                    title: 'Offline tracks'.i18n,
                     duration: Duration.zero,
                     tracks: offlineTracks);
               });
             }
+          }));
+        }
+      }));
+      futures.add(downloadManager.getOfflinePlaylists().then((playlists) {
+        if (mounted) setState(() => _playlists = playlists);
+      }));
+      futures.add(downloadManager.getOfflineAlbums().then((albums) {
+        if (mounted) setState(() => favoriteAlbums = albums.length.toString());
+      }));
+      futures.add(downloadManager.getOfflineShows().then((shows) {
+        if (mounted) setState(() => favoriteShows = shows.length.toString());
+      }));
+    } else {
+      // isOnline
+      futures.add(deezerAPI.getPlaylists().then((onlinePlaylists) {
+        if (mounted && onlinePlaylists.isNotEmpty) {
+          setState(() {
+            _playlists = onlinePlaylists;
+            cache.favoritePlaylists = onlinePlaylists;
           });
         }
-        _playlists = onlinePlaylists ?? playlists;
-        _loading = false;
-        cache.favoritePlaylists = _playlists ?? cache.favoritePlaylists;
-        favoriteShows = userShows?.length.toString() ?? shows.length.toString();
-        favoriteArtists = userArtists?.length.toString();
-        favoriteAlbums =
-            userAlbums?.length.toString() ?? albums.length.toString();
-        cache.save();
+      }));
+
+      futures.add(deezerAPI.getArtists().then((userArtists) {
+        if (mounted) {
+          setState(() => favoriteArtists = userArtists.length.toString());
+        }
+      }));
+
+      futures.add(deezerAPI.getAlbums().then((userAlbums) {
+        if (mounted) {
+          setState(() => favoriteAlbums = userAlbums.length.toString());
+        }
+      }));
+
+      futures.add(deezerAPI.getUserShows().then((userShows) {
+        if (mounted) {
+          setState(() => favoriteShows = userShows.length.toString());
+        }
+      }));
+
+      // Top tracks and favorites are fetched together to decide which one to display
+      final trackFutures = Future.wait([
+        deezerAPI.userTracks(),
+        deezerAPI.fullPlaylist(cache.favoritesPlaylistId),
+      ]);
+      futures.add(trackFutures);
+
+      trackFutures.then((results) {
+        if (!mounted) return;
+        final topTracks = results[0] as List<Track>?;
+        final onlineFavPlaylist = results[1] as Playlist?;
+
+        setState(() {
+          // Always update favorites playlist for its own tile
+          if (onlineFavPlaylist != null) {
+            favoritesPlaylist = onlineFavPlaylist;
+          }
+
+          if (topTracks != null && topTracks.isNotEmpty) {
+            tracks = topTracks;
+            topPlaylist = Playlist(
+              id: '1',
+              title: 'Your top tracks'.i18n,
+              image: ImageDetails.fromJson(cache.userPicture),
+              tracks: topTracks,
+            );
+          } else if (onlineFavPlaylist != null) {
+            tracks = onlineFavPlaylist.tracks ?? [];
+            topPlaylist = onlineFavPlaylist;
+          }
+          trackCount = tracks.length;
+          cache.favoriteTracks = tracks;
+        });
       });
     }
+
+    // When all futures are complete, stop loading indicator and save cache
+    Future.wait(futures).whenComplete(() {
+      if (mounted) {
+        setState(() => _loading = false);
+        if (isOnline) {
+          cache.save();
+        }
+      }
+    });
   }
 
   @override

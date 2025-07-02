@@ -696,7 +696,10 @@ class _MainScreenState extends State<MainScreen>
                                                 8,
                                             8,
                                             8,
-                                            8),
+                                            MediaQuery.of(context)
+                                                    .padding
+                                                    .bottom +
+                                                8),
                                     child: const PlayerBar(),
                                   ),
                                 ),

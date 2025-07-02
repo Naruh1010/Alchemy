@@ -57,19 +57,24 @@ class _DownloadsScreenState extends State<DownloadsScreen> {
 
     //Subscribe to state update
     _stateSubscription = downloadManager.serviceEvents.stream.listen((e) {
-      //State change = update
-      if (e['action'] == 'onStateChange') {
-        setState(() => downloadManager.running = downloadManager.running);
-      }
-      //Progress change
-      if (e['action'] == 'onProgress') {
-        setState(() {
-          for (Map su in e['data']) {
-            downloads
-                .firstWhere((d) => d.id == su['id'], orElse: () => Download())
-                .updateFromJson(su);
+      if (e is Map && e.containsKey('action')) {
+        if (e['action'] == 'onStateChange') {
+          // A change in queue size or running state might mean a download finished,
+          // or the user paused/resumed. Reload the list to get latest states.
+          _load();
+        } else if (e['action'] == 'onProgress') {
+          if (mounted) {
+            setState(() {
+              final List<dynamic> progressUpdates = e['data'];
+              for (final update in progressUpdates) {
+                final index = downloads.indexWhere((d) => d.id == update['id']);
+                if (index != -1) {
+                  downloads[index].updateFromJson(update);
+                }
+              }
+            });
           }
-        });
+        }
       }
     });
 
@@ -123,6 +128,7 @@ class _DownloadsScreenState extends State<DownloadsScreen> {
         ),
         body: ListView(
           children: [
+            //downloading
             ...List.generate(
                 downloading.length,
                 (int i) => DownloadTile(
@@ -484,13 +490,19 @@ class _DownloadsScreenState extends State<DownloadsScreen> {
   }
 }
 
-class DownloadTile extends StatelessWidget {
+class DownloadTile extends StatefulWidget {
   final Download download;
   final Function updateCallback;
   const DownloadTile(this.download, {super.key, required this.updateCallback});
 
+  @override
+  State<DownloadTile> createState() => _DownloadTileState();
+}
+
+class _DownloadTileState extends State<DownloadTile> {
   String subtitle() {
     String out = '';
+    final download = widget.download;
 
     if (download.state != DownloadState.DOWNLOADING &&
         download.state != DownloadState.POST) {
@@ -525,6 +537,7 @@ class DownloadTile extends StatelessWidget {
   }
 
   Future onClick(BuildContext context) async {
+    final download = widget.download;
     if (download.state != DownloadState.DOWNLOADING &&
         download.state != DownloadState.POST) {
       if (!(download.isEpisode ?? false)) {
@@ -534,6 +547,7 @@ class DownloadTile extends StatelessWidget {
   }
 
   Future onHold(BuildContext context) async {
+    final download = widget.download;
     if (download.state != DownloadState.DOWNLOADING &&
         download.state != DownloadState.POST) {
       showDialog(
@@ -544,6 +558,17 @@ class DownloadTile extends StatelessWidget {
               content:
                   Text('Are you sure you want to delete this download?'.i18n),
               actions: [
+                if (download.state == DownloadState.ERROR ||
+                    download.state == DownloadState.DEEZER_ERROR)
+                  TextButton(
+                    child: Text('View Log'.i18n),
+                    onPressed: () {
+                      Navigator.of(context).pop(); // Close dialog
+                      Navigator.of(context).push(MaterialPageRoute(
+                        builder: (context) => const DownloadLogViewer(),
+                      ));
+                    },
+                  ),
                 TextButton(
                   child: Text('Cancel'.i18n),
                   onPressed: () => Navigator.of(context).pop(),
@@ -552,7 +577,7 @@ class DownloadTile extends StatelessWidget {
                   child: Text('Delete'.i18n),
                   onPressed: () async {
                     await downloadManager.removeDownload(download.id!);
-                    updateCallback();
+                    widget.updateCallback();
                     if (context.mounted) Navigator.of(context).pop();
                   },
                 )
@@ -564,6 +589,7 @@ class DownloadTile extends StatelessWidget {
 
   //Trailing icon with state
   Widget trailing() {
+    final download = widget.download;
     switch (download.state) {
       case DownloadState.NONE:
         return const Icon(
@@ -579,9 +605,17 @@ class DownloadTile extends StatelessWidget {
           color: Colors.green,
         );
       case DownloadState.DEEZER_ERROR:
-        return const Icon(Icons.error, color: Colors.blue);
+        return Tooltip(
+          message:
+              'A Deezer-related error occurred (e.g. content unavailable).\nCheck log for more details.'
+                  .i18n,
+          child: const Icon(Icons.error, color: Colors.blue),
+        );
       case DownloadState.ERROR:
-        return const Icon(Icons.error, color: Colors.red);
+        return Tooltip(
+          message: 'A general error occurred. Check log for more details.'.i18n,
+          child: const Icon(Icons.error, color: Colors.red),
+        );
       default:
         return Container();
     }
@@ -589,6 +623,7 @@ class DownloadTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final download = widget.download;
     return Column(
       children: [
         ListTile(

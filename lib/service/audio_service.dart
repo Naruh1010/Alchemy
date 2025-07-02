@@ -391,7 +391,7 @@ class AudioPlayerHandler extends BaseAudioHandler
   Future<void> skipToQueueItem(int index) async {
     if (index < 0 || index >= _playlist.children.length) return;
 
-    _player.seek(
+    await _player.seek(
       Duration.zero,
       index: _player.shuffleModeEnabled ? _player.shuffleIndices[index] : index,
     );
@@ -627,7 +627,7 @@ class AudioPlayerHandler extends BaseAudioHandler
     if (queueSource == null) return;
 
     List<Track> tracks = [];
-    switch (queueSource!.source) {
+    switch (queueSource?.source) {
       case 'flow':
         tracks = await deezerAPI.flow();
         break;
@@ -650,7 +650,7 @@ class AudioPlayerHandler extends BaseAudioHandler
             await deezerAPI.playlistTracksPage(queueSource!.id!, pos, nb: 25);
         break;
       default:
-        Logger.root.info('Reached end of queue source: ${queueSource!.source}');
+        Logger.root.info('Reached end of queue source: ${queueSource?.source}');
         break;
     }
 

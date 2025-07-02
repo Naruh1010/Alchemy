@@ -702,7 +702,6 @@ public class DownloadService extends Service {
             download.state = Download.DownloadState.DONE;
             //Queue update
             updateQueueWrapper();
-            stopSelf();
         }
 
         //Each track has own album art, this is to download cover.jpg
@@ -755,7 +754,6 @@ public class DownloadService extends Service {
         //Clean stop/exit
         private void exit() {
             updateQueueWrapper();
-            stopSelf();
         }
 
     }
@@ -1102,4 +1100,3 @@ public class DownloadService extends Service {
         }
     }
 }
-

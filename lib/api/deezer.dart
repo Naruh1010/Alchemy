@@ -1311,6 +1311,7 @@ class DeezerAPI {
       'NB': (limit ?? 100).toString()
     });
     if (data['results']['data'] == null) return [];
+
     return data['results']['data']
         .map<Track>((json) => Track.fromPrivateJson(json))
         .toList();
