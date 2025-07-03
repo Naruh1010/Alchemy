@@ -1,6 +1,6 @@
 ![Alchemy](./assets/banner.png?raw=true)
 
-[![Flutter](https://img.shields.io/badge/Flutter-v3.32.2-blue?logo=flutter)](https://flutter.dev/)
+[![Flutter](https://img.shields.io/badge/Flutter-v3.32.5-blue?logo=flutter)](https://flutter.dev/)
 [![Dart](https://img.shields.io/badge/Dart-v3.8.1-blue?logo=dart)](https://dart.dev/)
 [![Android API](https://img.shields.io/badge/Android%20API-35-green?logo=android)](https://developer.android.com/about/versions/14)
 [![Java JDK](https://img.shields.io/badge/Java%20JDK-17-blue?logo=openjdk)](https://openjdk.java.net/projects/jdk/17/)

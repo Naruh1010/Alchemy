@@ -315,6 +315,8 @@ class DeezerAPI {
       return http.Response('', 200);
     });
 
+    if (res.body.isEmpty) return {};
+
     dynamic body = jsonDecode(res.body);
 
     //Grab SID

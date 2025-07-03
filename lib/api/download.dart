@@ -427,7 +427,7 @@ class DownloadManager {
       await b.commit();
     }
 
-    //Create downloads
+    //Generate downloads
     List<Map> out = [];
     for (Track t in (album.tracks ?? [])) {
       String tPath = _generatePath(t.id!, private);
@@ -438,6 +438,39 @@ class DownloadManager {
     }
     await platform.invokeMethod('addDownloads', out);
     await start();
+
+    List<Future> futures = [];
+    List<Track> downloadedTracks = [];
+
+    for (Track t in (album.tracks ?? [])) {
+      futures.add(_waitForDownloadCompletion(t.id!).then((bool success) async {
+        if (private) {
+          Batch b = db!.batch();
+          b = await _addTrackToDB(b, t, true);
+          await b.commit();
+
+          //Cache art
+          DefaultCacheManager().getSingleFile(t.image?.thumb ?? '');
+          DefaultCacheManager().getSingleFile(t.image?.full ?? '');
+
+          downloadedTracks.add(t);
+        }
+      }));
+    }
+
+    //Update DB
+    Future.wait(futures).whenComplete(() async {
+      if (private) {
+        album.tracks = downloadedTracks;
+        Batch b = db!.batch();
+        b.insert('Albums', album.toSQL(off: true),
+            conflictAlgorithm: ConflictAlgorithm.replace);
+        for (Track t in album.tracks ?? []) {
+          b = await _addTrackToDB(b, t, true);
+        }
+        await b.commit();
+      }
+    });
   }
 
   Future addOfflinePlaylist(Playlist playlist,
@@ -459,17 +492,11 @@ class DownloadManager {
       playlist = await deezerAPI.fullPlaylist(playlist.id ?? '');
     }
 
-    //Add to DB
+    //Add to db
     if (private) {
       Batch b = db!.batch();
       b.insert('Playlists', playlist.toSQL(),
           conflictAlgorithm: ConflictAlgorithm.replace);
-      for (Track t in (playlist.tracks ?? [])) {
-        b = await _addTrackToDB(b, t, true);
-        //Cache art
-        DefaultCacheManager().getSingleFile(t.image?.thumb ?? '');
-        DefaultCacheManager().getSingleFile(t.image?.full ?? '');
-      }
       await b.commit();
     }
 
@@ -490,6 +517,36 @@ class DownloadManager {
     }
     await platform.invokeMethod('addDownloads', out);
     await start();
+
+    List<Future> futures = [];
+    List<Track> downloadedTracks = [];
+
+    for (Track t in (playlist.tracks ?? [])) {
+      futures.add(_waitForDownloadCompletion(t.id!).then((bool success) async {
+        if (private) {
+          Batch b = db!.batch();
+          b = await _addTrackToDB(b, t, true);
+          await b.commit();
+
+          //Cache art
+          DefaultCacheManager().getSingleFile(t.image?.thumb ?? '');
+          DefaultCacheManager().getSingleFile(t.image?.full ?? '');
+
+          downloadedTracks.add(t);
+        }
+      }));
+    }
+
+    //Update DB
+    Future.wait(futures).whenComplete(() async {
+      if (private) {
+        playlist.tracks = downloadedTracks;
+        Batch b = db!.batch();
+        b.insert('Playlists', playlist.toSQL(),
+            conflictAlgorithm: ConflictAlgorithm.replace);
+        await b.commit();
+      }
+    });
   }
 
   Future updateOfflinePlaylist(Playlist playlist) async {
@@ -622,10 +679,19 @@ class DownloadManager {
 
     List<Track> tracks = [];
     //Load tracks
-    for (int i = 0; i < (album.tracks?.length ?? 0); i++) {
-      var offlineTrack = await getOfflineTrack(album.tracks![i].id!);
-      if (offlineTrack != null) tracks.add(offlineTrack);
+
+    if (album.tracks?.isEmpty ?? true) {
+      album.tracks = (await db!
+              .query('Tracks', where: 'album == ?', whereArgs: [album.id]))
+          .map((dynamic t) => Track.fromJson(t))
+          .toList();
+    } else {
+      for (int i = 0; i < (album.tracks?.length ?? 0); i++) {
+        var offlineTrack = await getOfflineTrack(album.tracks![i].id!);
+        if (offlineTrack != null) tracks.add(offlineTrack);
+      }
     }
+
     album.tracks = tracks;
     //Load artists
     List<Artist> artists = [];
@@ -708,7 +774,51 @@ class DownloadManager {
     List rawArtists =
         await db!.query('Artists', where: 'id == ?', whereArgs: [id]);
     if (rawArtists.isEmpty) return null;
-    return Artist.fromSQL(rawArtists[0]);
+    Artist a = Artist.fromSQL(rawArtists[0]);
+    List rawTracks =
+        await db!.rawQuery('SELECT * FROM Tracks WHERE artists LIKE "%$id%"');
+    a.topTracks =
+        rawTracks.map<Track>((dynamic t) => Track.fromSQL(t)).toList();
+
+    List<Album> rawAlbums =
+        (await db!.rawQuery('SELECT * FROM Albums WHERE artists LIKE "%$id%"'))
+            .map<Album>((dynamic a) => Album.fromSQL(a))
+            .toList();
+    List<Album> albums = [];
+    for (Album al in rawAlbums) {
+      List rawAlbum =
+          await db!.query('Albums', where: 'id == ?', whereArgs: [al.id]);
+      if (rawAlbums.isNotEmpty) {
+        Album album = Album.fromSQL(rawAlbum[0]);
+
+        List<Track> tracks = [];
+        //Load tracks
+        for (int i = 0; i < (album.tracks?.length ?? 0); i++) {
+          var offlineTrack = await getOfflineTrack(album.tracks![i].id!);
+          if (offlineTrack != null) tracks.add(offlineTrack);
+        }
+        album.tracks = tracks;
+        album.artists = [a];
+
+        albums.add(album);
+      }
+    }
+
+    a.albums = albums.where((Album a) => a.id != null).toList();
+
+    List<Playlist> rawPlaylists = [];
+    for (Track t in a.topTracks) {
+      for (dynamic p in (await db!
+          .rawQuery('SELECT * FROM Playlists WHERE tracks LIKE "%${t.id}%"'))) {
+        Playlist pl = Playlist.fromSQL(p);
+        if (!pl.isIn(rawPlaylists)) {
+          rawPlaylists.add(await getOfflinePlaylist(pl.id ?? '') ?? Playlist());
+        }
+      }
+    }
+    a.playlists = rawPlaylists.where((Playlist p) => p.id != null).toList();
+
+    return a;
   }
 
   //Get all offline playlists

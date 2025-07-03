@@ -57,6 +57,7 @@ class _AlbumDetailsState extends State<AlbumDetails> {
           if (mounted && a.id != null) setState(() => album = a);
         } else {
           Album? a = await downloadManager.getOfflineAlbum(album.id ?? '');
+          Logger.root.info(a?.toJson());
           //Preserve library
           a?.library = album.library;
           if (mounted && a?.id != null) setState(() => album = a ?? Album());
@@ -1198,27 +1199,38 @@ class _ArtistDetailsState extends State<ArtistDetails> {
 
   Future _loadArtist() async {
     //Load artist from api if no albums
-    if (artist.albums.isEmpty) {
-      try {
-        Artist a = await deezerAPI.artist(artist.id ?? '');
-        if (artist.isIn(await deezerAPI.getArtists())) {
-          a.library = true;
+    if (await isConnected()) {
+      if (artist.albums.isEmpty) {
+        try {
+          Artist a = await deezerAPI.artist(artist.id ?? '');
+          if (artist.isIn(await deezerAPI.getArtists())) {
+            a.library = true;
+          }
+          setState(() => artist = a);
+        } catch (e) {
+          setState(() => _error = true);
         }
-        setState(() => artist = a);
-      } catch (e) {
-        setState(() => _error = true);
       }
-    }
-    setState(() => _isLoading = false);
+      setState(() => _isLoading = false);
 
-    //load complete artist
-    try {
-      Artist a = await deezerAPI.completeArtist(artist.id ?? '');
-      a.library = artist.library;
-      if (mounted) setState(() => artist = a);
-    } catch (e) {
-      Logger.root.info(
-          'Something went wrong loading full details for artist ${artist.id}');
+      //load complete artist
+      try {
+        Artist a = await deezerAPI.completeArtist(artist.id ?? '');
+        a.library = artist.library;
+        if (mounted) setState(() => artist = a);
+      } catch (e) {
+        Logger.root.info(
+            'Something went wrong loading full details for artist ${artist.id}');
+      }
+    } else {
+      Artist a =
+          await downloadManager.getOfflineArtist(artist.id ?? '') ?? artist;
+      if (mounted) {
+        setState(() {
+          artist = a;
+          _isLoading = false;
+        });
+      }
     }
 
     _setColor();

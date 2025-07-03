@@ -93,8 +93,7 @@ dependencies:
     path: ./liquid_progress_indicator_v2
   figma_squircle:
     path: ./figma_squircle
-  open_filex:
-    path: ./open_filex
+  open_filex: ^4.7.0
 
 dev_dependencies:
   flutter_test:

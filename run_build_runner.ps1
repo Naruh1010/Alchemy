@@ -30,6 +30,8 @@ function Invoke-BuildRunner {
 
     Write-Host "Running 'flutter clean' for $name" -ForegroundColor Green
     flutter clean
+
+    Set-Location ..
 }
 
 # Extract submodule paths and repositories from .gitmodules

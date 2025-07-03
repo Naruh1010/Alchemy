@@ -19,6 +19,3 @@
 [submodule "figma_squircle"]
 	path = figma_squircle
 	url = https://github.com/SedlarDavid/figma_squircle.git
-[submodule "open_filex"]
-	path = open_filex
-	url = https://github.com/mufassalhussain/open_filex.git

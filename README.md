@@ -5,7 +5,7 @@
 [![Latest commit](https://img.shields.io/github/last-commit/PetitPrinc3/Alchemy)](../../commit/master)
 [![License](https://img.shields.io/github/license/PetitPrinc3/Deezer?flat)](./LICENSE)
 
-[![Flutter](https://img.shields.io/badge/Flutter-v3.32.2-blue?logo=flutter)](https://flutter.dev/)
+[![Flutter](https://img.shields.io/badge/Flutter-v3.32.5-blue?logo=flutter)](https://flutter.dev/)
 [![Dart](https://img.shields.io/badge/Dart-v3.8.1-blue?logo=dart)](https://dart.dev/)
 [![Android API](https://img.shields.io/badge/Android%20API-35-green?logo=android)](https://developer.android.com/about/versions/14)
 [![Java JDK](https://img.shields.io/badge/Java%20JDK-17-blue?logo=openjdk)](https://openjdk.java.net/projects/jdk/17/)
@@ -54,7 +54,7 @@ Get Alchemy running: Follow [these instructions](./HOWTO.md) to compile it yours
 
 ## :lady_beetle: Bugs
 
-*   Playlist and album downloads seem to not be working. This is because lyrics are fetched for everytrack before the downloads actually start. This will be fixed in the next commit.
+*   User top tracks do not behave properly when played (incomplete tracks cause dysfunctions);
 *   There is an awkward display bug in the details screen and with the player bar in landscape mode due to the use of SafeAreas and ListTiles;
 *   Some home tiles are not and will not be implemented (Concerts, Did you know, Original videos, ...);
 *   [Tell me!](https://github.com/PetitPrinc3/Deezer/issues)

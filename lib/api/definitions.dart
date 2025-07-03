@@ -715,7 +715,7 @@ class Playlist {
         'library': (library ?? false) ? 1 : 0
       };
   factory Playlist.fromSQL(dynamic data) => Playlist(
-        id: data['id'],
+        id: data['id'].toString(),
         title: data['title'],
         description: data['description'],
         tracks: List<Track>.generate(data?['tracks']?.split(',')?.length ?? 0,
