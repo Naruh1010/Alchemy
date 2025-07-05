@@ -256,14 +256,8 @@ class DeezerAPI {
 
     if (!(endOfTry ?? false) &&
         sidRes['error']?['REQUEST_ERROR'] == 'Auth token unknown') {
-      sidReq = await http.get(sidUri, headers: headers).catchError((e) {
-        return http.Response('', 200);
-      });
-      sidRes = jsonDecode(sidReq.body);
-
-      if (sidRes['error']?['REQUEST_ERROR'] == 'Auth token unknown') {
-        return await getGatewayAuth(endOfTry: true);
-      }
+      await getGatewayKeybag();
+      return await getGatewayAuth(endOfTry: true);
     }
 
     if (sidRes['results'] == null) return false;

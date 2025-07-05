@@ -3252,28 +3252,6 @@ class _PlaylistDetailsState extends State<PlaylistDetails> {
     }
   }
 
-  Future _isLibrary() async {
-    // Check offline first, as it's faster and works without connection.
-    if (playlist.isIn(await downloadManager.getOfflinePlaylists())) {
-      if (mounted) {
-        setState(() {
-          playlist.library = true;
-        });
-      }
-    }
-
-    // Then, check online if connected.
-    if (await isConnected()) {
-      if (playlist.isIn(await deezerAPI.getPlaylists())) {
-        if (mounted) {
-          setState(() {
-            playlist.library = true;
-          });
-        }
-      }
-    }
-  }
-
   void _loadTracks() async {
     // Got all tracks, return
     if (_isLoadingTracks ||
