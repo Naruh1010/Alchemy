@@ -414,7 +414,10 @@ class _PlayerScreenVerticalState extends State<PlayerScreenVertical> {
           ),
         ),
         Container(height: 4.0),
-        ActionControls(24.0),
+        ActionControls(
+          24.0,
+          key: mediaItemId != null ? Key(mediaItemId! + '_actnBtn') : null,
+        ),
         Container(
           padding: EdgeInsets.fromLTRB(18, 0, 18, 16),
           child: Column(
@@ -795,8 +798,7 @@ class _RepeatButtonState extends State<RepeatButton> {
 
 class ActionControls extends StatefulWidget {
   final double iconSize;
-  final Track? track;
-  const ActionControls(this.iconSize, {this.track, super.key});
+  const ActionControls(this.iconSize, {super.key});
 
   @override
   _ActionControls createState() => _ActionControls();
@@ -827,10 +829,9 @@ class _ActionControls extends State<ActionControls> {
   void initState() {
     if (mounted) {
       setState(() {
-        t = widget.track ??
-            (audioHandler.mediaItem.value != null
-                ? Track.fromMediaItem(audioHandler.mediaItem.value!)
-                : Track());
+        t = (audioHandler.mediaItem.value != null
+            ? Track.fromMediaItem(audioHandler.mediaItem.value!)
+            : Track());
       });
     }
     super.initState();
@@ -867,9 +868,6 @@ class _ActionControls extends State<ActionControls> {
             ),
             alignment: Alignment.center,
             child: IconButton(
-              key: audioHandler.mediaItem.value?.id != null
-                  ? Key(audioHandler.mediaItem.value!.id + '_moreBtn')
-                  : null,
               icon: Icon(
                 AlchemyIcons.more_vert,
                 size: widget.iconSize * 1.25,
@@ -1364,7 +1362,14 @@ class _QueueScreenState extends State<QueueScreen> with WidgetsBindingObserver {
                 }
                 MenuSheet m = MenuSheet();
                 if (mounted) {
-                  await m.createPlaylist(context);
+                  await m.createPlaylist(
+                    context,
+                    tracks: List.generate(
+                      queueState.queue.length,
+                      (int index) =>
+                          Track.fromMediaItem(queueState.queue[index]),
+                    ),
+                  );
                 }
               },
             ),

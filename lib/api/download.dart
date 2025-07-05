@@ -1,11 +1,11 @@
 import 'dart:async';
 import 'dart:io';
+import 'package:http/http.dart' as http;
 
 //import 'package:disk_space_plus/disk_space_plus.dart';
 import 'package:filesize/filesize.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:logging/logging.dart';
 import 'package:path/path.dart' as p;
@@ -104,6 +104,36 @@ class DownloadManager {
     await platform.invokeMethod('loadDownloads');
   }
 
+  Future<File?> _downloadAndSaveImage(ImageDetails imageDetails) async {
+    if (imageDetails.imageHash == null || imageDetails.imageHash!.isEmpty) {
+      return null;
+    }
+
+    final imagesDir = Directory(p.join(offlinePath!, 'images'));
+    if (!await imagesDir.exists()) {
+      await imagesDir.create(recursive: true);
+    }
+
+    final imageFile =
+        File(p.join(imagesDir.path, '${imageDetails.imageHash}.jpg'));
+
+    if (await imageFile.exists()) {
+      return imageFile;
+    }
+
+    try {
+      final response = await http.get(Uri.parse(imageDetails.fullUrl!));
+      if (response.statusCode == 200) {
+        await imageFile.writeAsBytes(response.bodyBytes);
+        return imageFile;
+      }
+    } catch (e) {
+      Logger.root.warning(
+          'Failed to download and save image ${imageDetails.imageHash}: $e');
+    }
+    return null;
+  }
+
   void exportTracks() async {
     List<Track> allTracks = await allOfflineTracks();
     for (Track track in allTracks) {
@@ -150,12 +180,14 @@ class DownloadManager {
         'Albums', track.album?.toSQL(off: false) as Map<String, dynamic>,
         conflictAlgorithm: ConflictAlgorithm.ignore);
     //Artists
+    List<Future> futures = [];
     if (track.artists != null) {
       for (Artist a in track.artists!) {
-        batch.insert('Artists', a.toSQL(off: false),
-            conflictAlgorithm: ConflictAlgorithm.ignore);
+        futures.add(addOfflineArtist(a));
       }
     }
+    await Future.wait(futures);
+
     return batch;
   }
 
@@ -289,6 +321,36 @@ class DownloadManager {
     return completer.future;
   }
 
+  Future addOfflineArtist(Artist artist) async {
+    if (artist.id == null) return;
+    if (artist.isIn(await getOfflineArtists())) return;
+
+    Batch b = db!.batch();
+    b.insert('Artists', artist.toSQL(off: false),
+        conflictAlgorithm: ConflictAlgorithm.ignore);
+
+    try {
+      if (artist.name == null ||
+          artist.fans == null ||
+          artist.biography == null) {
+        artist = await deezerAPI.artist(artist.id ?? '');
+      }
+
+      b.insert('Artists', artist.toSQL(),
+          conflictAlgorithm: ConflictAlgorithm.replace);
+      await b.commit();
+
+      if (artist.image?.imageHash != null) {
+        await _downloadAndSaveImage(artist.image!);
+      }
+    } catch (e) {
+      Logger.root.info(
+          'Something went wrong adding artist ${artist.id} to database : $e');
+    }
+
+    return;
+  }
+
   Future<bool> addOfflineTrack(Track track,
       {private = true, isSingleton = false}) async {
     //Permission
@@ -316,12 +378,8 @@ class DownloadManager {
 
       await start();
 
-      Logger.root.info('start ?');
-
       // Wait for the download to complete
       bool downloadSuccess = await _waitForDownloadCompletion(track.id!);
-
-      Logger.root.info(downloadSuccess);
 
       if (!downloadSuccess) {
         return false; // Exit if the download failed
@@ -334,9 +392,9 @@ class DownloadManager {
       b = await _addTrackToDB(b, track, true);
       await b.commit();
 
-      //Cache art
-      DefaultCacheManager().getSingleFile(track.image?.thumb ?? '');
-      DefaultCacheManager().getSingleFile(track.image?.full ?? '');
+      if (track.image?.imageHash != null) {
+        await _downloadAndSaveImage(track.image!);
+      }
     }
 
     return true;
@@ -393,8 +451,9 @@ class DownloadManager {
       await b.commit();
 
       //Cache art
-      DefaultCacheManager().getSingleFile(episode.episodeCover?.thumb ?? '');
-      DefaultCacheManager().getSingleFile(episode.episodeCover?.full ?? '');
+      if (episode.episodeCover?.imageHash != null) {
+        await _downloadAndSaveImage(episode.episodeCover!);
+      }
     }
 
     return true;
@@ -418,9 +477,9 @@ class DownloadManager {
 
     //Add to DB
     if (private) {
-      //Cache art
-      DefaultCacheManager().getSingleFile(album.image?.thumb ?? '');
-      DefaultCacheManager().getSingleFile(album.image?.full ?? '');
+      if (album.image?.imageHash != null) {
+        await _downloadAndSaveImage(album.image!);
+      }
 
       Batch b = db!.batch();
       b.insert('Albums', album.toSQL(off: true),
@@ -445,14 +504,14 @@ class DownloadManager {
 
     for (Track t in (album.tracks ?? [])) {
       futures.add(_waitForDownloadCompletion(t.id!).then((bool success) async {
-        if (private) {
+        if (private && success) {
           Batch b = db!.batch();
           b = await _addTrackToDB(b, t, true);
           await b.commit();
 
-          //Cache art
-          DefaultCacheManager().getSingleFile(t.image?.thumb ?? '');
-          DefaultCacheManager().getSingleFile(t.image?.full ?? '');
+          if (t.image?.imageHash != null) {
+            await _downloadAndSaveImage(t.image!);
+          }
 
           downloadedTracks.add(t);
         }
@@ -461,7 +520,6 @@ class DownloadManager {
 
     //Update DB
     Future.wait(futures).whenComplete(() async {
-      Logger.root.info(downloadedTracks);
       if (private) {
         album.tracks = downloadedTracks;
         Batch b = db!.batch();
@@ -493,6 +551,9 @@ class DownloadManager {
 
     //Add to db
     if (private) {
+      if (playlist.image?.imageHash != null) {
+        await _downloadAndSaveImage(playlist.image!);
+      }
       Batch b = db!.batch();
       b.insert('Playlists', playlist.toSQL(),
           conflictAlgorithm: ConflictAlgorithm.replace);
@@ -522,14 +583,14 @@ class DownloadManager {
 
     for (Track t in (playlist.tracks ?? [])) {
       futures.add(_waitForDownloadCompletion(t.id!).then((bool success) async {
-        if (private) {
+        if (private && success) {
           Batch b = db!.batch();
           b = await _addTrackToDB(b, t, true);
           await b.commit();
 
-          //Cache art
-          DefaultCacheManager().getSingleFile(t.image?.thumb ?? '');
-          DefaultCacheManager().getSingleFile(t.image?.full ?? '');
+          if (t.image?.imageHash != null) {
+            await _downloadAndSaveImage(t.image!);
+          }
 
           downloadedTracks.add(t);
         }
@@ -570,9 +631,9 @@ class DownloadManager {
           toDowload.add(t);
         }
         b = await _addTrackToDB(b, t, true);
-        //Cache art
-        DefaultCacheManager().getSingleFile(t.image?.thumb ?? '');
-        DefaultCacheManager().getSingleFile(t.image?.full ?? '');
+        if (t.image?.imageHash != null) {
+          await _downloadAndSaveImage(t.image!);
+        }
       }
       await b.commit();
 
@@ -596,6 +657,14 @@ class DownloadManager {
       }
       await platform.invokeMethod('addDownloads', out);
       await start();
+
+      for (Track t in toDowload) {
+        _waitForDownloadCompletion(t.id!).then((success) async {
+          if (success && t.image?.imageHash != null) {
+            await _downloadAndSaveImage(t.image!);
+          }
+        });
+      }
     }
   }
 
@@ -632,8 +701,8 @@ class DownloadManager {
 
   //Get offline library tracks
   Future<List<Track>> getOfflineTracks() async {
-    List rawTracks = await db!.query('Tracks',
-        where: 'library == 1 AND offline == 1', columns: ['id']);
+    List rawTracks =
+        await db!.query('Tracks', where: 'offline == 1', columns: ['id']);
     List<Track> out = [];
     //Load track meta individually
     for (Map rawTrack in rawTracks) {
@@ -679,10 +748,11 @@ class DownloadManager {
     List<Track> tracks = [];
     //Load tracks
 
-    if (album.tracks?.isEmpty ?? true) {
-      album.tracks = (await db!
+    if (album.tracks?.where((Track t) => t.id != null && t.id != '').isEmpty ??
+        true) {
+      tracks = (await db!
               .query('Tracks', where: 'album == ?', whereArgs: [album.id]))
-          .map((dynamic t) => Track.fromJson(t))
+          .map((dynamic t) => Track.fromSQL(t))
           .toList();
     } else {
       for (int i = 0; i < (album.tracks?.length ?? 0); i++) {
@@ -766,6 +836,12 @@ class DownloadManager {
       if (offlineEp.id != null) out.add(offlineEp);
     }
     return out;
+  }
+
+  Future<List<Artist>> getOfflineArtists() async {
+    List rawArtists = await db!.query('Artists');
+
+    return rawArtists.map<Artist>((dynamic a) => Artist.fromSQL(a)).toList();
   }
 
   //Get offline artist METADATA, not tracks

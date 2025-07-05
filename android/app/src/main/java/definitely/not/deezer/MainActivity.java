@@ -140,12 +140,14 @@ public class MainActivity extends AudioServiceActivity {
             public void onListen(Object arguments, EventChannel.EventSink events) {
                 Log.i(TAG, "Event Sink Listening");
                 eventSink = events;
+                sendMessageToDownloadService(DownloadService.SERVICE_REGISTER_CLIENT, null);
                 sendMessageToAcrService(AcrCloudHandler.MSG_ACR_STATE, null);
             }
 
             @Override
             public void onCancel(Object arguments) {
                 Log.i(TAG, "Event Sink Cancelled");
+                sendMessageToDownloadService(DownloadService.SERVICE_UNREGISTER_CLIENT, null);
                 eventSink = null;
             }
         });

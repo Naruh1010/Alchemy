@@ -58,12 +58,15 @@ public class DownloadService extends Service {
     static final int SERVICE_REMOVE_DOWNLOAD = 7;
     static final int SERVICE_RETRY_DOWNLOADS = 8;
     static final int SERVICE_REMOVE_DOWNLOADS = 9;
+    static final int SERVICE_REGISTER_CLIENT = 10;
+    static final int SERVICE_UNREGISTER_CLIENT = 11;
 
     static final String NOTIFICATION_CHANNEL_ID = "alchemydownloads";
     static final int NOTIFICATION_ID_START = 6969;
     static final String NOTIFICATION_GROUP_KEY = "definitely.not.deezer.DOWNLOAD_GROUP";
 
     boolean running = false;
+    boolean isUiListening = false;
     DownloadSettings settings;
     Context context;
     SQLiteDatabase db;
@@ -961,6 +964,16 @@ public class DownloadService extends Service {
                     updateState();
                     break;
 
+                    case SERVICE_REGISTER_CLIENT:
+                        isUiListening = true;
+                        updateState();
+                        updateProgress();
+                        break;
+
+                    case SERVICE_UNREGISTER_CLIENT:
+                        isUiListening = false;
+                        break;
+
                 default:
                     super.handleMessage(msg);
             }
@@ -969,7 +982,7 @@ public class DownloadService extends Service {
 
     //Send message to MainActivity
     void sendMessage(int type, Bundle data) {
-        if (serviceMessenger != null) {
+        if (activityMessenger != null && isUiListening) {
             Message msg = Message.obtain(null, type);
             msg.setData(data);
             try {

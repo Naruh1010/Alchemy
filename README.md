@@ -46,11 +46,9 @@ Get Alchemy running: Follow [these instructions](./HOWTO.md) to compile it yours
 
 ## :building_construction: Upcoming Features
 
-*   Make artists available offline;
 *   Create notification settings;
 *   Remove the See All / View More button when it is not required;
-*   Implement a profile editing screen;
-*   Prefetch lyrics for tracks in the queue.
+*   Implement a profile editing screen.
 
 ## :lady_beetle: Bugs
 

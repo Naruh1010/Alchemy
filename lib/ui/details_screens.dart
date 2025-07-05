@@ -57,7 +57,6 @@ class _AlbumDetailsState extends State<AlbumDetails> {
           if (mounted && a.id != null) setState(() => album = a);
         } else {
           Album? a = await downloadManager.getOfflineAlbum(album.id ?? '');
-          Logger.root.info(a?.toJson());
           //Preserve library
           a?.library = album.library;
           if (mounted && a?.id != null) setState(() => album = a ?? Album());
@@ -477,10 +476,17 @@ class _AlbumDetailsState extends State<AlbumDetails> {
                                                               'Love'.i18n,
                                                         ),
                                                   onPressed: () async {
-                                                    //Add to library
-                                                    if (!(album.library ??
-                                                        false)) {
-                                                      bool result =
+                                                    final wasInLibrary =
+                                                        album.library ?? false;
+                                                    if (mounted) {
+                                                      setState(() =>
+                                                          album.library =
+                                                              !wasInLibrary);
+                                                    }
+
+                                                    if (!wasInLibrary) {
+                                                      // Add to library
+                                                      final result =
                                                           await deezerAPI
                                                               .addFavoriteAlbum(
                                                                   album.id ??
@@ -489,52 +495,41 @@ class _AlbumDetailsState extends State<AlbumDetails> {
                                                         Fluttertoast.showToast(
                                                             msg:
                                                                 'Added to library'
-                                                                    .i18n,
-                                                            toastLength: Toast
-                                                                .LENGTH_SHORT,
-                                                            gravity:
-                                                                ToastGravity
-                                                                    .BOTTOM);
-                                                        setState(() => album
-                                                            .library = true);
+                                                                    .i18n);
                                                       } else {
                                                         Fluttertoast.showToast(
                                                             msg:
                                                                 'Failed to add album to library'
-                                                                    .i18n,
-                                                            toastLength: Toast
-                                                                .LENGTH_SHORT,
-                                                            gravity:
-                                                                ToastGravity
-                                                                    .BOTTOM);
+                                                                    .i18n);
+                                                        if (mounted) {
+                                                          setState(() =>
+                                                              album.library =
+                                                                  wasInLibrary);
+                                                        }
                                                       }
-                                                      return;
-                                                    }
-                                                    //Remove
-                                                    bool result =
-                                                        await deezerAPI
-                                                            .removeAlbum(
-                                                                album.id ?? '');
-                                                    if (result) {
-                                                      Fluttertoast.showToast(
-                                                          msg:
-                                                              'Album removed from library!'
-                                                                  .i18n,
-                                                          toastLength: Toast
-                                                              .LENGTH_SHORT,
-                                                          gravity: ToastGravity
-                                                              .BOTTOM);
-                                                      setState(() => album
-                                                          .library = false);
                                                     } else {
-                                                      Fluttertoast.showToast(
-                                                          msg:
-                                                              'Failed to remove album from library'
-                                                                  .i18n,
-                                                          toastLength: Toast
-                                                              .LENGTH_SHORT,
-                                                          gravity: ToastGravity
-                                                              .BOTTOM);
+                                                      // Remove from library
+                                                      final result =
+                                                          await deezerAPI
+                                                              .removeAlbum(
+                                                                  album.id ??
+                                                                      '');
+                                                      if (result) {
+                                                        Fluttertoast.showToast(
+                                                            msg:
+                                                                'Album removed from library!'
+                                                                    .i18n);
+                                                      } else {
+                                                        Fluttertoast.showToast(
+                                                            msg:
+                                                                'Failed to remove album from library'
+                                                                    .i18n);
+                                                        if (mounted) {
+                                                          setState(() =>
+                                                              album.library =
+                                                                  wasInLibrary);
+                                                        }
+                                                      }
                                                     }
                                                   },
                                                 ),
@@ -893,59 +888,55 @@ class _AlbumDetailsState extends State<AlbumDetails> {
                                               padding:
                                                   EdgeInsets.only(right: 8.0),
                                               child: IconButton(
-                                                  icon: (album.library ?? false)
-                                                      ? Icon(
-                                                          AlchemyIcons
-                                                              .heart_fill,
-                                                          size: 25,
-                                                          color:
-                                                              Theme.of(context)
-                                                                  .primaryColor,
-                                                          semanticLabel:
-                                                              'Unlove'.i18n,
-                                                        )
-                                                      : Icon(
-                                                          AlchemyIcons.heart,
-                                                          size: 25,
-                                                          semanticLabel:
-                                                              'Love'.i18n,
-                                                        ),
-                                                  onPressed: () async {
-                                                    //Add to library
-                                                    if (!(album.library ??
-                                                        false)) {
-                                                      bool result =
-                                                          await deezerAPI
-                                                              .addFavoriteAlbum(
-                                                                  album.id ??
-                                                                      '');
-                                                      if (result) {
-                                                        Fluttertoast.showToast(
-                                                            msg:
-                                                                'Added to library'
-                                                                    .i18n,
-                                                            toastLength: Toast
-                                                                .LENGTH_SHORT,
-                                                            gravity:
-                                                                ToastGravity
-                                                                    .BOTTOM);
-                                                        setState(() => album
-                                                            .library = true);
-                                                      } else {
-                                                        Fluttertoast.showToast(
-                                                            msg:
-                                                                'Failed to add album to library'
-                                                                    .i18n,
-                                                            toastLength: Toast
-                                                                .LENGTH_SHORT,
-                                                            gravity:
-                                                                ToastGravity
-                                                                    .BOTTOM);
+                                                icon: (album.library ?? false)
+                                                    ? Icon(
+                                                        AlchemyIcons.heart_fill,
+                                                        size: 25,
+                                                        color: Theme.of(context)
+                                                            .primaryColor,
+                                                        semanticLabel:
+                                                            'Unlove'.i18n,
+                                                      )
+                                                    : Icon(
+                                                        AlchemyIcons.heart,
+                                                        size: 25,
+                                                        semanticLabel:
+                                                            'Love'.i18n,
+                                                      ),
+                                                onPressed: () async {
+                                                  final wasInLibrary =
+                                                      album.library ?? false;
+                                                  if (mounted) {
+                                                    setState(() =>
+                                                        album.library =
+                                                            !wasInLibrary);
+                                                  }
+
+                                                  if (!wasInLibrary) {
+                                                    // Add to library
+                                                    final result =
+                                                        await deezerAPI
+                                                            .addFavoriteAlbum(
+                                                                album.id ?? '');
+                                                    if (result) {
+                                                      Fluttertoast.showToast(
+                                                          msg:
+                                                              'Added to library'
+                                                                  .i18n);
+                                                    } else {
+                                                      Fluttertoast.showToast(
+                                                          msg:
+                                                              'Failed to add album to library'
+                                                                  .i18n);
+                                                      if (mounted) {
+                                                        setState(() =>
+                                                            album.library =
+                                                                wasInLibrary);
                                                       }
-                                                      return;
                                                     }
-                                                    //Remove
-                                                    bool result =
+                                                  } else {
+                                                    // Remove from library
+                                                    final result =
                                                         await deezerAPI
                                                             .removeAlbum(
                                                                 album.id ?? '');
@@ -953,24 +944,21 @@ class _AlbumDetailsState extends State<AlbumDetails> {
                                                       Fluttertoast.showToast(
                                                           msg:
                                                               'Album removed from library!'
-                                                                  .i18n,
-                                                          toastLength: Toast
-                                                              .LENGTH_SHORT,
-                                                          gravity: ToastGravity
-                                                              .BOTTOM);
-                                                      setState(() => album
-                                                          .library = false);
+                                                                  .i18n);
                                                     } else {
                                                       Fluttertoast.showToast(
                                                           msg:
                                                               'Failed to remove album from library'
-                                                                  .i18n,
-                                                          toastLength: Toast
-                                                              .LENGTH_SHORT,
-                                                          gravity: ToastGravity
-                                                              .BOTTOM);
+                                                                  .i18n);
+                                                      if (mounted) {
+                                                        setState(() =>
+                                                            album.library =
+                                                                wasInLibrary);
+                                                      }
                                                     }
-                                                  }),
+                                                  }
+                                                },
+                                              ),
                                             ),
                                             IconButton(
                                                 onPressed: () => {
@@ -1348,10 +1336,17 @@ class _ArtistDetailsState extends State<ArtistDetails> {
                                                             'Love'.i18n,
                                                       ),
                                                 onPressed: () async {
-                                                  //Add to library
-                                                  if (!(artist.library ??
-                                                      false)) {
-                                                    bool result =
+                                                  final wasInLibrary =
+                                                      artist.library ?? false;
+                                                  if (mounted) {
+                                                    setState(() =>
+                                                        artist.library =
+                                                            !wasInLibrary);
+                                                  }
+
+                                                  if (!wasInLibrary) {
+                                                    // Add to library
+                                                    final result =
                                                         await deezerAPI
                                                             .addFavoriteArtist(
                                                                 artist.id ??
@@ -1360,49 +1355,41 @@ class _ArtistDetailsState extends State<ArtistDetails> {
                                                       Fluttertoast.showToast(
                                                           msg:
                                                               'Artist added to library'
-                                                                  .i18n,
-                                                          toastLength: Toast
-                                                              .LENGTH_SHORT,
-                                                          gravity: ToastGravity
-                                                              .BOTTOM);
-                                                      setState(() => artist
-                                                          .library = true);
-                                                      return;
+                                                                  .i18n);
                                                     } else {
                                                       Fluttertoast.showToast(
                                                           msg:
                                                               'Failed to add artist to library'
-                                                                  .i18n,
-                                                          toastLength: Toast
-                                                              .LENGTH_SHORT,
-                                                          gravity: ToastGravity
-                                                              .BOTTOM);
+                                                                  .i18n);
+                                                      if (mounted) {
+                                                        setState(() =>
+                                                            artist.library =
+                                                                wasInLibrary);
+                                                      }
                                                     }
-                                                  }
-                                                  //Remove
-                                                  bool result = await deezerAPI
-                                                      .removeArtist(
-                                                          artist.id ?? '');
-                                                  if (result) {
-                                                    Fluttertoast.showToast(
-                                                        msg:
-                                                            'Artist removed from library!'
-                                                                .i18n,
-                                                        toastLength:
-                                                            Toast.LENGTH_SHORT,
-                                                        gravity: ToastGravity
-                                                            .BOTTOM);
-                                                    setState(() =>
-                                                        artist.library = false);
                                                   } else {
-                                                    Fluttertoast.showToast(
-                                                        msg:
-                                                            'Failed to remove artist from library'
-                                                                .i18n,
-                                                        toastLength:
-                                                            Toast.LENGTH_SHORT,
-                                                        gravity: ToastGravity
-                                                            .BOTTOM);
+                                                    // Remove from library
+                                                    final result =
+                                                        await deezerAPI
+                                                            .removeArtist(
+                                                                artist.id ??
+                                                                    '');
+                                                    if (result) {
+                                                      Fluttertoast.showToast(
+                                                          msg:
+                                                              'Artist removed from library!'
+                                                                  .i18n);
+                                                    } else {
+                                                      Fluttertoast.showToast(
+                                                          msg:
+                                                              'Failed to remove artist from library'
+                                                                  .i18n);
+                                                      if (mounted) {
+                                                        setState(() =>
+                                                            artist.library =
+                                                                wasInLibrary);
+                                                      }
+                                                    }
                                                   }
                                                 },
                                               ),
@@ -2107,59 +2094,55 @@ class _ArtistDetailsState extends State<ArtistDetails> {
                                                           'Love'.i18n,
                                                     ),
                                               onPressed: () async {
-                                                //Add to library
-                                                if (!(artist.library ??
-                                                    false)) {
-                                                  bool result = await deezerAPI
+                                                final wasInLibrary =
+                                                    artist.library ?? false;
+                                                if (mounted) {
+                                                  setState(() => artist
+                                                      .library = !wasInLibrary);
+                                                }
+
+                                                if (!wasInLibrary) {
+                                                  // Add to library
+                                                  final result = await deezerAPI
                                                       .addFavoriteArtist(
                                                           artist.id ?? '');
                                                   if (result) {
                                                     Fluttertoast.showToast(
                                                         msg:
                                                             'Artist added to library'
-                                                                .i18n,
-                                                        toastLength:
-                                                            Toast.LENGTH_SHORT,
-                                                        gravity: ToastGravity
-                                                            .BOTTOM);
-                                                    setState(() =>
-                                                        artist.library = true);
-                                                    return;
+                                                                .i18n);
                                                   } else {
                                                     Fluttertoast.showToast(
                                                         msg:
                                                             'Failed to add artist to library'
-                                                                .i18n,
-                                                        toastLength:
-                                                            Toast.LENGTH_SHORT,
-                                                        gravity: ToastGravity
-                                                            .BOTTOM);
+                                                                .i18n);
+                                                    if (mounted) {
+                                                      setState(() =>
+                                                          artist.library =
+                                                              wasInLibrary);
+                                                    }
                                                   }
-                                                }
-                                                //Remove
-                                                bool result = await deezerAPI
-                                                    .removeArtist(
-                                                        artist.id ?? '');
-                                                if (result) {
-                                                  Fluttertoast.showToast(
-                                                      msg:
-                                                          'Artist removed from library!'
-                                                              .i18n,
-                                                      toastLength:
-                                                          Toast.LENGTH_SHORT,
-                                                      gravity:
-                                                          ToastGravity.BOTTOM);
-                                                  setState(() =>
-                                                      artist.library = false);
                                                 } else {
-                                                  Fluttertoast.showToast(
-                                                      msg:
-                                                          'Failed to remove artist from library'
-                                                              .i18n,
-                                                      toastLength:
-                                                          Toast.LENGTH_SHORT,
-                                                      gravity:
-                                                          ToastGravity.BOTTOM);
+                                                  // Remove from library
+                                                  final result = await deezerAPI
+                                                      .removeArtist(
+                                                          artist.id ?? '');
+                                                  if (result) {
+                                                    Fluttertoast.showToast(
+                                                        msg:
+                                                            'Artist removed from library!'
+                                                                .i18n);
+                                                  } else {
+                                                    Fluttertoast.showToast(
+                                                        msg:
+                                                            'Failed to remove artist from library'
+                                                                .i18n);
+                                                    if (mounted) {
+                                                      setState(() =>
+                                                          artist.library =
+                                                              wasInLibrary);
+                                                    }
+                                                  }
                                                 }
                                               },
                                             ),
@@ -3270,17 +3253,24 @@ class _PlaylistDetailsState extends State<PlaylistDetails> {
   }
 
   Future _isLibrary() async {
+    // Check offline first, as it's faster and works without connection.
     if (playlist.isIn(await downloadManager.getOfflinePlaylists())) {
-      setState(() {
-        playlist.library = true;
-      });
-      return;
+      if (mounted) {
+        setState(() {
+          playlist.library = true;
+        });
+      }
     }
-    if (playlist.isIn(await deezerAPI.getPlaylists())) {
-      setState(() {
-        playlist.library = true;
-      });
-      return;
+
+    // Then, check online if connected.
+    if (await isConnected()) {
+      if (playlist.isIn(await deezerAPI.getPlaylists())) {
+        if (mounted) {
+          setState(() {
+            playlist.library = true;
+          });
+        }
+      }
     }
   }
 
@@ -3319,65 +3309,81 @@ class _PlaylistDetailsState extends State<PlaylistDetails> {
   Future _load() async {
     if (mounted) setState(() => _isLoading = true);
 
-    // Initial load if no tracks
-    if (playlist.tracks?.isEmpty ?? true) {
-      //If playlist is offline
-      Playlist? offlinePlaylist = await downloadManager
-          .getOfflinePlaylist(playlist.id ?? '')
-          .catchError((e) {
-        if (mounted) {
-          setState(() {
-            _error = true;
-          });
-        }
-        return null;
-      });
-      if ((offlinePlaylist?.tracks?.isNotEmpty ?? false) && mounted) {
-        setState(() {
-          playlist = offlinePlaylist ?? Playlist();
-          _isLoading = false;
-        });
+    try {
+      final results = await Future.wait([
+        _fetchPlaylistDetails(),
+        _fetchIsLibrary(),
+      ]);
 
-        //Try to update offline playlist
-        Playlist? fullPlaylist =
-            await deezerAPI.fullPlaylist(playlist.id ?? '');
-        if (fullPlaylist.tracks != offlinePlaylist?.tracks &&
-            (fullPlaylist.tracks?.isNotEmpty ?? false)) {
-          setState(() {
-            playlist = fullPlaylist;
-          });
-          await downloadManager.updateOfflinePlaylist(playlist);
+      final loadedPlaylist = results[0] as Playlist?;
+      final isLibrary = results[1] as bool;
+
+      if (mounted) {
+        if (loadedPlaylist != null) {
+          loadedPlaylist.library = isLibrary || (playlist.library ?? false);
+          setState(() => playlist = loadedPlaylist);
+        } else {
+          setState(() => _error = true);
         }
-      } else {
-        //If playlist is not offline
-        Playlist? onlinePlaylist =
-            await deezerAPI.playlist(playlist.id ?? '', nb: 25).catchError((e) {
-          if (mounted) {
-            setState(
-              () {
-                _error = true;
-              },
-            );
+      }
+    } catch (e) {
+      if (mounted) setState(() => _error = true);
+      Logger.root.severe('Failed to load playlist data', e);
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        _setColor();
+      }
+    }
+  }
+
+  Future<Playlist?> _fetchPlaylistDetails() async {
+    if (playlist.tracks?.isNotEmpty ?? false) {
+      return playlist;
+    }
+
+    Playlist? offlinePlaylist =
+        await downloadManager.getOfflinePlaylist(playlist.id ?? '');
+    if (offlinePlaylist?.tracks?.isNotEmpty ?? false) {
+      // We have an offline version with tracks.
+      // Check for updates in the background if connected.
+      if (await isConnected()) {
+        deezerAPI.fullPlaylist(playlist.id ?? '').then((onlinePlaylist) {
+          if (mounted &&
+              onlinePlaylist.tracks != offlinePlaylist?.tracks &&
+              (onlinePlaylist.tracks?.isNotEmpty ?? false)) {
+            final currentLibraryStatus = playlist.library;
+            setState(() {
+              playlist = onlinePlaylist;
+              playlist.library = currentLibraryStatus;
+            });
+            downloadManager.updateOfflinePlaylist(onlinePlaylist);
           }
-
-          return Playlist();
+        }).catchError((e) {
+          Logger.root.warning('Failed to update playlist in background: $e');
         });
-        if (mounted) {
-          setState(() {
-            playlist = onlinePlaylist;
-            _isLoading = false;
-          });
-        }
+      }
+      return offlinePlaylist;
+    }
+
+    if (await isConnected()) {
+      return await deezerAPI.playlist(playlist.id ?? '', nb: 25);
+    }
+
+    return offlinePlaylist; // Can be null or empty
+  }
+
+  Future<bool> _fetchIsLibrary() async {
+    if (await downloadManager.checkOffline(playlist: widget.playlist)) {
+      return true;
+    }
+    if (await isConnected()) {
+      if (widget.playlist.isIn(await deezerAPI.getPlaylists())) {
+        return true;
       }
     }
 
-    _setColor();
-
-    if (mounted) {
-      setState(() {
-        _isLoading = false;
-      });
-    }
+    return false;
   }
 
   void _setColor() async {
@@ -3398,7 +3404,6 @@ class _PlaylistDetailsState extends State<PlaylistDetails> {
     playlist = widget.playlist;
     _setColor();
     _load();
-    _isLibrary();
     _restoreSort();
     super.initState();
 
@@ -3744,10 +3749,17 @@ class _PlaylistDetailsState extends State<PlaylistDetails> {
                                                             'Love'.i18n,
                                                       ),
                                                 onPressed: () async {
-                                                  //Add to library
-                                                  if (!(playlist.library ??
-                                                      false)) {
-                                                    bool result =
+                                                  final wasInLibrary =
+                                                      playlist.library ?? false;
+                                                  if (mounted) {
+                                                    setState(() =>
+                                                        playlist.library =
+                                                            !wasInLibrary);
+                                                  }
+
+                                                  if (!wasInLibrary) {
+                                                    // Add to library
+                                                    final result =
                                                         await deezerAPI
                                                             .addPlaylist(
                                                                 playlist.id ??
@@ -3756,49 +3768,41 @@ class _PlaylistDetailsState extends State<PlaylistDetails> {
                                                       Fluttertoast.showToast(
                                                           msg:
                                                               'Added to library'
-                                                                  .i18n,
-                                                          toastLength: Toast
-                                                              .LENGTH_SHORT,
-                                                          gravity: ToastGravity
-                                                              .BOTTOM);
-                                                      setState(() => playlist
-                                                          .library = true);
-                                                      return;
+                                                                  .i18n);
                                                     } else {
                                                       Fluttertoast.showToast(
                                                           msg:
                                                               'Failed to add playlist to library'
-                                                                  .i18n,
-                                                          toastLength: Toast
-                                                              .LENGTH_SHORT,
-                                                          gravity: ToastGravity
-                                                              .BOTTOM);
+                                                                  .i18n);
+                                                      if (mounted) {
+                                                        setState(() =>
+                                                            playlist.library =
+                                                                wasInLibrary);
+                                                      }
                                                     }
-                                                  }
-                                                  //Remove
-                                                  bool result = await deezerAPI
-                                                      .removePlaylist(
-                                                          playlist.id ?? '');
-                                                  if (result) {
-                                                    Fluttertoast.showToast(
-                                                        msg:
-                                                            'Playlist removed from library!'
-                                                                .i18n,
-                                                        toastLength:
-                                                            Toast.LENGTH_SHORT,
-                                                        gravity: ToastGravity
-                                                            .BOTTOM);
-                                                    setState(() => playlist
-                                                        .library = false);
                                                   } else {
-                                                    Fluttertoast.showToast(
-                                                        msg:
-                                                            'Failed to remove playlist from library!'
-                                                                .i18n,
-                                                        toastLength:
-                                                            Toast.LENGTH_SHORT,
-                                                        gravity: ToastGravity
-                                                            .BOTTOM);
+                                                    // Remove from library
+                                                    final result =
+                                                        await deezerAPI
+                                                            .removePlaylist(
+                                                                playlist.id ??
+                                                                    '');
+                                                    if (result) {
+                                                      Fluttertoast.showToast(
+                                                          msg:
+                                                              'Playlist removed from library!'
+                                                                  .i18n);
+                                                    } else {
+                                                      Fluttertoast.showToast(
+                                                          msg:
+                                                              'Failed to remove playlist from library!'
+                                                                  .i18n);
+                                                      if (mounted) {
+                                                        setState(() =>
+                                                            playlist.library =
+                                                                wasInLibrary);
+                                                      }
+                                                    }
                                                   }
                                                 },
                                               ),
@@ -4325,58 +4329,54 @@ class _PlaylistDetailsState extends State<PlaylistDetails> {
                                                           'Love'.i18n,
                                                     ),
                                               onPressed: () async {
-                                                //Add to library
-                                                if (!(playlist.library ??
-                                                    false)) {
-                                                  bool result = await deezerAPI
+                                                final wasInLibrary =
+                                                    playlist.library ?? false;
+                                                if (mounted) {
+                                                  setState(() => playlist
+                                                      .library = !wasInLibrary);
+                                                }
+
+                                                if (!wasInLibrary) {
+                                                  // Add to library
+                                                  final result = await deezerAPI
                                                       .addPlaylist(
                                                           playlist.id ?? '');
                                                   if (result) {
                                                     Fluttertoast.showToast(
                                                         msg: 'Added to library'
-                                                            .i18n,
-                                                        toastLength:
-                                                            Toast.LENGTH_SHORT,
-                                                        gravity: ToastGravity
-                                                            .BOTTOM);
-                                                    setState(() => playlist
-                                                        .library = true);
-                                                    return;
+                                                            .i18n);
                                                   } else {
                                                     Fluttertoast.showToast(
                                                         msg:
                                                             'Failed to add playlist to library'
-                                                                .i18n,
-                                                        toastLength:
-                                                            Toast.LENGTH_SHORT,
-                                                        gravity: ToastGravity
-                                                            .BOTTOM);
+                                                                .i18n);
+                                                    if (mounted) {
+                                                      setState(() =>
+                                                          playlist.library =
+                                                              wasInLibrary);
+                                                    }
                                                   }
-                                                }
-                                                //Remove
-                                                bool result = await deezerAPI
-                                                    .removePlaylist(
-                                                        playlist.id ?? '');
-                                                if (result) {
-                                                  Fluttertoast.showToast(
-                                                      msg:
-                                                          'Playlist removed from library!'
-                                                              .i18n,
-                                                      toastLength:
-                                                          Toast.LENGTH_SHORT,
-                                                      gravity:
-                                                          ToastGravity.BOTTOM);
-                                                  setState(() =>
-                                                      playlist.library = false);
                                                 } else {
-                                                  Fluttertoast.showToast(
-                                                      msg:
-                                                          'Failed to remove playlist from library!'
-                                                              .i18n,
-                                                      toastLength:
-                                                          Toast.LENGTH_SHORT,
-                                                      gravity:
-                                                          ToastGravity.BOTTOM);
+                                                  // Remove from library
+                                                  final result = await deezerAPI
+                                                      .removePlaylist(
+                                                          playlist.id ?? '');
+                                                  if (result) {
+                                                    Fluttertoast.showToast(
+                                                        msg:
+                                                            'Playlist removed from library!'
+                                                                .i18n);
+                                                  } else {
+                                                    Fluttertoast.showToast(
+                                                        msg:
+                                                            'Failed to remove playlist from library!'
+                                                                .i18n);
+                                                    if (mounted) {
+                                                      setState(() =>
+                                                          playlist.library =
+                                                              wasInLibrary);
+                                                    }
+                                                  }
                                                 }
                                               },
                                             ),
@@ -4925,60 +4925,57 @@ class _ShowScreenState extends State<ShowScreen> {
                                                             'Love'.i18n,
                                                       ),
                                                 onPressed: () async {
-                                                  //Add to library
-                                                  if (!(show.isLibrary ??
-                                                      false)) {
-                                                    bool result =
+                                                  final wasInLibrary =
+                                                      show.isLibrary ?? false;
+                                                  if (mounted) {
+                                                    setState(() =>
+                                                        show.isLibrary =
+                                                            !wasInLibrary);
+                                                  }
+
+                                                  if (!wasInLibrary) {
+                                                    // Add to library
+                                                    final result =
                                                         await deezerAPI.addShow(
                                                             show.id ?? '');
-
                                                     if (result) {
                                                       Fluttertoast.showToast(
                                                           msg:
                                                               'Added to library'
-                                                                  .i18n,
-                                                          toastLength: Toast
-                                                              .LENGTH_SHORT,
-                                                          gravity: ToastGravity
-                                                              .BOTTOM);
-                                                      setState(() => show
-                                                          .isLibrary = true);
+                                                                  .i18n);
                                                     } else {
                                                       Fluttertoast.showToast(
                                                           msg:
                                                               'Failed to add show to library'
-                                                                  .i18n,
-                                                          toastLength: Toast
-                                                              .LENGTH_SHORT,
-                                                          gravity: ToastGravity
-                                                              .BOTTOM);
+                                                                  .i18n);
+                                                      if (mounted) {
+                                                        setState(() =>
+                                                            show.isLibrary =
+                                                                wasInLibrary);
+                                                      }
                                                     }
-                                                    return;
-                                                  }
-                                                  //Remove
-                                                  bool result = await deezerAPI
-                                                      .removeShow(
-                                                          show.id ?? '');
-                                                  if (result) {
-                                                    Fluttertoast.showToast(
-                                                        msg:
-                                                            'Show removed from library!'
-                                                                .i18n,
-                                                        toastLength:
-                                                            Toast.LENGTH_SHORT,
-                                                        gravity: ToastGravity
-                                                            .BOTTOM);
-                                                    setState(() =>
-                                                        show.isLibrary = false);
                                                   } else {
-                                                    Fluttertoast.showToast(
-                                                        msg:
-                                                            'Failed to remove show from library'
-                                                                .i18n,
-                                                        toastLength:
-                                                            Toast.LENGTH_SHORT,
-                                                        gravity: ToastGravity
-                                                            .BOTTOM);
+                                                    // Remove from library
+                                                    final result =
+                                                        await deezerAPI
+                                                            .removeShow(
+                                                                show.id ?? '');
+                                                    if (result) {
+                                                      Fluttertoast.showToast(
+                                                          msg:
+                                                              'Show removed from library!'
+                                                                  .i18n);
+                                                    } else {
+                                                      Fluttertoast.showToast(
+                                                          msg:
+                                                              'Failed to remove show from library'
+                                                                  .i18n);
+                                                      if (mounted) {
+                                                        setState(() =>
+                                                            show.isLibrary =
+                                                                wasInLibrary);
+                                                      }
+                                                    }
                                                   }
                                                 },
                                               ),
@@ -5503,57 +5500,54 @@ class _ShowScreenState extends State<ShowScreen> {
                                                           'Love'.i18n,
                                                     ),
                                               onPressed: () async {
-                                                //Add to library
-                                                if (!(show.isLibrary ??
-                                                    false)) {
-                                                  bool result = await deezerAPI
-                                                      .addShow(show.id ?? '');
+                                                final wasInLibrary =
+                                                    show.isLibrary ?? false;
+                                                if (mounted) {
+                                                  setState(() =>
+                                                      show.isLibrary =
+                                                          !wasInLibrary);
+                                                }
 
+                                                if (!wasInLibrary) {
+                                                  // Add to library
+                                                  final result = await deezerAPI
+                                                      .addShow(show.id ?? '');
                                                   if (result) {
                                                     Fluttertoast.showToast(
                                                         msg: 'Added to library'
-                                                            .i18n,
-                                                        toastLength:
-                                                            Toast.LENGTH_SHORT,
-                                                        gravity: ToastGravity
-                                                            .BOTTOM);
-                                                    setState(() =>
-                                                        show.isLibrary = true);
+                                                            .i18n);
                                                   } else {
                                                     Fluttertoast.showToast(
                                                         msg:
                                                             'Failed to add show to library'
-                                                                .i18n,
-                                                        toastLength:
-                                                            Toast.LENGTH_SHORT,
-                                                        gravity: ToastGravity
-                                                            .BOTTOM);
+                                                                .i18n);
+                                                    if (mounted) {
+                                                      setState(() =>
+                                                          show.isLibrary =
+                                                              wasInLibrary);
+                                                    }
                                                   }
-                                                  return;
-                                                }
-                                                //Remove
-                                                bool result = await deezerAPI
-                                                    .removeShow(show.id ?? '');
-                                                if (result) {
-                                                  Fluttertoast.showToast(
-                                                      msg:
-                                                          'Show removed from library!'
-                                                              .i18n,
-                                                      toastLength:
-                                                          Toast.LENGTH_SHORT,
-                                                      gravity:
-                                                          ToastGravity.BOTTOM);
-                                                  setState(() =>
-                                                      show.isLibrary = false);
                                                 } else {
-                                                  Fluttertoast.showToast(
-                                                      msg:
-                                                          'Failed to remove show from library'
-                                                              .i18n,
-                                                      toastLength:
-                                                          Toast.LENGTH_SHORT,
-                                                      gravity:
-                                                          ToastGravity.BOTTOM);
+                                                  // Remove from library
+                                                  final result = await deezerAPI
+                                                      .removeShow(
+                                                          show.id ?? '');
+                                                  if (result) {
+                                                    Fluttertoast.showToast(
+                                                        msg:
+                                                            'Show removed from library!'
+                                                                .i18n);
+                                                  } else {
+                                                    Fluttertoast.showToast(
+                                                        msg:
+                                                            'Failed to remove show from library'
+                                                                .i18n);
+                                                    if (mounted) {
+                                                      setState(() =>
+                                                          show.isLibrary =
+                                                              wasInLibrary);
+                                                    }
+                                                  }
                                                 }
                                               },
                                             ),

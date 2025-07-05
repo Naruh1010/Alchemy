@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:math';
+import 'dart:ui' as ui;
 
 import 'package:alchemy/ui/blind_test.dart';
 import 'package:alchemy/ui/elements.dart';
@@ -557,14 +558,16 @@ class MenuSheet {
       Function? onRemove,
       Function? onUpdate}) {
     show(context, [
-      (playlist.library == true)
-          ? removePlaylistLibrary(playlist, context, onRemove: onRemove)
-          : addPlaylistLibrary(playlist, context),
       playBlindTest(playlist, context),
       if (!(playlist.library ?? false)) addPlaylistOffline(playlist, context),
       shareTile('playlist', playlist.id!),
       if (playlist.user?.id == deezerAPI.userId)
         editPlaylist(playlist, context: context, onUpdate: onUpdate),
+      (playlist.library == true)
+          ? (playlist.user?.id?.trim() == deezerAPI.userId)
+              ? deletePlaylist(playlist, context: context, onUpdate: onUpdate)
+              : removePlaylistLibrary(playlist, context, onRemove: onRemove)
+          : addPlaylistLibrary(playlist, context),
       ...options
     ]);
   }
@@ -639,6 +642,19 @@ class MenuSheet {
               builder: (context) => CreatePlaylistScreen(playlist: p),
             ),
           );
+          if (onUpdate != null) onUpdate();
+        },
+      );
+
+  Widget deletePlaylist(Playlist p,
+          {required BuildContext context, Function? onUpdate}) =>
+      ListTile(
+        title: Text('Remove playlist'.i18n),
+        leading: const Icon(AlchemyIcons.trash),
+        onTap: () async {
+          await deezerAPI.deletePlaylist(p.id ?? '');
+          if (context.mounted) _close(context);
+
           if (onUpdate != null) onUpdate();
         },
       );
@@ -940,6 +956,7 @@ class _CreatePlaylistScreenState extends State<CreatePlaylistScreen> {
   bool _isLoading = false;
   bool _titleHasFocus = false;
   List<Track> _tracks = [];
+  Color? _placeholderColor;
 
   final FocusNode _keyboardListenerFocusNode = FocusNode();
   final FocusNode _textFieldFocusNode = FocusNode();
@@ -947,12 +964,33 @@ class _CreatePlaylistScreenState extends State<CreatePlaylistScreen> {
   //Create or edit mode
   bool get edit => widget.playlist != null;
 
+  Future<Uint8List> _createImageFromColor(Color color,
+      {int width = 500, int height = 500}) async {
+    final recorder = ui.PictureRecorder();
+    final canvas = Canvas(
+        recorder, Rect.fromLTWH(0.0, 0.0, width.toDouble(), height.toDouble()));
+    final paint = Paint()..color = color;
+    canvas.drawRect(
+        Rect.fromLTWH(0.0, 0.0, width.toDouble(), height.toDouble()), paint);
+    final picture = recorder.endRecording();
+    final img = await picture.toImage(width, height);
+    final byteData = await img.toByteData(format: ui.ImageByteFormat.png);
+    return byteData!.buffer.asUint8List();
+  }
+
   @override
   void initState() {
     //Edit playlist mode
     if (edit) {
       _title = widget.playlist?.title ?? '';
       _tracks = widget.playlist?.tracks ?? [];
+    } else {
+      _tracks = widget.tracks ?? [];
+    }
+
+    if (widget.playlist?.image == null) {
+      _placeholderColor =
+          Color((Random().nextDouble() * 0xFFFFFF).toInt()).withAlpha(255);
     }
 
     _titleController = TextEditingController(text: _title);
@@ -986,25 +1024,37 @@ class _CreatePlaylistScreenState extends State<CreatePlaylistScreen> {
                   });
                 }
                 if (edit) {
+                  List<int>? imageToUpload = _imageBytes;
+                  if (imageToUpload == null &&
+                      widget.playlist?.image == null &&
+                      _placeholderColor != null) {
+                    imageToUpload =
+                        await _createImageFromColor(_placeholderColor!);
+                  }
                   //Update
                   await deezerAPI.updatePlaylist(
                     title: _titleController!.value.text,
                     playlistId: widget.playlist!.id!,
                     isPrivate: _isPrivate,
                     isCollaborative: _isCollaborative,
-                    pictureData: _imageBytes,
+                    pictureData: imageToUpload,
                   );
                   Fluttertoast.showToast(
                       msg: 'Playlist updated!'.i18n,
                       gravity: ToastGravity.BOTTOM);
                 } else {
+                  List<int>? imageToUpload = _imageBytes;
+                  if (imageToUpload == null && _placeholderColor != null) {
+                    imageToUpload =
+                        await _createImageFromColor(_placeholderColor!);
+                  }
                   List<String> tracks = [];
                   tracks = _tracks.map<String>((t) => t.id!).toList();
                   await deezerAPI.createPlaylist(
                       title: _title,
                       isPrivate: _isPrivate,
                       isCollaborative: _isCollaborative,
-                      pictureData: _imageBytes,
+                      pictureData: imageToUpload,
                       trackIds: tracks);
                   Fluttertoast.showToast(
                       msg: 'Playlist created!'.i18n,
@@ -1065,10 +1115,7 @@ class _CreatePlaylistScreenState extends State<CreatePlaylistScreen> {
                                   : Container(
                                       height: 160,
                                       width: 160,
-                                      color: Color(
-                                              (Random().nextDouble() * 0xFFFFFF)
-                                                  .toInt())
-                                          .withAlpha(255)),
+                                      color: _placeholderColor),
                         ),
                         IconButton(
                             onPressed: () async {

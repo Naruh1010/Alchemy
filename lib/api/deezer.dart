@@ -64,9 +64,6 @@ class DeezerAPI {
   Future? _authorizing;
 
   Future testFunction(BuildContext context) async {
-    for (Track t in await downloadManager.allOfflineTracks()) {
-      Logger.root.info(t.lyrics?.toJson());
-    }
 /*    ImagePicker picker = ImagePicker();
     XFile? imageFile = await picker.pickImage(source: ImageSource.gallery);
     if (imageFile == null) return;
@@ -229,7 +226,7 @@ class DeezerAPI {
     }
   }
 
-  Future<bool> getGatewayAuth() async {
+  Future<bool> getGatewayAuth({bool? endOfTry}) async {
     if ((keyBag.token == null ||
             keyBag.tokenKey == null ||
             keyBag.userKey == null) &&
@@ -257,7 +254,19 @@ class DeezerAPI {
 
     dynamic sidRes = jsonDecode(sidReq.body);
 
-    Logger.root.info(sidRes);
+    if (!(endOfTry ?? false) &&
+        sidRes['error']?['REQUEST_ERROR'] == 'Auth token unknown') {
+      sidReq = await http.get(sidUri, headers: headers).catchError((e) {
+        return http.Response('', 200);
+      });
+      sidRes = jsonDecode(sidReq.body);
+
+      if (sidRes['error']?['REQUEST_ERROR'] == 'Auth token unknown') {
+        return await getGatewayAuth(endOfTry: true);
+      }
+    }
+
+    if (sidRes['results'] == null) return false;
 
     keyBag.sid = sidRes['results'];
 
@@ -1308,16 +1317,17 @@ class DeezerAPI {
     return LyricsFull.fromPrivateJson(data['data']);
   }
 
-  Future<List<Track>> completeTracks(List<Track> initTracks) async {
+  Future<List<Track>> completeTracks(List<Track> tracks) async {
     List<Future> futures = [];
-    List<Track> completeTracks = [];
-    for (Track t in initTracks) {
-      futures.add(track(t.id ?? '').then((Track ct) => completeTracks.add(ct)));
+
+    for (int i = 0; i < tracks.length; i++) {
+      futures.add(track(tracks[i].id ?? '')
+          .then((Track completeTrack) => tracks[i] = completeTrack));
     }
 
     await Future.wait(futures);
 
-    return completeTracks.where((Track t) => t.id != null).toList();
+    return tracks.where((Track t) => t.id != null).toList();
   }
 
   Future<List<Track>?> userTracks({int? limit}) async {
@@ -1593,8 +1603,6 @@ class DeezerAPI {
       imageRef = await imageUpload(
           imageData: pictureData!, uploadPath: '/v2/playlist/picture');
     }
-
-    Logger.root.info(imageRef);
 
     Map data = await callPipeApi(
       params: {
