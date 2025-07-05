@@ -1160,9 +1160,11 @@ class _MakeAlbumOfflineState extends State<MakeAlbumOffline> {
             await downloadManager.addOfflineAlbum(widget.album ?? Album(),
                 private: true);
             MenuSheet().showDownloadStartedToast();
-            setState(() {
-              _offline = true;
-            });
+            if (mounted) {
+              setState(() {
+                _offline = true;
+              });
+            }
             return;
           }
         });

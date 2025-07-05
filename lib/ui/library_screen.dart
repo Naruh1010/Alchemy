@@ -163,7 +163,6 @@ class _LibraryScreenState extends State<LibraryScreen> {
             tracks = onlineFavPlaylist.tracks ?? [];
             topPlaylist = onlineFavPlaylist;
           }
-          trackCount = tracks.length;
           cache.favoriteTracks = tracks;
         });
       });

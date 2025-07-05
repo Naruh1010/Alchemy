@@ -126,7 +126,10 @@ class _PlayerScreenState extends State<PlayerScreen> {
 
     return Scaffold(
       body: Container(
-        padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top),
+        padding: EdgeInsets.only(
+          top: MediaQuery.of(context).padding.top,
+          bottom: MediaQuery.of(context).padding.bottom,
+        ),
         decoration: BoxDecoration(
             gradient: settings.blurPlayerBackground ? null : _bgGradient),
         child: Stack(
@@ -311,7 +314,9 @@ class _PlayerScreenHorizontalState extends State<PlayerScreenHorizontal> {
                         LyricsIconButton(
                           12,
                           afterOnPressed: updateColor,
-                          key: mediaItemId != null ? Key(mediaItemId!) : null,
+                          key: mediaItemId != null
+                              ? Key(mediaItemId! + '_lrcBtn')
+                              : null,
                         ),
                         IconButton(
                           icon: Icon(
@@ -487,7 +492,7 @@ class _PlayerScreenVerticalState extends State<PlayerScreenVertical> {
               LyricsIconButton(
                 ScreenUtil().setSp(25) * 0.6,
                 afterOnPressed: updateColor,
-                key: mediaItemId != null ? Key(mediaItemId!) : null,
+                key: mediaItemId != null ? Key(mediaItemId! + '_lrcBtn') : null,
               ),
               IconButton(
                 key: iconButtonKey,
@@ -862,6 +867,9 @@ class _ActionControls extends State<ActionControls> {
             ),
             alignment: Alignment.center,
             child: IconButton(
+              key: audioHandler.mediaItem.value?.id != null
+                  ? Key(audioHandler.mediaItem.value!.id + '_moreBtn')
+                  : null,
               icon: Icon(
                 AlchemyIcons.more_vert,
                 size: widget.iconSize * 1.25,

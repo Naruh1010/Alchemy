@@ -257,6 +257,8 @@ class DeezerAPI {
 
     dynamic sidRes = jsonDecode(sidReq.body);
 
+    Logger.root.info(sidRes);
+
     keyBag.sid = sidRes['results'];
 
     Uri arlUri = Uri.https('api.deezer.com', '/1.0/gateway.php', {
@@ -1304,6 +1306,15 @@ class DeezerAPI {
       return Lyrics.error('err');
     }
     return LyricsFull.fromPrivateJson(data['data']);
+  }
+
+  Future<List<Track>> completeTracks(List<Track> initTracks) async {
+    List<Track> completeTracks = [];
+    for (Track t in initTracks) {
+      completeTracks.add(await track(t.id ?? ''));
+    }
+
+    return completeTracks.where((Track t) => t.id != null).toList();
   }
 
   Future<List<Track>?> userTracks({int? limit}) async {

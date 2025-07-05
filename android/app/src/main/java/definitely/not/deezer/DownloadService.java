@@ -788,6 +788,7 @@ public class DownloadService extends Service {
     private Bundle createProgressBundle(Download download) {
         Bundle bundle = new Bundle();
         bundle.putInt("id", download.id);
+        bundle.putString("trackId", download.trackId);
         bundle.putLong("received", download.received);
         bundle.putLong("filesize", download.filesize);
         bundle.putInt("quality", download.quality);

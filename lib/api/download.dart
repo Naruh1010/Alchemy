@@ -316,8 +316,13 @@ class DownloadManager {
 
       await start();
 
+      Logger.root.info('start ?');
+
       // Wait for the download to complete
       bool downloadSuccess = await _waitForDownloadCompletion(track.id!);
+
+      Logger.root.info(downloadSuccess);
+
       if (!downloadSuccess) {
         return false; // Exit if the download failed
       }
@@ -358,7 +363,6 @@ class DownloadManager {
         }
       }
     });
-
     return completer.future;
   }
 
@@ -421,9 +425,6 @@ class DownloadManager {
       Batch b = db!.batch();
       b.insert('Albums', album.toSQL(off: true),
           conflictAlgorithm: ConflictAlgorithm.replace);
-      for (Track t in album.tracks ?? []) {
-        b = await _addTrackToDB(b, t, true);
-      }
       await b.commit();
     }
 
@@ -460,14 +461,12 @@ class DownloadManager {
 
     //Update DB
     Future.wait(futures).whenComplete(() async {
+      Logger.root.info(downloadedTracks);
       if (private) {
         album.tracks = downloadedTracks;
         Batch b = db!.batch();
         b.insert('Albums', album.toSQL(off: true),
             conflictAlgorithm: ConflictAlgorithm.replace);
-        for (Track t in album.tracks ?? []) {
-          b = await _addTrackToDB(b, t, true);
-        }
         await b.commit();
       }
     });
@@ -779,6 +778,13 @@ class DownloadManager {
         await db!.rawQuery('SELECT * FROM Tracks WHERE artists LIKE "%$id%"');
     a.topTracks =
         rawTracks.map<Track>((dynamic t) => Track.fromSQL(t)).toList();
+    for (Track t in a.topTracks) {
+      for (int i = 0; i < (t.artists?.length ?? 0); i++) {
+        t.artists![i] = Artist.fromSQL((await db!.query('Artists',
+                where: 'id = ?', whereArgs: [t.artists?[i].id]))
+            .first);
+      }
+    }
 
     List<Album> rawAlbums =
         (await db!.rawQuery('SELECT * FROM Albums WHERE artists LIKE "%$id%"'))

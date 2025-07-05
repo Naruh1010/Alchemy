@@ -440,14 +440,15 @@ public class MainActivity extends AudioServiceActivity {
                         eventData.put("eventType", "downloadProgress");
                         ArrayList<Bundle> downloads = getParcelableArrayList(data, "downloads", Bundle.class);
                         if (downloads != null && !downloads.isEmpty()) {
-                            ArrayList<HashMap<String, Number>> progressData = new ArrayList<>();
+                            ArrayList<HashMap<String, Object>> progressData = new ArrayList<>();
                             for (Bundle bundle : downloads) {
-                                HashMap<String, Number> item = new HashMap<>();
+                                HashMap<String, Object> item = new HashMap<>();
                                 item.put("id", bundle.getInt("id"));
                                 item.put("state", bundle.getInt("state"));
                                 item.put("received", bundle.getLong("received"));
                                 item.put("filesize", bundle.getLong("filesize"));
                                 item.put("quality", bundle.getInt("quality"));
+                                item.put("trackId", bundle.getString("trackId"));
                                 progressData.add(item);
                             }
                             eventData.put("data", progressData);
