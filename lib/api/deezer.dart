@@ -1309,10 +1309,13 @@ class DeezerAPI {
   }
 
   Future<List<Track>> completeTracks(List<Track> initTracks) async {
+    List<Future> futures = [];
     List<Track> completeTracks = [];
     for (Track t in initTracks) {
-      completeTracks.add(await track(t.id ?? ''));
+      futures.add(track(t.id ?? '').then((Track ct) => completeTracks.add(ct)));
     }
+
+    await Future.wait(futures);
 
     return completeTracks.where((Track t) => t.id != null).toList();
   }

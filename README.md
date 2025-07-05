@@ -54,7 +54,6 @@ Get Alchemy running: Follow [these instructions](./HOWTO.md) to compile it yours
 
 ## :lady_beetle: Bugs
 
-*   User top tracks do not behave properly when played (incomplete tracks cause dysfunctions);
 *   There is an awkward display bug in the details screen and with the player bar in landscape mode due to the use of SafeAreas and ListTiles;
 *   Some home tiles are not and will not be implemented (Concerts, Did you know, Original videos, ...);
 *   [Tell me!](https://github.com/PetitPrinc3/Deezer/issues)

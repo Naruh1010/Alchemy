@@ -140,15 +140,23 @@ class _LibraryScreenState extends State<LibraryScreen> {
       ]);
       futures.add(trackFutures);
 
-      trackFutures.then((results) {
+      trackFutures.then((results) async {
         if (!mounted) return;
-        final topTracks = results[0] as List<Track>?;
+        List<Track>? topTracks = results[0] as List<Track>?;
         final onlineFavPlaylist = results[1] as Playlist?;
+
+        if (topTracks != null && topTracks.isNotEmpty) {
+          topTracks = await deezerAPI.completeTracks(topTracks);
+        }
 
         setState(() {
           // Always update favorites playlist for its own tile
           if (onlineFavPlaylist != null) {
             favoritesPlaylist = onlineFavPlaylist;
+            trackCount = onlineFavPlaylist.trackCount ??
+                onlineFavPlaylist.tracks?.length ??
+                topTracks?.length ??
+                0;
           }
 
           if (topTracks != null && topTracks.isNotEmpty) {
@@ -163,7 +171,8 @@ class _LibraryScreenState extends State<LibraryScreen> {
             tracks = onlineFavPlaylist.tracks ?? [];
             topPlaylist = onlineFavPlaylist;
           }
-          cache.favoriteTracks = tracks;
+          cache.favoriteTracks =
+              onlineFavPlaylist?.tracks ?? topTracks ?? cache.favoriteTracks;
         });
       });
     }
