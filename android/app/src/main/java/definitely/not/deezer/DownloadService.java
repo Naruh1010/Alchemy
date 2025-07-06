@@ -796,6 +796,8 @@ public class DownloadService extends Service {
         bundle.putLong("filesize", download.filesize);
         bundle.putInt("quality", download.quality);
         bundle.putInt("state", download.state.getValue());
+        bundle.putBoolean("private", download.priv);
+        bundle.putBoolean("isEpisode", download.isEpisode);
         return bundle;
     }
 

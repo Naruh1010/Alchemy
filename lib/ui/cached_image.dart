@@ -131,10 +131,17 @@ class _CachedImageState extends State<CachedImage> {
   Widget _buildPlaceholder(BuildContext context, {bool isError = false}) {
     String assetPath;
     if (isError) {
-      assetPath = 'assets/cover.jpg';
+      assetPath = widget.url.contains('artist')
+          ? 'assets/artist.jpg'
+          : 'assets/cover.jpg';
     } else {
-      assetPath =
-          widget.fullThumb ? 'assets/cover.jpg' : 'assets/cover_thumb.jpg';
+      assetPath = widget.fullThumb
+          ? widget.url.contains('artist')
+              ? 'assets/artist.jpg'
+              : 'assets/cover.jpg'
+          : widget.url.contains('artist')
+              ? 'assets/artist_thumb.jpg'
+              : 'assets/cover_thumb.jpg';
     }
     return Image.asset(
       assetPath,

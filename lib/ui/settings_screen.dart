@@ -1023,6 +1023,27 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: <Widget>[const Icon(Icons.image)]),
           ),
+          ListTile(
+            title: Text("Save artist's picture file for every track".i18n),
+            subtitle: Text(
+                'This is not recommended as it consumes significant bandwidth and disk space, and can be unreliable.'),
+            trailing: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: <Widget>[
+                  Switch(
+                    value: settings.downloadArtistImages,
+                    onChanged: (v) {
+                      setState(() => settings.downloadArtistImages = v);
+                      settings.save();
+                    },
+                  ),
+                ]),
+            leading: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: <Widget>[const Icon(Icons.image)]),
+          ),
           Padding(
             padding: EdgeInsets.fromLTRB(
               16,

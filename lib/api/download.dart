@@ -94,6 +94,15 @@ class DownloadManager {
           'queueSize': queueSize
         });
       } else if (eventType == 'downloadProgress') {
+        final List<dynamic> progressUpdates = event['data'];
+        for (final update in progressUpdates) {
+          // Check for completed private downloads to add them to the database
+          if (update['state'] == DownloadState.DONE.index &&
+              update['private'] == true) {
+            _handleCompletedPrivateDownload(update);
+          }
+        }
+
         serviceEvents.add({'action': 'onProgress', 'data': event['data']});
       } else {
         //Forward other/unknown events
@@ -102,6 +111,47 @@ class DownloadManager {
     });
 
     await platform.invokeMethod('loadDownloads');
+  }
+
+  /// When a private download completes (including retries), this function
+  /// ensures its metadata is saved to the offline database.
+  Future<void> _handleCompletedPrivateDownload(
+      Map<dynamic, dynamic> downloadUpdate) async {
+    final String trackId = downloadUpdate['trackId'];
+    final bool isEpisode = downloadUpdate['isEpisode'];
+
+    if (isEpisode) {
+      final existingEpisode = await getOfflineEpisode(trackId);
+      if (existingEpisode?.id != null) return; // Already processed
+
+      try {
+        ShowEpisode episode = await deezerAPI.showEpisode(trackId);
+        Batch b = db!.batch();
+        b = await _addShowEpisodeToDB(b, episode, true);
+        await b.commit();
+        if (episode.episodeCover?.imageHash != null) {
+          await _downloadAndSaveImage(episode.episodeCover!);
+        }
+      } catch (e) {
+        Logger.root
+            .severe('Failed to add completed episode to DB: $trackId', e);
+      }
+    } else {
+      final existingTrack = await getOfflineTrack(trackId);
+      if (existingTrack?.offline == true) return; // Already processed
+
+      try {
+        Track track = await deezerAPI.track(trackId);
+        Batch b = db!.batch();
+        b = await _addTrackToDB(b, track, true);
+        await b.commit();
+        if (track.image?.imageHash != null) {
+          await _downloadAndSaveImage(track.image!);
+        }
+      } catch (e) {
+        Logger.root.severe('Failed to add completed track to DB: $trackId', e);
+      }
+    }
   }
 
   Future<File?> _downloadAndSaveImage(ImageDetails imageDetails) async {
@@ -186,7 +236,8 @@ class DownloadManager {
         futures.add(addOfflineArtist(a));
       }
     }
-    await Future.wait(futures);
+
+    Future.wait(futures);
 
     return batch;
   }
@@ -340,7 +391,7 @@ class DownloadManager {
           conflictAlgorithm: ConflictAlgorithm.replace);
       await b.commit();
 
-      if (artist.image?.imageHash != null) {
+      if (settings.downloadArtistImages && artist.image?.imageHash != null) {
         await _downloadAndSaveImage(artist.image!);
       }
     } catch (e) {
@@ -499,11 +550,8 @@ class DownloadManager {
     await platform.invokeMethod('addDownloads', out);
     await start();
 
-    List<Future> futures = [];
-    List<Track> downloadedTracks = [];
-
     for (Track t in (album.tracks ?? [])) {
-      futures.add(_waitForDownloadCompletion(t.id!).then((bool success) async {
+      _waitForDownloadCompletion(t.id!).then((bool success) async {
         if (private && success) {
           Batch b = db!.batch();
           b = await _addTrackToDB(b, t, true);
@@ -512,22 +560,9 @@ class DownloadManager {
           if (t.image?.imageHash != null) {
             await _downloadAndSaveImage(t.image!);
           }
-
-          downloadedTracks.add(t);
         }
-      }));
+      });
     }
-
-    //Update DB
-    Future.wait(futures).whenComplete(() async {
-      if (private) {
-        album.tracks = downloadedTracks;
-        Batch b = db!.batch();
-        b.insert('Albums', album.toSQL(off: true),
-            conflictAlgorithm: ConflictAlgorithm.replace);
-        await b.commit();
-      }
-    });
   }
 
   Future addOfflinePlaylist(Playlist playlist,
@@ -578,11 +613,8 @@ class DownloadManager {
     await platform.invokeMethod('addDownloads', out);
     await start();
 
-    List<Future> futures = [];
-    List<Track> downloadedTracks = [];
-
     for (Track t in (playlist.tracks ?? [])) {
-      futures.add(_waitForDownloadCompletion(t.id!).then((bool success) async {
+      _waitForDownloadCompletion(t.id!).then((bool success) async {
         if (private && success) {
           Batch b = db!.batch();
           b = await _addTrackToDB(b, t, true);
@@ -591,22 +623,9 @@ class DownloadManager {
           if (t.image?.imageHash != null) {
             await _downloadAndSaveImage(t.image!);
           }
-
-          downloadedTracks.add(t);
         }
-      }));
+      });
     }
-
-    //Update DB
-    Future.wait(futures).whenComplete(() async {
-      if (private) {
-        playlist.tracks = downloadedTracks;
-        Batch b = db!.batch();
-        b.insert('Playlists', playlist.toSQL(),
-            conflictAlgorithm: ConflictAlgorithm.replace);
-        await b.commit();
-      }
-    });
   }
 
   Future updateOfflinePlaylist(Playlist playlist) async {

@@ -122,8 +122,10 @@ flutter:
   assets:
     - lib/.env
     - assets/cover.jpg
-    - assets/banner.png
     - assets/cover_thumb.jpg
+    - assets/artist.jpg
+    - assets/artist_thumb.jpg
+    - assets/banner.png
     - assets/icon_legacy.png
     - assets/icon.png
     - assets/favorites_thumb.jpg

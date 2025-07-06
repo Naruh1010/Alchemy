@@ -67,6 +67,8 @@ class Settings {
   @JsonKey(defaultValue: true)
   late bool downloadLyrics;
   @JsonKey(defaultValue: false)
+  late bool downloadArtistImages;
+  @JsonKey(defaultValue: false)
   late bool trackCover;
   @JsonKey(defaultValue: true)
   late bool albumCover;

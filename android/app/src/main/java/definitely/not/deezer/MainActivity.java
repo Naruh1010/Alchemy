@@ -451,6 +451,8 @@ public class MainActivity extends AudioServiceActivity {
                                 item.put("filesize", bundle.getLong("filesize"));
                                 item.put("quality", bundle.getInt("quality"));
                                 item.put("trackId", bundle.getString("trackId"));
+                                item.put("private", bundle.getBoolean("private"));
+                                item.put("isEpisode", bundle.getBoolean("isEpisode"));
                                 progressData.add(item);
                             }
                             eventData.put("data", progressData);
