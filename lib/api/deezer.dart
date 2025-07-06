@@ -1018,9 +1018,14 @@ class DeezerAPI {
   Future<List<Playlist>> getUserPlaylists({String? uId}) async {
     Map data = await callGwApi('playlist.getList',
         params: {'nb': '1000', 'start': '0', 'user_id': uId ?? userId});
-    return (data['results']?['data'] ?? [])
+    List<Playlist> playlists = (data['results']?['data'] ?? [])
         .map<Playlist>((json) => Playlist.fromPrivateJson(json, library: true))
         .toList();
+    for (int i = 0; i < playlists.length; i++) {
+      playlists[i].user = User(id: userId);
+    }
+
+    return playlists;
   }
 
   //Get favorite playlists
