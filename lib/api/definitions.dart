@@ -1196,6 +1196,7 @@ class HomePage {
 
   Future<HomePage> load() async {
     String path = await _getPath();
+    //TODO
     String jsonString = await File(path).readAsString();
     Map<String, dynamic> data = jsonDecode(jsonString);
     return HomePage.fromJson(data);
@@ -1696,7 +1697,7 @@ class ShowEpisode {
   String? url;
   Duration? duration;
   String? publishedDate;
-  ImageDetails? episodeCover;
+  ImageDetails? image;
   bool? isExplicit;
   Show? show;
 
@@ -1707,7 +1708,7 @@ class ShowEpisode {
     this.url,
     this.duration,
     this.publishedDate,
-    this.episodeCover,
+    this.image,
     this.isExplicit,
     this.show,
   });
@@ -1728,7 +1729,7 @@ class ShowEpisode {
       url: data['url'],
       duration: Duration(seconds: data['duration']),
       publishedDate: data['publishedDate'],
-      episodeCover: ImageDetails(fullUrl: data['episodeCover']),
+      image: ImageDetails(fullUrl: data['image']),
       isExplicit: data['isExplicit'] == 1,
       show: Show(id: data['showId']));
 
@@ -1739,7 +1740,7 @@ class ShowEpisode {
         'url': url,
         'duration': duration?.inSeconds,
         'publishedDate': publishedDate,
-        'episodeCover': episodeCover?.fullUrl,
+        'image': image?.fullUrl,
         'isExplicit': (isExplicit ?? false) ? 1 : 0,
         'showId': show?.id ?? '',
       };
@@ -1762,7 +1763,7 @@ class ShowEpisode {
       },
       displayDescription: description,
       duration: duration,
-      artUri: Uri.parse(episodeCover?.full ?? ''),
+      artUri: Uri.parse(image?.full ?? ''),
     );
   }
 
@@ -1792,7 +1793,7 @@ class ShowEpisode {
                   .format(DateTime.parse(json['EPISODE_PUBLISHED_TIMESTAMP']))
               : DateFormat('MMM d, y')
                   .format(DateTime.parse(json['EPISODE_PUBLISHED_TIMESTAMP'])),
-          episodeCover: json['EPISODE_IMAGE_MD5'] != null
+          image: json['EPISODE_IMAGE_MD5'] != null
               ? ImageDetails.fromPrivateString(json['EPISODE_IMAGE_MD5'],
                   type: 'talk')
               : null,
@@ -1812,7 +1813,7 @@ class ShowEpisode {
                 DateFormat('yyyy-MM-ddThh:mm:ss').parse(json['releaseDate']))
             : DateFormat('MMM d, y').format(
                 DateFormat('yyyy-MM-ddThh:mm:ss').parse(json['releaseDate'])),
-        episodeCover: json['cover'] != null
+        image: json['cover'] != null
             ? ImageDetails.fromPrivateString(json['cover']?['md5'],
                 type: 'talk')
             : null,

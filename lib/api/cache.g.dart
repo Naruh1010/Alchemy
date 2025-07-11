@@ -12,7 +12,7 @@ Cache _$CacheFromJson(Map<String, dynamic> json) => Cache(
           .toList(),
     )
       ..favoritesPlaylistId = json['favoritesPlaylistId'] as String? ?? ''
-      ..favoriteTracks = (json['favoriteTracks'] as List<dynamic>?)
+      ..topTracks = (json['topTracks'] as List<dynamic>?)
               ?.map((e) => Track.fromJson(e as Map<String, dynamic>))
               .toList() ??
           []
@@ -20,6 +20,9 @@ Cache _$CacheFromJson(Map<String, dynamic> json) => Cache(
               ?.map((e) => Playlist.fromJson(e as Map<String, dynamic>))
               .toList() ??
           []
+      ..favortirePlaylist = json['favortirePlaylist'] == null
+          ? null
+          : Playlist.fromJson(json['favortirePlaylist'] as Map<String, dynamic>)
       ..userName = json['userName'] as String? ?? ''
       ..userEmail = json['userEmail'] as String? ?? ''
       ..userPicture = json['userPicture'] as Map<String, dynamic>? ?? {}
@@ -47,8 +50,9 @@ Cache _$CacheFromJson(Map<String, dynamic> json) => Cache(
 
 Map<String, dynamic> _$CacheToJson(Cache instance) => <String, dynamic>{
       'favoritesPlaylistId': instance.favoritesPlaylistId,
-      'favoriteTracks': instance.favoriteTracks,
+      'topTracks': instance.topTracks,
       'favoritePlaylists': instance.favoritePlaylists,
+      'favortirePlaylist': instance.favortirePlaylist,
       'userName': instance.userName,
       'userEmail': instance.userEmail,
       'userPicture': instance.userPicture,

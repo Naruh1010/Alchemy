@@ -129,8 +129,8 @@ class DownloadManager {
         Batch b = db!.batch();
         b = await _addShowEpisodeToDB(b, episode, true);
         await b.commit();
-        if (episode.episodeCover?.imageHash != null) {
-          await _downloadAndSaveImage(episode.episodeCover!);
+        if (episode.image?.imageHash != null) {
+          await _downloadAndSaveImage(episode.image!);
         }
       } catch (e) {
         Logger.root
@@ -481,7 +481,7 @@ class DownloadManager {
     if (!private && !(await checkPermission())) return false;
 
     //Get path
-    String path = _generatePath(episode.id!, private, isSingleton: isSingleton);
+    String path = p.join(offlinePath!, episode.id);
     if (!(await File(path).exists())) {
       await platform.invokeMethod('addDownloads',
           [await Download.jsonFromEpisode(episode, path, private: private)]);
@@ -502,8 +502,8 @@ class DownloadManager {
       await b.commit();
 
       //Cache art
-      if (episode.episodeCover?.imageHash != null) {
-        await _downloadAndSaveImage(episode.episodeCover!);
+      if (episode.image?.imageHash != null) {
+        await _downloadAndSaveImage(episode.image!);
       }
     }
 
@@ -987,6 +987,26 @@ class DownloadManager {
     }
   }
 
+  Future removeOfflineEpisodes(List<ShowEpisode> episodes) async {
+    for (ShowEpisode e in episodes) {
+      //Check if library
+      List rawEp = await db!.query('Episodes',
+          where: 'id == ?', whereArgs: [e.id], columns: ['favorite']);
+      if (rawEp.isNotEmpty) {
+        await db!.delete('Episodes', where: 'id == ?', whereArgs: [e.id]);
+      }
+
+      //Remove file
+      try {
+        if (await File(p.join(offlinePath!, e.id)).exists()) {
+          File(p.join(offlinePath!, e.id)).delete();
+        }
+      } catch (err) {
+        Logger.root.severe('Error deleting offline episode : ${e.id}', e);
+      }
+    }
+  }
+
   Future removeOfflineAlbum(String id) async {
     //Get album
     List rawAlbums =
@@ -1351,7 +1371,7 @@ class Download {
       'url': e.url,
       'title': e.title,
       'path': path,
-      'image': e.episodeCover?.thumb,
+      'image': e.image?.thumb,
       'quality': 1,
       'isEpisode': true,
     };

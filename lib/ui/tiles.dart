@@ -9,6 +9,7 @@ import 'package:alchemy/settings.dart';
 import 'package:alchemy/ui/details_screens.dart';
 import 'package:alchemy/ui/library_screen.dart';
 import 'package:alchemy/ui/menu.dart';
+import 'package:logging/logging.dart';
 import 'package:lottie/lottie.dart';
 import 'package:figma_squircle/figma_squircle.dart';
 import 'package:share_plus/share_plus.dart';
@@ -1103,7 +1104,7 @@ class _ShowEpisodeTileState extends State<ShowEpisodeTile> {
                 leading: Stack(
                   children: [
                     CachedImage(
-                      url: widget.episode.episodeCover?.full ?? '',
+                      url: widget.episode.image?.full ?? '',
                       width: 48,
                       rounded: true,
                     ),
@@ -1142,12 +1143,31 @@ class _ShowEpisodeTileState extends State<ShowEpisodeTile> {
                   children: [
                     if (_isOffline)
                       IconButton(
-                          onPressed: () {},
+                          onPressed: () {
+                            if (mounted) {
+                              setState(() {
+                                _isOffline = false;
+                              });
+                            }
+                            downloadManager
+                                .removeOfflineEpisodes([widget.episode]);
+                          },
                           icon: Icon(AlchemyIcons.download_fill)),
                     if (!_isOffline)
                       IconButton(
-                          onPressed: () {
-                            downloadManager.addOfflineEpisode(widget.episode);
+                          onPressed: () async {
+                            if (mounted) {
+                              setState(() {
+                                _isOffline = true;
+                              });
+                            }
+                            bool off = await downloadManager
+                                .addOfflineEpisode(widget.episode);
+                            if (mounted) {
+                              setState(() {
+                                _isOffline = off;
+                              });
+                            }
                           },
                           icon: Icon(AlchemyIcons.download)),
                     if (widget.episode.isExplicit ?? false)
@@ -1203,9 +1223,7 @@ class _ShowEpisodeTileState extends State<ShowEpisodeTile> {
                                                     ),
                                                   ),
                                                   child: CachedImage(
-                                                    url: widget
-                                                            .episode
-                                                            .episodeCover
+                                                    url: widget.episode.image
                                                             ?.full ??
                                                         '',
                                                   ),

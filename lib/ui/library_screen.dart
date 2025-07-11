@@ -56,9 +56,12 @@ class _LibraryScreenState extends State<LibraryScreen> {
         cache.favoritePlaylists[0].id != null) {
       _playlists = cache.favoritePlaylists;
     }
-    if (cache.favoriteTracks.isNotEmpty) {
-      tracks = cache.favoriteTracks;
-      trackCount = tracks.length;
+    if (cache.favortirePlaylist != null) {
+      trackCount = cache.favortirePlaylist?.tracks?.length;
+    }
+    if (cache.topTracks.isNotEmpty) {
+      tracks = cache.topTracks;
+      trackCount = trackCount ?? tracks.length;
     }
     // Immediate UI update with cached data
     if (mounted) setState(() {});
@@ -171,8 +174,10 @@ class _LibraryScreenState extends State<LibraryScreen> {
             tracks = onlineFavPlaylist.tracks ?? [];
             topPlaylist = onlineFavPlaylist;
           }
-          cache.favoriteTracks =
-              onlineFavPlaylist?.tracks ?? topTracks ?? cache.favoriteTracks;
+          cache.favortirePlaylist = onlineFavPlaylist;
+          cache.topTracks =
+              topTracks ?? onlineFavPlaylist?.tracks ?? cache.topTracks;
+          cache.save();
         });
       });
     }
@@ -197,178 +202,259 @@ class _LibraryScreenState extends State<LibraryScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SafeArea(
-        child: ListView(
-            padding: const EdgeInsets.only(top: 12.0),
-            children: <Widget>[
-              ListTile(
-                contentPadding: EdgeInsets.symmetric(
-                    horizontal: MediaQuery.of(context).size.width * 0.05),
-                leading: ClipRRect(
-                  borderRadius: BorderRadius.circular(60),
-                  child: Container(
-                    width: 60,
+      body: RefreshIndicator(
+        color: Theme.of(context).primaryColor,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        onRefresh: _load,
+        child: SafeArea(
+          child: ListView(
+              padding: const EdgeInsets.only(top: 12.0),
+              children: <Widget>[
+                ListTile(
+                  contentPadding: EdgeInsets.symmetric(
+                      horizontal: MediaQuery.of(context).size.width * 0.05),
+                  leading: ClipRRect(
+                    borderRadius: BorderRadius.circular(60),
+                    child: Container(
+                      width: 60,
+                      height: 60,
+                      alignment: Alignment.centerLeft,
+                      child: SizedBox(
+                        width: 30,
+                        height: 30,
+                        child: CachedImage(
+                          url: ImageDetails.fromJson(cache.userPicture)
+                                  .fullUrl ??
+                              '',
+                          circular: true,
+                        ),
+                      ),
+                    ),
+                  ),
+                  title: const Center(
+                    child: Text(
+                      'Library',
+                      style:
+                          TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                  trailing: SizedBox(
                     height: 60,
-                    alignment: Alignment.centerLeft,
-                    child: SizedBox(
-                      width: 30,
-                      height: 30,
-                      child: CachedImage(
-                        url: ImageDetails.fromJson(cache.userPicture).fullUrl ??
-                            '',
-                        circular: true,
+                    width: 60,
+                    child: Align(
+                      alignment: Alignment.centerRight,
+                      child: IconButton(
+                        splashRadius: 20,
+                        alignment: Alignment.center,
+                        onPressed: () {
+                          List<Track> trackList = List.from(tracks);
+                          trackList.shuffle();
+                          GetIt.I<AudioPlayerHandler>().playFromTrackList(
+                              trackList,
+                              trackList[0].id ?? '',
+                              QueueSource(
+                                  id: '',
+                                  source: 'Library',
+                                  text: 'Library shuffle'.i18n));
+                        },
+                        icon: const Icon(AlchemyIcons.shuffle),
                       ),
                     ),
                   ),
                 ),
-                title: const Center(
-                  child: Text(
-                    'Library',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                ),
-                trailing: SizedBox(
-                  height: 60,
-                  width: 60,
-                  child: Align(
-                    alignment: Alignment.centerRight,
-                    child: IconButton(
-                      splashRadius: 20,
-                      alignment: Alignment.center,
-                      onPressed: () {
-                        List<Track> trackList = List.from(tracks);
-                        trackList.shuffle();
-                        GetIt.I<AudioPlayerHandler>().playFromTrackList(
-                            trackList,
-                            trackList[0].id ?? '',
-                            QueueSource(
-                                id: '',
-                                source: 'Library',
-                                text: 'Library shuffle'.i18n));
-                      },
-                      icon: const Icon(AlchemyIcons.shuffle),
-                    ),
-                  ),
-                ),
-              ),
-              SizedBox(
-                width: MediaQuery.of(context).size.width,
-                child: Padding(
-                  padding:
-                      EdgeInsets.all(MediaQuery.of(context).size.width * 0.05),
-                  child: Column(
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          Expanded(
-                            child: LibraryGridItem(
-                              title: 'Favorites'.i18n,
-                              subtitle: '${(trackCount ?? 0)} ' + 'Songs'.i18n,
-                              icon: AlchemyIcons.heart,
-                              onTap: () {
-                                Navigator.of(context).push(MaterialPageRoute(
-                                    builder: (context) => PlaylistDetails(
-                                        favoritesPlaylist ??
-                                            Playlist(
-                                                id: cache
-                                                    .favoritesPlaylistId))));
-                              },
+                SizedBox(
+                  width: MediaQuery.of(context).size.width,
+                  child: Padding(
+                    padding: EdgeInsets.all(
+                        MediaQuery.of(context).size.width * 0.05),
+                    child: Column(
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Expanded(
+                              child: LibraryGridItem(
+                                title: 'Favorites'.i18n,
+                                subtitle:
+                                    '${(trackCount ?? 0)} ' + 'Songs'.i18n,
+                                icon: AlchemyIcons.heart,
+                                onTap: () {
+                                  Navigator.of(context).push(MaterialPageRoute(
+                                      builder: (context) => PlaylistDetails(
+                                          favoritesPlaylist ??
+                                              Playlist(
+                                                  id: cache
+                                                      .favoritesPlaylistId))));
+                                },
+                              ),
                             ),
-                          ),
 
-                          SizedBox(
-                              width: MediaQuery.of(context).size.width *
-                                  0.05), // Spacing between items
-                          Expanded(
-                            child: LibraryGridItem(
-                              title: 'Artists'.i18n,
-                              subtitle: favoriteArtists != null
-                                  ? '$favoriteArtists ' + 'Artists'.i18n
-                                  : 'You are offline',
-                              icon: AlchemyIcons.human_circle,
-                              onTap: () {
-                                Navigator.of(context).push(MaterialPageRoute(
-                                    builder: (context) => LibraryArtists()));
-                              },
+                            SizedBox(
+                                width: MediaQuery.of(context).size.width *
+                                    0.05), // Spacing between items
+                            Expanded(
+                              child: LibraryGridItem(
+                                title: 'Artists'.i18n,
+                                subtitle: favoriteArtists != null
+                                    ? '$favoriteArtists ' + 'Artists'.i18n
+                                    : 'You are offline',
+                                icon: AlchemyIcons.human_circle,
+                                onTap: () {
+                                  Navigator.of(context).push(MaterialPageRoute(
+                                      builder: (context) => LibraryArtists()));
+                                },
+                              ),
                             ),
-                          ),
-                        ],
-                      ),
-                      SizedBox(
-                          height: MediaQuery.of(context).size.width *
-                              0.05), // Spacing between rows
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          Expanded(
-                            child: LibraryGridItem(
-                              title: 'Podcasts'.i18n,
-                              subtitle: '$favoriteShows ' + 'Shows'.i18n,
-                              icon: AlchemyIcons.podcast,
-                              onTap: () {
-                                Navigator.of(context).push(MaterialPageRoute(
-                                    builder: (context) =>
-                                        const LibraryShows()));
-                              },
+                          ],
+                        ),
+                        SizedBox(
+                            height: MediaQuery.of(context).size.width *
+                                0.05), // Spacing between rows
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Expanded(
+                              child: LibraryGridItem(
+                                title: 'Podcasts'.i18n,
+                                subtitle: '$favoriteShows ' + 'Shows'.i18n,
+                                icon: AlchemyIcons.podcast,
+                                onTap: () {
+                                  Navigator.of(context).push(MaterialPageRoute(
+                                      builder: (context) =>
+                                          const LibraryShows()));
+                                },
+                              ),
                             ),
-                          ),
-                          SizedBox(
-                              width: MediaQuery.of(context).size.width *
-                                  0.05), // Spacing between items
-                          Expanded(
-                            child: LibraryGridItem(
-                              title: 'Albums'.i18n,
-                              subtitle: favoriteAlbums != null
-                                  ? '$favoriteAlbums ' + 'Albums'.i18n
-                                  : 'You are offline',
-                              icon: AlchemyIcons.album,
-                              onTap: () {
-                                Navigator.of(context).push(MaterialPageRoute(
-                                    builder: (context) => LibraryAlbums()));
-                              },
+                            SizedBox(
+                                width: MediaQuery.of(context).size.width *
+                                    0.05), // Spacing between items
+                            Expanded(
+                              child: LibraryGridItem(
+                                title: 'Albums'.i18n,
+                                subtitle: favoriteAlbums != null
+                                    ? '$favoriteAlbums ' + 'Albums'.i18n
+                                    : 'You are offline',
+                                icon: AlchemyIcons.album,
+                                onTap: () {
+                                  Navigator.of(context).push(MaterialPageRoute(
+                                      builder: (context) => LibraryAlbums()));
+                                },
+                              ),
                             ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              if ((_playlists?.isEmpty ?? true) && _loading)
-                SizedBox(
-                  height: 260,
-                  child: ListTile(
-                    contentPadding: EdgeInsets.symmetric(
-                        horizontal: MediaQuery.of(context).size.width * 0.05),
-                    title: Text(
-                      'Your Playlists'.i18n,
-                      style: const TextStyle(
-                          fontSize: 18, fontWeight: FontWeight.bold),
+                          ],
+                        ),
+                      ],
                     ),
-                    trailing: Transform.scale(
-                        scale: 0.5,
-                        child: CircularProgressIndicator(
-                            color: Theme.of(context).primaryColor)),
-                    onTap: () => {
-                      Navigator.of(context).push(MaterialPageRoute(
-                          builder: (context) => const LibraryPlaylists()))
-                    },
                   ),
                 ),
-              if (_playlists?.isNotEmpty ?? false)
-                SizedBox(
-                  height: 260,
-                  child: Column(
-                    children: [
+                if ((_playlists?.isEmpty ?? true) && _loading)
+                  SizedBox(
+                    height: 260,
+                    child: ListTile(
+                      contentPadding: EdgeInsets.symmetric(
+                          horizontal: MediaQuery.of(context).size.width * 0.05),
+                      title: Text(
+                        'Your Playlists'.i18n,
+                        style: const TextStyle(
+                            fontSize: 18, fontWeight: FontWeight.bold),
+                      ),
+                      trailing: Transform.scale(
+                          scale: 0.5,
+                          child: CircularProgressIndicator(
+                              color: Theme.of(context).primaryColor)),
+                      onTap: () => {
+                        Navigator.of(context).push(MaterialPageRoute(
+                            builder: (context) => const LibraryPlaylists()))
+                      },
+                    ),
+                  ),
+                if (_playlists?.isNotEmpty ?? false)
+                  SizedBox(
+                    height: 260,
+                    child: Column(
+                      children: [
+                        ListTile(
+                          contentPadding: EdgeInsets.symmetric(
+                              horizontal:
+                                  MediaQuery.of(context).size.width * 0.05),
+                          title: Text(
+                            'Your Playlists'.i18n,
+                            style: const TextStyle(
+                                fontSize: 18, fontWeight: FontWeight.bold),
+                          ),
+                          trailing: _loading
+                              ? Transform.scale(
+                                  scale: 0.5,
+                                  child: CircularProgressIndicator(
+                                      color: Theme.of(context).primaryColor))
+                              : Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  mainAxisAlignment: MainAxisAlignment.end,
+                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                  children: [
+                                    Text((_playlists!.length).toString(),
+                                        style: TextStyle(
+                                            color: Settings.secondaryText)),
+                                    const Icon(
+                                      Icons.chevron_right,
+                                    )
+                                  ],
+                                ),
+                          onTap: () => {
+                            Navigator.of(context).push(MaterialPageRoute(
+                                builder: (context) => const LibraryPlaylists()))
+                          },
+                        ),
+                        SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          physics: const ClampingScrollPhysics(),
+                          padding: EdgeInsets.only(
+                              left: MediaQuery.of(context).size.width * 0.03),
+                          child: Row(children: [
+                            if (_playlists != null)
+                              ...List.generate(_playlists!.length,
+                                  (int i) => LargePlaylistTile(_playlists![i]))
+                          ]),
+                        ),
+                      ],
+                    ),
+                  ),
+                if (tracks.isEmpty && _loading)
+                  Column(children: [
+                    SizedBox(
+                      height: 224,
+                      child: ListTile(
+                        contentPadding: EdgeInsets.symmetric(
+                            horizontal:
+                                MediaQuery.of(context).size.width * 0.05),
+                        title: Text(
+                          'Your Top Tracks'.i18n,
+                          style: const TextStyle(
+                              fontSize: 18, fontWeight: FontWeight.bold),
+                        ),
+                        trailing: Transform.scale(
+                            scale: 0.5,
+                            child: CircularProgressIndicator(
+                                color: Theme.of(context).primaryColor)),
+                        onTap: () => (favoritesPlaylist != null)
+                            ? Navigator.of(context).push(MaterialPageRoute(
+                                builder: (context) => PlaylistDetails(
+                                    favoritesPlaylist ?? Playlist())))
+                            : null,
+                      ),
+                    ),
+                  ]),
+                if (tracks.isNotEmpty)
+                  SizedBox(
+                    child: Column(children: [
                       ListTile(
                         contentPadding: EdgeInsets.symmetric(
                             horizontal:
                                 MediaQuery.of(context).size.width * 0.05),
                         title: Text(
-                          'Your Playlists'.i18n,
+                          'Your Top Tracks'.i18n,
                           style: const TextStyle(
                               fontSize: 18, fontWeight: FontWeight.bold),
                         ),
@@ -382,7 +468,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
                                 mainAxisAlignment: MainAxisAlignment.end,
                                 crossAxisAlignment: CrossAxisAlignment.center,
                                 children: [
-                                  Text((_playlists!.length).toString(),
+                                  Text((tracks.length).toString(),
                                       style: TextStyle(
                                           color: Settings.secondaryText)),
                                   const Icon(
@@ -390,107 +476,36 @@ class _LibraryScreenState extends State<LibraryScreen> {
                                   )
                                 ],
                               ),
-                        onTap: () => {
-                          Navigator.of(context).push(MaterialPageRoute(
-                              builder: (context) => const LibraryPlaylists()))
-                        },
+                        onTap: () =>
+                            (topPlaylist != null || favoritesPlaylist != null)
+                                ? Navigator.of(context).push(MaterialPageRoute(
+                                    builder: (context) => PlaylistDetails(
+                                        topPlaylist ??
+                                            favoritesPlaylist ??
+                                            Playlist())))
+                                : null,
                       ),
-                      SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        physics: const ClampingScrollPhysics(),
+                      ...List.generate(
+                        min(5, tracks.length),
+                        (int index) => Padding(
+                            padding: EdgeInsets.symmetric(
+                                horizontal:
+                                    MediaQuery.of(context).size.width * 0.05),
+                            child: SimpleTrackTile(tracks[index], topPlaylist)),
+                      ),
+                    ]),
+                  ),
+                ListenableBuilder(
+                    listenable: playerBarState,
+                    builder: (BuildContext context, Widget? child) {
+                      return AnimatedPadding(
+                        duration: const Duration(milliseconds: 200),
                         padding: EdgeInsets.only(
-                            left: MediaQuery.of(context).size.width * 0.03),
-                        child: Row(children: [
-                          if (_playlists != null)
-                            ...List.generate(_playlists!.length,
-                                (int i) => LargePlaylistTile(_playlists![i]))
-                        ]),
-                      ),
-                    ],
-                  ),
-                ),
-              if (tracks.isEmpty && _loading)
-                Column(children: [
-                  SizedBox(
-                    height: 224,
-                    child: ListTile(
-                      contentPadding: EdgeInsets.symmetric(
-                          horizontal: MediaQuery.of(context).size.width * 0.05),
-                      title: Text(
-                        'Your Top Tracks'.i18n,
-                        style: const TextStyle(
-                            fontSize: 18, fontWeight: FontWeight.bold),
-                      ),
-                      trailing: Transform.scale(
-                          scale: 0.5,
-                          child: CircularProgressIndicator(
-                              color: Theme.of(context).primaryColor)),
-                      onTap: () => (favoritesPlaylist != null)
-                          ? Navigator.of(context).push(MaterialPageRoute(
-                              builder: (context) => PlaylistDetails(
-                                  favoritesPlaylist ?? Playlist())))
-                          : null,
-                    ),
-                  ),
-                ]),
-              if (tracks.isNotEmpty)
-                SizedBox(
-                  child: Column(children: [
-                    ListTile(
-                      contentPadding: EdgeInsets.symmetric(
-                          horizontal: MediaQuery.of(context).size.width * 0.05),
-                      title: Text(
-                        'Your Top Tracks'.i18n,
-                        style: const TextStyle(
-                            fontSize: 18, fontWeight: FontWeight.bold),
-                      ),
-                      trailing: _loading
-                          ? Transform.scale(
-                              scale: 0.5,
-                              child: CircularProgressIndicator(
-                                  color: Theme.of(context).primaryColor))
-                          : Row(
-                              mainAxisSize: MainAxisSize.min,
-                              mainAxisAlignment: MainAxisAlignment.end,
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              children: [
-                                Text((tracks.length).toString(),
-                                    style: TextStyle(
-                                        color: Settings.secondaryText)),
-                                const Icon(
-                                  Icons.chevron_right,
-                                )
-                              ],
-                            ),
-                      onTap: () =>
-                          (topPlaylist != null || favoritesPlaylist != null)
-                              ? Navigator.of(context).push(MaterialPageRoute(
-                                  builder: (context) => PlaylistDetails(
-                                      topPlaylist ??
-                                          favoritesPlaylist ??
-                                          Playlist())))
-                              : null,
-                    ),
-                    ...List.generate(
-                      min(5, tracks.length),
-                      (int index) => Padding(
-                          padding: EdgeInsets.symmetric(
-                              horizontal:
-                                  MediaQuery.of(context).size.width * 0.05),
-                          child: SimpleTrackTile(tracks[index], topPlaylist)),
-                    ),
-                  ]),
-                ),
-              ListenableBuilder(
-                  listenable: playerBarState,
-                  builder: (BuildContext context, Widget? child) {
-                    return AnimatedPadding(
-                      duration: const Duration(milliseconds: 200),
-                      padding: EdgeInsets.only(
-                          bottom: playerBarState.state ? 80 : 0),
-                    );
-                  }),
-            ]),
+                            bottom: playerBarState.state ? 80 : 0),
+                      );
+                    }),
+              ]),
+        ),
       ),
     );
   }

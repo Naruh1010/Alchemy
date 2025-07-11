@@ -20,10 +20,13 @@ class Cache {
   String favoritesPlaylistId = '';
 
   @JsonKey(defaultValue: [])
-  List<Track> favoriteTracks = [];
+  List<Track> topTracks = [];
 
   @JsonKey(defaultValue: [])
   List<Playlist> favoritePlaylists = [];
+
+  @JsonKey(defaultValue: null)
+  Playlist? favortirePlaylist;
 
   @JsonKey(defaultValue: '')
   String userName = '';

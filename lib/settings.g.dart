@@ -33,6 +33,7 @@ Settings _$SettingsFromJson(Map<String, dynamic> json) => Settings(
       ..downloadThreads = (json['downloadThreads'] as num?)?.toInt() ?? 2
       ..playlistFolder = json['playlistFolder'] as bool? ?? false
       ..downloadLyrics = json['downloadLyrics'] as bool? ?? true
+      ..downloadArtistImages = json['downloadArtistImages'] as bool? ?? false
       ..trackCover = json['trackCover'] as bool? ?? false
       ..albumCover = json['albumCover'] as bool? ?? true
       ..nomediaFiles = json['nomediaFiles'] as bool? ?? false
@@ -112,6 +113,7 @@ Map<String, dynamic> _$SettingsToJson(Settings instance) => <String, dynamic>{
       'downloadThreads': instance.downloadThreads,
       'playlistFolder': instance.playlistFolder,
       'downloadLyrics': instance.downloadLyrics,
+      'downloadArtistImages': instance.downloadArtistImages,
       'trackCover': instance.trackCover,
       'albumCover': instance.albumCover,
       'nomediaFiles': instance.nomediaFiles,

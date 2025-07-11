@@ -581,9 +581,9 @@ ShowEpisode _$ShowEpisodeFromJson(Map<String, dynamic> json) => ShowEpisode(
           ? null
           : Duration(microseconds: (json['duration'] as num).toInt()),
       publishedDate: json['publishedDate'] as String?,
-      episodeCover: json['episodeCover'] == null
+      image: json['image'] == null
           ? null
-          : ImageDetails.fromJson(json['episodeCover'] as Map<String, dynamic>),
+          : ImageDetails.fromJson(json['image'] as Map<String, dynamic>),
       isExplicit: json['isExplicit'] as bool?,
       show: json['show'] == null
           ? null
@@ -598,7 +598,7 @@ Map<String, dynamic> _$ShowEpisodeToJson(ShowEpisode instance) =>
       'url': instance.url,
       'duration': instance.duration?.inMicroseconds,
       'publishedDate': instance.publishedDate,
-      'episodeCover': instance.episodeCover,
+      'image': instance.image,
       'isExplicit': instance.isExplicit,
       'show': instance.show,
     };

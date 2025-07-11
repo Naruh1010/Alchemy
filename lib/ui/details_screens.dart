@@ -2774,7 +2774,7 @@ class _DiscographyScreenState extends State<DiscographyScreen> {
     //Save
     if (mounted) {
       setState(() {
-        artist.albums.addAll(data);
+        artist.albums.addAll(data.where((Album a) => !a.isIn(artist.albums)));
         _isLoading = false;
       });
     }
@@ -4781,7 +4781,6 @@ class _ShowScreenState extends State<ShowScreen> {
     } catch (e) {
       if (mounted) {
         setState(() {
-          Logger.root.info(e);
           _error = true;
           _isLoadingTracks = false;
         });

@@ -255,6 +255,8 @@ class DeezerAPI {
     dynamic sidRes = jsonDecode(sidReq.body);
 
     if (!(endOfTry ?? false) &&
+        sidRes['error']?.runtimeType != List &&
+        sidRes['error']?['REQUEST_ERROR'].runtimeType == String &&
         sidRes['error']?['REQUEST_ERROR'] == 'Auth token unknown') {
       await getGatewayKeybag();
       return await getGatewayAuth(endOfTry: true);

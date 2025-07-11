@@ -787,8 +787,11 @@ class _SearchScreenState extends State<SearchScreen> {
                                     load: deezerAPI
                                         .instantSearch(_query ?? '',
                                             includeTracks: true, count: 100)
-                                        .then((InstantSearchResults s) =>
-                                            s.tracks ?? []),
+                                        .then(
+                                          (InstantSearchResults s) async =>
+                                              await deezerAPI.completeTracks(
+                                                  s.tracks ?? []),
+                                        ),
                                     queueSource: QueueSource(
                                         id: _query,
                                         source: 'track',
