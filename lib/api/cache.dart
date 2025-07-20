@@ -34,6 +34,9 @@ class Cache {
   @JsonKey(defaultValue: '')
   String userEmail = '';
 
+  @JsonKey(defaultValue: '')
+  String userSex = '';
+
   @JsonKey(defaultValue: {})
   Map<String, dynamic> userPicture = ImageDetails().toJson();
 

@@ -1196,7 +1196,9 @@ class HomePage {
 
   Future<HomePage> load() async {
     String path = await _getPath();
-    //TODO
+    if (!await File(path).exists()) {
+      throw Exception('HomePage is not available.');
+    }
     String jsonString = await File(path).readAsString();
     Map<String, dynamic> data = jsonDecode(jsonString);
     return HomePage.fromJson(data);

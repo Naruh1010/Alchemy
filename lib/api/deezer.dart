@@ -64,6 +64,7 @@ class DeezerAPI {
   Future? _authorizing;
 
   Future testFunction(BuildContext context) async {
+    Logger.root.info(getUser(userId ?? ''));
 /*    ImagePicker picker = ImagePicker();
     XFile? imageFile = await picker.pickImage(source: ImageSource.gallery);
     if (imageFile == null) return;
@@ -1901,6 +1902,70 @@ class DeezerAPI {
     return data['results']?['data']
         .map<Show>((e) => Show.fromPrivateJson(e))
         .toList();
+  }
+
+  Future<void> updateUser({String? sex, String? name}) async {
+    Map data = await callGwApi('user_updateInfo', params: {
+      if (sex != null) 'SEX': sex,
+      if (name != null) 'BLOG_NAME': name,
+//      'BIRTHDAY': '2025-7-10',
+    });
+
+    Logger.root.info(data);
+  }
+
+  Future<String> profilePictureUpload({
+    required List<int> imageData,
+  }) async {
+    String jwtToken = await getJsonWebToken();
+    Map<String, String> uploadApiHeaders = headers;
+    // Add jwt token to headers
+    uploadApiHeaders['Authorization'] = 'Bearer $jwtToken';
+
+    Uri uri = Uri.https('upload.deezer.com', '/', {
+      'id': userId,
+      'directory': 'user',
+      'type': 'picture',
+      'refer': settings.deezerCountry.toLowerCase(),
+      'file': 'user_picture.png',
+      'resize': '1',
+      'sid': keyBag.sid,
+      'arl': keyBag.arl
+    });
+    //Post
+
+    http.MultipartFile imageFile = http.MultipartFile.fromBytes(
+      'file',
+      imageData,
+      filename: 'user_picture.png',
+    );
+
+    http.MultipartRequest request = http.MultipartRequest('POST', uri)
+      ..files.add(imageFile)
+      ..headers.addAll(uploadApiHeaders);
+    http.StreamedResponse streamedRes = await request.send();
+    http.Response res = await http.Response.fromStream(streamedRes);
+
+    dynamic body = jsonDecode(res.body);
+
+    return body['results']?.toString() ?? '';
+  }
+
+  Future<User?> getUser(String? id) async {
+    Map data = await callGwApi('mobile.pageUser', params: {
+      'USER_ID': id,
+      'ARRAY_DEFAULT': ['USER']
+    });
+    Logger.root.info(data);
+    if (data['results']?['data'] == null) {
+      return null;
+    }
+    return User(
+      id: id,
+      name: data['USER']['BLOG_NAME'],
+      image: ImageDetails.fromPrivateString(data['USER']['USER_PICTURE'],
+          type: 'user'),
+    );
   }
 }
 

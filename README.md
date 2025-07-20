@@ -47,8 +47,7 @@ Get Alchemy running: Follow [these instructions](./HOWTO.md) to compile it yours
 ## :building_construction: Upcoming Features
 
 *   Create notification settings;
-*   Remove the See All / View More button when it is not required;
-*   Implement a profile editing screen.
+*   Remove the See All / View More button when it is not required.
 
 ## :lady_beetle: Bugs
 

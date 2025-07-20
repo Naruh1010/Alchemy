@@ -17,7 +17,6 @@ import 'package:figma_squircle/figma_squircle.dart';
 import '../api/deezer.dart';
 import '../api/definitions.dart';
 import '../service/audio_service.dart';
-import '../settings.dart';
 import '../translations.i18n.dart';
 import '../ui/elements.dart';
 import '../ui/error.dart';
@@ -226,7 +225,6 @@ class _HomePageScreenState extends State<HomePageScreen> {
     }
     //On background load from API
     try {
-      if (settings.offlineMode) await deezerAPI.authorize();
       HomePage hp = await deezerAPI.homePage();
       if (_cancel) return;
       if (hp.sections.isEmpty) return;
@@ -246,7 +244,7 @@ class _HomePageScreenState extends State<HomePageScreen> {
     }
   }
 
-  void _load() {
+  Future<void> _load() async {
     if (widget.channel != null) {
       _loadChannel();
       return;
@@ -311,135 +309,142 @@ class _HomePageScreenState extends State<HomePageScreen> {
         }
         cards = List.generate(_homePage?.mainSection?.items?.length ?? 0,
             (int i) => _homePage?.mainSection?.items?[i]?.value);
-        return ListView(
-          shrinkWrap: true,
-          controller: ScrollController(),
-          // Wrapped with ListView
-          children: [
-            if (_homePage?.flowSection != null)
-              HomepageRowSection(_homePage!.flowSection!),
-            if (_homePage?.mainSection != null)
-              ListTile(
-                title: Padding(
-                  padding: const EdgeInsets.fromLTRB(8.0, 32.0, 8.0, 16.0),
-                  child: Text(
-                    _homePage?.mainSection?.title ?? '',
-                    textAlign: TextAlign.left,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                        fontSize: 22.0, fontWeight: FontWeight.bold),
+        return RefreshIndicator(
+          color: Theme.of(context).primaryColor,
+          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+          onRefresh: _load,
+          child: ListView(
+            shrinkWrap: true,
+            controller: ScrollController(),
+            // Wrapped with ListView
+            children: [
+              if (_homePage?.flowSection != null)
+                HomepageRowSection(_homePage!.flowSection!),
+              if (_homePage?.mainSection != null)
+                ListTile(
+                  title: Padding(
+                    padding: const EdgeInsets.fromLTRB(8.0, 32.0, 8.0, 16.0),
+                    child: Text(
+                      _homePage?.mainSection?.title ?? '',
+                      textAlign: TextAlign.left,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                          fontSize: 22.0, fontWeight: FontWeight.bold),
+                    ),
                   ),
-                ),
-                subtitle: SizedBox(
-                  height: cardSize * 1.1,
-                  width: cardSize * 1.1,
-                  child: CardCarouselWidget(
-                      onCardStackAnimationComplete: (value) {
-                        setState(() {
-                          _shouldPlayAnimation = value;
-                        });
-                      },
-                      shouldStartCardStackAnimation: _shouldPlayAnimation,
-                      cardData: cards,
-                      animationDuration: const Duration(milliseconds: 600),
-                      downScrollDuration: const Duration(milliseconds: 200),
-                      secondCardOffsetEnd: cardSize * -0.1,
-                      secondCardOffsetStart: cardSize * 0.185,
-                      maxScrollDistance: cardSize,
-                      topCardOffsetStart: cardSize * -0.1,
-                      topCardYDrop: cardSize * 0.1,
-                      topCardScaleEnd: 0.6,
-                      onCardChange: (index) {},
-                      cardBuilder: (context, index, visibleIndex) {
-                        if (index < 0 || index >= cards.length) {
-                          return const SizedBox.shrink();
-                        }
-                        final card = cards[index];
-                        return AnimatedSwitcher(
-                          duration: const Duration(milliseconds: 300),
-                          transitionBuilder:
-                              (Widget child, Animation<double> animation) {
-                            final bool isIncoming =
-                                child.key == ValueKey<int>(visibleIndex);
+                  subtitle: SizedBox(
+                    height: cardSize * 1.1,
+                    width: cardSize * 1.1,
+                    child: CardCarouselWidget(
+                        onCardStackAnimationComplete: (value) {
+                          setState(() {
+                            _shouldPlayAnimation = value;
+                          });
+                        },
+                        shouldStartCardStackAnimation: _shouldPlayAnimation,
+                        cardData: cards,
+                        animationDuration: const Duration(milliseconds: 600),
+                        downScrollDuration: const Duration(milliseconds: 200),
+                        secondCardOffsetEnd: cardSize * -0.1,
+                        secondCardOffsetStart: cardSize * 0.185,
+                        maxScrollDistance: cardSize,
+                        topCardOffsetStart: cardSize * -0.1,
+                        topCardYDrop: cardSize * 0.1,
+                        topCardScaleEnd: 0.6,
+                        onCardChange: (index) {},
+                        cardBuilder: (context, index, visibleIndex) {
+                          if (index < 0 || index >= cards.length) {
+                            return const SizedBox.shrink();
+                          }
+                          final card = cards[index];
+                          return AnimatedSwitcher(
+                            duration: const Duration(milliseconds: 300),
+                            transitionBuilder:
+                                (Widget child, Animation<double> animation) {
+                              final bool isIncoming =
+                                  child.key == ValueKey<int>(visibleIndex);
 
-                            if (isIncoming) {
-                              return FadeTransition(
-                                opacity: animation,
-                                child: child,
-                              );
-                            } else {
-                              return child;
-                            }
-                          },
-                          child: SizedBox(
-                            height: cardSize,
-                            width: cardSize,
-                            child: Container(
-                              key: ValueKey<int>(visibleIndex),
-                              decoration: ShapeDecoration(
-                                shape: SmoothRectangleBorder(
-                                  borderRadius: SmoothBorderRadius(
-                                    cornerRadius: 45,
-                                    cornerSmoothing: 1,
+                              if (isIncoming) {
+                                return FadeTransition(
+                                  opacity: animation,
+                                  child: child,
+                                );
+                              } else {
+                                return child;
+                              }
+                            },
+                            child: SizedBox(
+                              height: cardSize,
+                              width: cardSize,
+                              child: Container(
+                                key: ValueKey<int>(visibleIndex),
+                                decoration: ShapeDecoration(
+                                  shape: SmoothRectangleBorder(
+                                    borderRadius: SmoothBorderRadius(
+                                      cornerRadius: 45,
+                                      cornerSmoothing: 1,
+                                    ),
                                   ),
                                 ),
-                              ),
-                              clipBehavior: Clip.hardEdge,
-                              alignment: Alignment.center,
-                              child: InkWell(
-                                customBorder: SmoothRectangleBorder(
-                                  borderRadius: SmoothBorderRadius(
-                                    cornerRadius: 45,
-                                    cornerSmoothing: 1,
+                                clipBehavior: Clip.hardEdge,
+                                alignment: Alignment.center,
+                                child: InkWell(
+                                  customBorder: SmoothRectangleBorder(
+                                    borderRadius: SmoothBorderRadius(
+                                      cornerRadius: 45,
+                                      cornerSmoothing: 1,
+                                    ),
                                   ),
-                                ),
-                                onTap: () => {
-                                  Navigator.of(context).push(MaterialPageRoute(
-                                      builder: (context) =>
-                                          PlaylistDetails(card)))
-                                },
-                                onLongPress: () {
-                                  MenuSheet m = MenuSheet();
-                                  m.defaultPlaylistMenu(card, context: context);
-                                },
-                                child: CachedImage(
-                                  url: card.image?.fullUrl ?? '',
-                                  height: cardSize,
+                                  onTap: () => {
+                                    Navigator.of(context).push(
+                                        MaterialPageRoute(
+                                            builder: (context) =>
+                                                PlaylistDetails(card)))
+                                  },
+                                  onLongPress: () {
+                                    MenuSheet m = MenuSheet();
+                                    m.defaultPlaylistMenu(card,
+                                        context: context);
+                                  },
+                                  child: CachedImage(
+                                    url: card.image?.fullUrl ?? '',
+                                    height: cardSize,
+                                  ),
                                 ),
                               ),
                             ),
-                          ),
-                        );
-                      }),
+                          );
+                        }),
+                  ),
                 ),
+              ...List.generate(
+                _homePage?.sections.length ?? 0,
+                (i) {
+                  switch (_homePage!.sections[i].layout) {
+                    case HomePageSectionLayout.ROW:
+                      return HomepageRowSection(_homePage!.sections[i]);
+                    case HomePageSectionLayout.GRID:
+                      return HomePageGridSection(_homePage!.sections[i]);
+                    default:
+                      return HomepageRowSection(_homePage!.sections[i]);
+                  }
+                },
               ),
-            ...List.generate(
-              _homePage?.sections.length ?? 0,
-              (i) {
-                switch (_homePage!.sections[i].layout) {
-                  case HomePageSectionLayout.ROW:
-                    return HomepageRowSection(_homePage!.sections[i]);
-                  case HomePageSectionLayout.GRID:
-                    return HomePageGridSection(_homePage!.sections[i]);
-                  default:
-                    return HomepageRowSection(_homePage!.sections[i]);
-                }
-              },
-            ),
-            Container(
-              height: 16.0,
-            ),
-            ListenableBuilder(
-                listenable: playerBarState,
-                builder: (BuildContext context, Widget? child) {
-                  return AnimatedPadding(
-                    duration: const Duration(milliseconds: 200),
-                    padding:
-                        EdgeInsets.only(bottom: playerBarState.state ? 80 : 0),
-                  );
-                }),
-          ],
+              Container(
+                height: 16.0,
+              ),
+              ListenableBuilder(
+                  listenable: playerBarState,
+                  builder: (BuildContext context, Widget? child) {
+                    return AnimatedPadding(
+                      duration: const Duration(milliseconds: 200),
+                      padding: EdgeInsets.only(
+                          bottom: playerBarState.state ? 80 : 0),
+                    );
+                  }),
+            ],
+          ),
         );
       },
     );

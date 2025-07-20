@@ -152,33 +152,35 @@ class _LibraryScreenState extends State<LibraryScreen> {
           topTracks = await deezerAPI.completeTracks(topTracks);
         }
 
-        setState(() {
-          // Always update favorites playlist for its own tile
-          if (onlineFavPlaylist != null) {
-            favoritesPlaylist = onlineFavPlaylist;
-            trackCount = onlineFavPlaylist.trackCount ??
-                onlineFavPlaylist.tracks?.length ??
-                topTracks?.length ??
-                0;
-          }
+        if (mounted) {
+          setState(() {
+            // Always update favorites playlist for its own tile
+            if (onlineFavPlaylist != null) {
+              favoritesPlaylist = onlineFavPlaylist;
+              trackCount = onlineFavPlaylist.trackCount ??
+                  onlineFavPlaylist.tracks?.length ??
+                  topTracks?.length ??
+                  0;
+            }
 
-          if (topTracks != null && topTracks.isNotEmpty) {
-            tracks = topTracks;
-            topPlaylist = Playlist(
-              id: '1',
-              title: 'Your top tracks'.i18n,
-              image: ImageDetails.fromJson(cache.userPicture),
-              tracks: topTracks,
-            );
-          } else if (onlineFavPlaylist != null) {
-            tracks = onlineFavPlaylist.tracks ?? [];
-            topPlaylist = onlineFavPlaylist;
-          }
-          cache.favortirePlaylist = onlineFavPlaylist;
-          cache.topTracks =
-              topTracks ?? onlineFavPlaylist?.tracks ?? cache.topTracks;
-          cache.save();
-        });
+            if (topTracks != null && topTracks.isNotEmpty) {
+              tracks = topTracks;
+              topPlaylist = Playlist(
+                id: '1',
+                title: 'Your top tracks'.i18n,
+                image: ImageDetails.fromJson(cache.userPicture),
+                tracks: topTracks,
+              );
+            } else if (onlineFavPlaylist != null) {
+              tracks = onlineFavPlaylist.tracks ?? [];
+              topPlaylist = onlineFavPlaylist;
+            }
+            cache.favortirePlaylist = onlineFavPlaylist;
+            cache.topTracks =
+                topTracks ?? onlineFavPlaylist?.tracks ?? cache.topTracks;
+            cache.save();
+          });
+        }
       });
     }
 

@@ -9,7 +9,6 @@ import 'package:alchemy/settings.dart';
 import 'package:alchemy/ui/details_screens.dart';
 import 'package:alchemy/ui/library_screen.dart';
 import 'package:alchemy/ui/menu.dart';
-import 'package:logging/logging.dart';
 import 'package:lottie/lottie.dart';
 import 'package:figma_squircle/figma_squircle.dart';
 import 'package:share_plus/share_plus.dart';
