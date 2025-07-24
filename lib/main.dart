@@ -31,7 +31,7 @@ import 'settings.dart';
 import 'translations.i18n.dart';
 import 'ui/home_screen.dart';
 import 'ui/login_screen.dart';
-import 'ui/player_panel.dart';
+import 'ui/player_bar.dart';
 import 'ui/updater.dart';
 import 'ui/search.dart';
 import 'utils/logging.dart';
@@ -58,18 +58,21 @@ class _SplashScreenState extends State<SplashScreen> {
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Center(
-          child: Lottie.asset('assets/animations/logo_closing.json',
-              repeat: true,
-              frameRate: FrameRate(60),
-              fit: MediaQuery.of(context).orientation == Orientation.portrait
-                  ? BoxFit.fitWidth
-                  : BoxFit.fitHeight,
-              width: MediaQuery.of(context).orientation == Orientation.portrait
-                  ? MediaQuery.of(context).size.width * 0.2
-                  : MediaQuery.of(context).size.width,
-              height: MediaQuery.of(context).orientation == Orientation.portrait
-                  ? MediaQuery.of(context).size.height
-                  : MediaQuery.of(context).size.height * 0.3)),
+        child: Lottie.asset(
+          'assets/animations/logo_closing.json',
+          repeat: true,
+          frameRate: FrameRate(60),
+          fit: MediaQuery.of(context).orientation == Orientation.portrait
+              ? BoxFit.fitWidth
+              : BoxFit.fitHeight,
+          width: MediaQuery.of(context).orientation == Orientation.portrait
+              ? MediaQuery.of(context).size.width * 0.2
+              : MediaQuery.of(context).size.width,
+          height: MediaQuery.of(context).orientation == Orientation.portrait
+              ? MediaQuery.of(context).size.height
+              : MediaQuery.of(context).size.height * 0.3,
+        ),
+      ),
     );
   }
 }
@@ -131,19 +134,24 @@ class _AlchemyAppState extends State<AlchemyApp> {
     setState(() {
       settings.themeData;
     });
-    SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
-      systemNavigationBarColor: settings.themeData.bottomAppBarTheme.color,
-      systemNavigationBarIconBrightness:
-          settings.isDark ? Brightness.light : Brightness.dark,
-      statusBarColor: Colors.transparent,
-    ));
+    SystemChrome.setSystemUIOverlayStyle(
+      SystemUiOverlayStyle(
+        systemNavigationBarColor: settings.themeData.bottomAppBarTheme.color,
+        systemNavigationBarIconBrightness: settings.isDark
+            ? Brightness.light
+            : Brightness.dark,
+        statusBarColor: Colors.transparent,
+      ),
+    );
     Future.microtask(() => settings.save());
   }
 
   Locale? _locale() {
     if ((settings.language?.split('_').length ?? 0) < 2) return null;
     return Locale(
-        settings.language!.split('_')[0], settings.language!.split('_')[1]);
+      settings.language!.split('_')[0],
+      settings.language!.split('_')[1],
+    );
   }
 
   @override
@@ -176,10 +184,7 @@ class _AlchemyAppState extends State<AlchemyApp> {
           await MoveToBackground.moveTaskToBack();
           return;
         },
-        child: I18n(
-          initialLocale: _locale(),
-          child: const LoginMainWrapper(),
-        ),
+        child: I18n(initialLocale: _locale(), child: const LoginMainWrapper()),
       ),
       navigatorKey: mainNavigatorKey,
     );
@@ -231,7 +236,10 @@ class _LoginMainWrapperState extends State<LoginMainWrapper> {
       await GetIt.I<AudioPlayerHandler>().removeSavedQueueFile();
     } catch (e, st) {
       Logger.root.severe(
-          'Error stopping and clearing audio service before logout', e, st);
+        'Error stopping and clearing audio service before logout',
+        e,
+        st,
+      );
     }
     try {
       await downloadManager.stop();
@@ -244,9 +252,7 @@ class _LoginMainWrapperState extends State<LoginMainWrapper> {
   @override
   Widget build(BuildContext context) {
     if (settings.arl == null) {
-      return LoginWidget(
-        callback: () => setState(() => {}),
-      );
+      return LoginWidget(callback: () => setState(() => {}));
     }
     return const MainScreen();
   }
@@ -275,8 +281,9 @@ class _MainScreenState extends State<MainScreen>
 
   @override
   void initState() {
-    _lifeCycleListener =
-        AppLifecycleListener(onStateChange: _onLifeCycleChanged);
+    _lifeCycleListener = AppLifecycleListener(
+      onStateChange: _onLifeCycleChanged,
+    );
     _initialization = _init();
     super.initState();
   }
@@ -285,7 +292,9 @@ class _MainScreenState extends State<MainScreen>
     await Future.wait<dynamic>([
       _setDisplayMode(),
       compute<String?, List<String>?>(
-          _preloadFavoriteTracksToCache, settings.arl),
+        _preloadFavoriteTracksToCache,
+        settings.arl,
+      ),
       Future.microtask(() => _initDownloadManager()),
       Future.microtask(() => _startStreamingServer()),
       _setupServiceLocator(),
@@ -307,20 +316,23 @@ class _MainScreenState extends State<MainScreen>
       final modes = await FlutterDisplayMode.supported;
       if (modes.length - 1 >= settings.displayMode!.toInt()) {
         await FlutterDisplayMode.setPreferredMode(
-            modes[settings.displayMode!.toInt()]);
+          modes[settings.displayMode!.toInt()],
+        );
       }
     }
   }
 
   static Future<List<String>?> _preloadFavoriteTracksToCache(
-      String? arl) async {
+    String? arl,
+  ) async {
     if (arl == null) return null;
     try {
       final isoApi = DeezerAPI();
       isoApi.keyBag.arl = arl;
       if (!await isoApi.authorize()) {
         Logger.root.warning(
-            'Could not authorize in background isolate for preloading favorites');
+          'Could not authorize in background isolate for preloading favorites',
+        );
         return null;
       }
       final trackIds = await isoApi.getFavoriteTrackIds();
@@ -337,8 +349,9 @@ class _MainScreenState extends State<MainScreen>
   }
 
   void _startStreamingServer() async {
-    await DownloadManager.platform
-        .invokeMethod('startServer', {'arl': settings.arl});
+    await DownloadManager.platform.invokeMethod('startServer', {
+      'arl': settings.arl,
+    });
   }
 
   Future<void> _setupServiceLocator() async {
@@ -348,9 +361,10 @@ class _MainScreenState extends State<MainScreen>
     // Initialize the player bar padding listener :
     GetIt.I<AudioPlayerHandler>().playbackState.listen((event) {
       playerBarState.setPlayerBarState(
-          GetIt.I<AudioPlayerHandler>().playbackState.value.processingState !=
-                  AudioProcessingState.idle &&
-              GetIt.I<AudioPlayerHandler>().mediaItem.value != null);
+        GetIt.I<AudioPlayerHandler>().playbackState.value.processingState !=
+                AudioProcessingState.idle &&
+            GetIt.I<AudioPlayerHandler>().mediaItem.value != null,
+      );
     });
   }
 
@@ -363,9 +377,10 @@ class _MainScreenState extends State<MainScreen>
     //Actions
     quickActions.setShortcutItems([
       ShortcutItem(
-          type: 'favorites',
-          localizedTitle: 'Favorites'.i18n,
-          icon: 'ic_favorites'),
+        type: 'favorites',
+        localizedTitle: 'Favorites'.i18n,
+        icon: 'ic_favorites',
+      ),
       ShortcutItem(type: 'flow', localizedTitle: 'Flow'.i18n, icon: 'ic_flow'),
     ]);
   }
@@ -373,13 +388,15 @@ class _MainScreenState extends State<MainScreen>
   void _startPreload(String type) async {
     await deezerAPI.authorize();
     if (type == 'flow') {
-      await GetIt.I<AudioPlayerHandler>()
-          .playFromSmartTrackList(SmartTrackList(id: 'flow'));
+      await GetIt.I<AudioPlayerHandler>().playFromSmartTrackList(
+        SmartTrackList(id: 'flow'),
+      );
       return;
     }
     if (type == 'favorites') {
-      Playlist p = await deezerAPI
-          .fullPlaylist(deezerAPI.favoritesPlaylistId.toString());
+      Playlist p = await deezerAPI.fullPlaylist(
+        deezerAPI.favoritesPlaylistId.toString(),
+      );
       GetIt.I<AudioPlayerHandler>().playFromPlaylist(p, p.tracks?[0].id ?? '');
     }
   }
@@ -424,8 +441,11 @@ class _MainScreenState extends State<MainScreen>
     }
   }
 
-  void _handleKey(KeyEvent event, FocusScopeNode navigationBarFocusNode,
-      FocusNode screenFocusNode) {
+  void _handleKey(
+    KeyEvent event,
+    FocusScopeNode navigationBarFocusNode,
+    FocusNode screenFocusNode,
+  ) {
     FocusNode? primaryFocus = FocusManager.instance.primaryFocus;
 
     // Movement to navigation bar and back
@@ -463,7 +483,10 @@ class _MainScreenState extends State<MainScreen>
         }
       } else if (logicalKey == LogicalKeyboardKey.arrowUp) {
         if (navigationBarFocusNode.hasFocus) {
-          screenFocusNode.parent!.parent?.children
+          screenFocusNode
+              .parent!
+              .parent
+              ?.children
               .last // children.last is used for handling "playlists" screen in library. Under CustomNavigator 2 screens appears.
               .nextFocus(); // nextFocus is used instead of requestFocus because it focuses on last, bottom, non-visible tile of main page
         }
@@ -473,8 +496,9 @@ class _MainScreenState extends State<MainScreen>
 
   void focusToNavbar(FocusScopeNode navigatorFocusNode) {
     navigatorFocusNode.requestFocus();
-    navigatorFocusNode.focusInDirection(TraversalDirection
-        .down); // If player bar is hidden, focus won't be visible, so go down once more
+    navigatorFocusNode.focusInDirection(
+      TraversalDirection.down,
+    ); // If player bar is hidden, focus won't be visible, so go down once more
   }
 
   @override
@@ -484,10 +508,12 @@ class _MainScreenState extends State<MainScreen>
     FocusNode screenFocusNode = FocusNode(); // for CustomNavigator
     screenFocusNode.requestFocus();
 
-    SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
-      statusBarColor: Colors.transparent,
-      systemNavigationBarColor: Theme.of(context).scaffoldBackgroundColor,
-    ));
+    SystemChrome.setSystemUIOverlayStyle(
+      SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        systemNavigationBarColor: Theme.of(context).scaffoldBackgroundColor,
+      ),
+    );
 
     return FutureBuilder(
       future: _initialization,
@@ -499,27 +525,153 @@ class _MainScreenState extends State<MainScreen>
           return OrientationBuilder(
             builder: (context, orientation) {
               return KeyboardListener(
-                  focusNode: FocusNode(),
-                  onKeyEvent: (event) => _handleKey(
-                      event, navigationBarFocusNode, screenFocusNode),
-                  child: Scaffold(
-                      backgroundColor:
-                          Theme.of(context).scaffoldBackgroundColor,
-                      bottomNavigationBar: orientation == Orientation.portrait
-                          ? FocusScope(
-                              node: navigationBarFocusNode,
-                              child: Theme(
-                                  data: Theme.of(context).copyWith(
-                                      canvasColor: Theme.of(context)
-                                          .scaffoldBackgroundColor,
-                                      splashColor: Colors.transparent,
-                                      highlightColor: Colors.transparent),
-                                  child: BottomNavigationBar(
-                                    type: BottomNavigationBarType.fixed,
-                                    unselectedItemColor:
-                                        Theme.of(context).unselectedWidgetColor,
-                                    currentIndex: _selected,
-                                    onTap: (int index) async {
+                focusNode: FocusNode(),
+                onKeyEvent: (event) =>
+                    _handleKey(event, navigationBarFocusNode, screenFocusNode),
+                child: Scaffold(
+                  backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+                  bottomNavigationBar: orientation == Orientation.portrait
+                      ? FocusScope(
+                          node: navigationBarFocusNode,
+                          child: Theme(
+                            data: Theme.of(context).copyWith(
+                              canvasColor: Theme.of(
+                                context,
+                              ).scaffoldBackgroundColor,
+                              splashColor: Colors.transparent,
+                              highlightColor: Colors.transparent,
+                            ),
+                            child: BottomNavigationBar(
+                              type: BottomNavigationBarType.fixed,
+                              unselectedItemColor: Theme.of(
+                                context,
+                              ).unselectedWidgetColor,
+                              currentIndex: _selected,
+                              onTap: (int index) async {
+                                //Pop all routes until home screen
+                                while (customNavigatorKey.currentState!
+                                    .canPop()) {
+                                  await customNavigatorKey.currentState!
+                                      .maybePop();
+                                }
+
+                                await customNavigatorKey.currentState!
+                                    .maybePop();
+
+                                setState(() {
+                                  _selected = index;
+                                });
+
+                                SystemChrome.setSystemUIOverlayStyle(
+                                  SystemUiOverlayStyle(
+                                    statusBarColor: Colors.transparent,
+                                  ),
+                                );
+                              },
+                              selectedItemColor: settings.primaryColor
+                                  .withAlpha(200),
+                              showUnselectedLabels: true,
+                              selectedLabelStyle: TextStyle(
+                                color: settings.primaryColor,
+                              ),
+                              unselectedLabelStyle: TextStyle(
+                                color: Settings.secondaryText,
+                              ),
+                              items: <BottomNavigationBarItem>[
+                                BottomNavigationBarItem(
+                                  activeIcon: const Padding(
+                                    padding: EdgeInsets.only(top: 4),
+                                    child: Icon(AlchemyIcons.house_fill),
+                                  ),
+                                  icon: const Padding(
+                                    padding: EdgeInsets.only(top: 4),
+                                    child: Icon(AlchemyIcons.house),
+                                  ),
+                                  label: 'Home'.i18n,
+                                ),
+                                BottomNavigationBarItem(
+                                  activeIcon: const Padding(
+                                    padding: EdgeInsets.only(top: 4),
+                                    child: Icon(AlchemyIcons.search_fill),
+                                  ),
+                                  icon: const Padding(
+                                    padding: EdgeInsets.only(top: 4),
+                                    child: Icon(AlchemyIcons.search),
+                                  ),
+                                  label: 'Search'.i18n,
+                                ),
+                                BottomNavigationBarItem(
+                                  activeIcon: const Padding(
+                                    padding: EdgeInsets.only(top: 4),
+                                    child: Icon(AlchemyIcons.heart_fill),
+                                  ),
+                                  icon: const Padding(
+                                    padding: EdgeInsets.only(top: 4),
+                                    child: Icon(AlchemyIcons.heart),
+                                  ),
+                                  label: 'Library'.i18n,
+                                ),
+                                BottomNavigationBarItem(
+                                  activeIcon: const Padding(
+                                    padding: EdgeInsets.only(top: 4),
+                                    child: Icon(AlchemyIcons.human_fill),
+                                  ),
+                                  icon: const Padding(
+                                    padding: EdgeInsets.only(top: 4),
+                                    child: Icon(AlchemyIcons.human),
+                                  ),
+                                  label: 'Profile'.i18n,
+                                ),
+                              ],
+                            ),
+                          ),
+                        )
+                      : null,
+                  body: Row(
+                    children: [
+                      if (orientation == Orientation.landscape)
+                        LayoutBuilder(
+                          builder: (context, constraints) {
+                            return SingleChildScrollView(
+                              physics: NeverScrollableScrollPhysics(),
+                              child: ConstrainedBox(
+                                constraints: BoxConstraints(
+                                  minHeight: constraints.maxHeight,
+                                ),
+                                child: IntrinsicHeight(
+                                  child: NavigationRail(
+                                    destinations: [
+                                      NavigationRailDestination(
+                                        selectedIcon: const Icon(
+                                          AlchemyIcons.house_fill,
+                                        ),
+                                        icon: const Icon(AlchemyIcons.house),
+                                        label: Text('Home'.i18n),
+                                      ),
+                                      NavigationRailDestination(
+                                        selectedIcon: const Icon(
+                                          AlchemyIcons.search_fill,
+                                        ),
+                                        icon: const Icon(AlchemyIcons.search),
+                                        label: Text('Search'.i18n),
+                                      ),
+                                      NavigationRailDestination(
+                                        selectedIcon: const Icon(
+                                          AlchemyIcons.heart_fill,
+                                        ),
+                                        icon: const Icon(AlchemyIcons.heart),
+                                        label: Text('Library'.i18n),
+                                      ),
+                                      NavigationRailDestination(
+                                        selectedIcon: const Icon(
+                                          AlchemyIcons.human_fill,
+                                        ),
+                                        icon: const Icon(AlchemyIcons.human),
+                                        label: Text('Profile'.i18n),
+                                      ),
+                                    ],
+                                    selectedIndex: _selected,
+                                    onDestinationSelected: (int index) async {
                                       //Pop all routes until home screen
                                       while (customNavigatorKey.currentState!
                                           .canPop()) {
@@ -535,179 +687,72 @@ class _MainScreenState extends State<MainScreen>
                                       });
 
                                       SystemChrome.setSystemUIOverlayStyle(
-                                          SystemUiOverlayStyle(
-                                        statusBarColor: Colors.transparent,
-                                      ));
+                                        SystemUiOverlayStyle(
+                                          statusBarColor: Colors.transparent,
+                                        ),
+                                      );
                                     },
-                                    selectedItemColor:
-                                        settings.primaryColor.withAlpha(200),
-                                    showUnselectedLabels: true,
-                                    selectedLabelStyle:
-                                        TextStyle(color: settings.primaryColor),
-                                    unselectedLabelStyle: TextStyle(
-                                        color: Settings.secondaryText),
-                                    items: <BottomNavigationBarItem>[
-                                      BottomNavigationBarItem(
-                                          activeIcon: const Padding(
-                                            padding: EdgeInsets.only(top: 4),
-                                            child:
-                                                Icon(AlchemyIcons.house_fill),
-                                          ),
-                                          icon: const Padding(
-                                            padding: EdgeInsets.only(top: 4),
-                                            child: Icon(AlchemyIcons.house),
-                                          ),
-                                          label: 'Home'.i18n),
-                                      BottomNavigationBarItem(
-                                        activeIcon: const Padding(
-                                          padding: EdgeInsets.only(top: 4),
-                                          child: Icon(AlchemyIcons.search_fill),
-                                        ),
-                                        icon: const Padding(
-                                          padding: EdgeInsets.only(top: 4),
-                                          child: Icon(AlchemyIcons.search),
-                                        ),
-                                        label: 'Search'.i18n,
-                                      ),
-                                      BottomNavigationBarItem(
-                                          activeIcon: const Padding(
-                                            padding: EdgeInsets.only(top: 4),
-                                            child:
-                                                Icon(AlchemyIcons.heart_fill),
-                                          ),
-                                          icon: const Padding(
-                                            padding: EdgeInsets.only(top: 4),
-                                            child: Icon(AlchemyIcons.heart),
-                                          ),
-                                          label: 'Library'.i18n),
-                                      BottomNavigationBarItem(
-                                          activeIcon: const Padding(
-                                            padding: EdgeInsets.only(top: 4),
-                                            child:
-                                                Icon(AlchemyIcons.human_fill),
-                                          ),
-                                          icon: const Padding(
-                                            padding: EdgeInsets.only(top: 4),
-                                            child: Icon(AlchemyIcons.human),
-                                          ),
-                                          label: 'Profile'.i18n),
-                                    ],
-                                  )))
-                          : null,
-                      body: Row(
-                        children: [
-                          if (orientation == Orientation.landscape)
-                            LayoutBuilder(builder: (context, constraints) {
-                              return SingleChildScrollView(
-                                  physics: NeverScrollableScrollPhysics(),
-                                  child: ConstrainedBox(
-                                      constraints: BoxConstraints(
-                                          minHeight: constraints.maxHeight),
-                                      child: IntrinsicHeight(
-                                          child: NavigationRail(
-                                        destinations: [
-                                          NavigationRailDestination(
-                                              selectedIcon: const Icon(
-                                                  AlchemyIcons.house_fill),
-                                              icon: const Icon(
-                                                  AlchemyIcons.house),
-                                              label: Text('Home'.i18n)),
-                                          NavigationRailDestination(
-                                            selectedIcon: const Icon(
-                                                AlchemyIcons.search_fill),
-                                            icon:
-                                                const Icon(AlchemyIcons.search),
-                                            label: Text('Search'.i18n),
-                                          ),
-                                          NavigationRailDestination(
-                                              selectedIcon: const Icon(
-                                                  AlchemyIcons.heart_fill),
-                                              icon: const Icon(
-                                                  AlchemyIcons.heart),
-                                              label: Text('Library'.i18n)),
-                                          NavigationRailDestination(
-                                              selectedIcon: const Icon(
-                                                  AlchemyIcons.human_fill),
-                                              icon: const Icon(
-                                                  AlchemyIcons.human),
-                                              label: Text('Profile'.i18n)),
-                                        ],
-                                        selectedIndex: _selected,
-                                        onDestinationSelected:
-                                            (int index) async {
-                                          //Pop all routes until home screen
-                                          while (customNavigatorKey
-                                              .currentState!
-                                              .canPop()) {
-                                            await customNavigatorKey
-                                                .currentState!
-                                                .maybePop();
-                                          }
-
-                                          await customNavigatorKey.currentState!
-                                              .maybePop();
-
-                                          setState(() {
-                                            _selected = index;
-                                          });
-
-                                          SystemChrome.setSystemUIOverlayStyle(
-                                              SystemUiOverlayStyle(
-                                            statusBarColor: Colors.transparent,
-                                          ));
-                                        },
-                                        selectedIconTheme: IconThemeData(
-                                            color: settings.primaryColor),
-                                        groupAlignment: 0,
-                                        selectedLabelTextStyle: TextStyle(
-                                            color: settings.primaryColor),
-                                        unselectedIconTheme: IconThemeData(
-                                            color: Settings.secondaryText),
-                                        unselectedLabelTextStyle: TextStyle(
-                                            color: Settings.secondaryText),
-                                        labelType: NavigationRailLabelType.all,
-                                        backgroundColor:
-                                            Colors.white.withAlpha(30),
-                                      ))));
-                            }),
-                          Expanded(
-                            child: Stack(
-                              children: [
-                                CustomNavigator(
-                                    navigatorKey: customNavigatorKey,
-                                    home: Focus(
-                                      focusNode: screenFocusNode,
-                                      skipTraversal: true,
-                                      canRequestFocus: false,
-                                      child: _screens[_selected],
+                                    selectedIconTheme: IconThemeData(
+                                      color: settings.primaryColor,
                                     ),
-                                    pageRoute: PageRoutes.materialPageRoute),
-                                Align(
-                                  alignment: Alignment.bottomCenter,
-                                  child: Container(
-                                    color: Colors.transparent,
-                                    margin: MediaQuery.of(context)
-                                                .orientation ==
-                                            Orientation.portrait
-                                        ? EdgeInsets.all(8)
-                                        : EdgeInsets.fromLTRB(
-                                            MediaQuery.of(context).size.width *
-                                                    0.4 +
-                                                8,
-                                            8,
-                                            8,
-                                            MediaQuery.of(context)
-                                                    .padding
-                                                    .bottom +
-                                                8),
-                                    child: const PlayerPanel(),
+                                    groupAlignment: 0,
+                                    selectedLabelTextStyle: TextStyle(
+                                      color: settings.primaryColor,
+                                    ),
+                                    unselectedIconTheme: IconThemeData(
+                                      color: Settings.secondaryText,
+                                    ),
+                                    unselectedLabelTextStyle: TextStyle(
+                                      color: Settings.secondaryText,
+                                    ),
+                                    labelType: NavigationRailLabelType.all,
+                                    backgroundColor: Colors.white.withAlpha(30),
                                   ),
                                 ),
-                              ],
+                              ),
+                            );
+                          },
+                        ),
+                      Expanded(
+                        child: Stack(
+                          children: [
+                            CustomNavigator(
+                              navigatorKey: customNavigatorKey,
+                              home: Focus(
+                                focusNode: screenFocusNode,
+                                skipTraversal: true,
+                                canRequestFocus: false,
+                                child: _screens[_selected],
+                              ),
+                              pageRoute: PageRoutes.materialPageRoute,
                             ),
-                          )
-                        ],
-                      )));
+                            Align(
+                              alignment: Alignment.bottomCenter,
+                              child: Container(
+                                color: Colors.transparent,
+                                margin:
+                                    MediaQuery.of(context).orientation ==
+                                        Orientation.portrait
+                                    ? EdgeInsets.all(8)
+                                    : EdgeInsets.fromLTRB(
+                                        MediaQuery.of(context).size.width *
+                                                0.4 +
+                                            8,
+                                        8,
+                                        8,
+                                        MediaQuery.of(context).padding.bottom +
+                                            8,
+                                      ),
+                                child: const PlayerBar(),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
             },
           );
         } else {
