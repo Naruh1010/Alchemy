@@ -384,7 +384,7 @@ class _UpdateUserScreenState extends State<UpdateUserScreen> {
                 String? s = await deezerAPI.profilePictureUpload(
                   imageData: _imageBytes!,
                 );
-                if (s != null && mounted) {
+                if (s != '' && mounted) {
                   setState(() {
                     _picture = ImageDetails.fromPrivateString(s, type: 'user');
                     cache.userPicture = _picture.toJson();

@@ -31,7 +31,7 @@ import 'settings.dart';
 import 'translations.i18n.dart';
 import 'ui/home_screen.dart';
 import 'ui/login_screen.dart';
-import 'ui/player_bar.dart';
+import 'ui/player_panel.dart';
 import 'ui/updater.dart';
 import 'ui/search.dart';
 import 'utils/logging.dart';
@@ -700,7 +700,7 @@ class _MainScreenState extends State<MainScreen>
                                                     .padding
                                                     .bottom +
                                                 8),
-                                    child: const PlayerBar(),
+                                    child: const PlayerPanel(),
                                   ),
                                 ),
                               ],
