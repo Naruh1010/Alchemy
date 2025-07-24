@@ -160,42 +160,57 @@ class _PlayerBarState extends State<PlayerBar> {
                                   Theme.of(context).scaffoldBackgroundColor,
                             ));
                           },
-                          leading: Padding(
-                            padding: EdgeInsets.only(left: 6),
-                            child: CachedImage(
-                              width: 40,
-                              height: 40,
-                              url: GetIt.I<AudioPlayerHandler>()
-                                      .mediaItem
-                                      .value
-                                      ?.extras?['thumb'] ??
-                                  GetIt.I<AudioPlayerHandler>()
-                                      .mediaItem
-                                      .value
-                                      ?.artUri
-                                      .toString(),
-                            ),
+                          leading: Hero(
+                          tag: 'player-art',
+                          child: Padding(
+                          padding: EdgeInsets.only(left: 6),
+                          child: CachedImage(
+                          width: 40,
+                          height: 40,
+                          url: GetIt.I<AudioPlayerHandler>()
+                          .mediaItem
+                          .value
+                          ?.extras?['thumb'] ??
+                          GetIt.I<AudioPlayerHandler>()
+                          .mediaItem
+                          .value
+                          ?.artUri
+                          .toString(),
                           ),
-                          title: Text(
-                            GetIt.I<AudioPlayerHandler>()
-                                    .mediaItem
-                                    .value
-                                    ?.displayTitle ??
-                                '',
-                            overflow: TextOverflow.clip,
-                            style: TextStyle(
-                                fontWeight: FontWeight.bold, fontSize: 12),
-                            maxLines: 1,
                           ),
-                          subtitle: Text(
-                            GetIt.I<AudioPlayerHandler>()
-                                    .mediaItem
-                                    .value
-                                    ?.displaySubtitle ??
-                                '',
-                            overflow: TextOverflow.clip,
-                            style: TextStyle(fontSize: 10),
-                            maxLines: 1,
+                          ),
+                          title: Hero(
+                          tag: 'player-title',
+                          child: Material(
+                          type: MaterialType.transparency,
+                          child: Text(
+                          GetIt.I<AudioPlayerHandler>()
+                          .mediaItem
+                          .value
+                          ?.displayTitle ??
+                          '',
+                          overflow: TextOverflow.clip,
+                          style: TextStyle(
+                          fontWeight: FontWeight.bold, fontSize: 12),
+                          maxLines: 1,
+                          ),
+                          ),
+                          ),
+                          subtitle: Hero(
+                          tag: 'player-artist',
+                          child: Material(
+                          type: MaterialType.transparency,
+                          child: Text(
+                          GetIt.I<AudioPlayerHandler>()
+                          .mediaItem
+                          .value
+                          ?.displaySubtitle ??
+                          '',
+                          overflow: TextOverflow.clip,
+                          style: TextStyle(fontSize: 10),
+                          maxLines: 1,
+                          ),
+                          ),
                           ),
                           trailing: IconTheme(
                             data: IconThemeData(

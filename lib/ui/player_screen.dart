@@ -402,88 +402,100 @@ class _PlayerScreenVerticalState extends State<PlayerScreenVertical> {
                 textWidth: ScreenUtil().setWidth(350),
                 short: true)),
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
-          child: SizedBox(
-            height: ScreenUtil()
-                .setHeight(MediaQuery.of(context).size.height * 0.35),
-            child: Stack(
-              children: <Widget>[
-                BigAlbumArt(),
-              ],
-            ),
-          ),
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+        child: SizedBox(
+        height: ScreenUtil()
+        .setHeight(MediaQuery.of(context).size.height * 0.35),
+        child: Stack(
+        children: <Widget>[
+        Hero(
+        tag: 'player-art',
+        child: BigAlbumArt(),
+        ),
+        ],
+        ),
+        ),
         ),
         Container(height: 4.0),
         ActionControls(
-          24.0,
-          key: mediaItemId != null ? Key(mediaItemId! + '_actnBtn') : null,
+        24.0,
+        key: mediaItemId != null ? Key(mediaItemId! + '_actnBtn') : null,
         ),
         Container(
-          padding: EdgeInsets.fromLTRB(18, 0, 18, 16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              SeekBar(8.0),
-              Container(
-                height: 8.0,
-              ),
-              Padding(
-                padding: EdgeInsets.symmetric(horizontal: 4.0),
-                child: SizedBox(
-                    height: ScreenUtil().setSp(18),
-                    child: (GetIt.I<AudioPlayerHandler>()
-                                        .mediaItem
-                                        .value
-                                        ?.displayTitle ??
-                                    '')
-                                .length >=
-                            42
-                        ? Marquee(
-                            text: GetIt.I<AudioPlayerHandler>()
-                                    .mediaItem
-                                    .value
-                                    ?.displayTitle ??
-                                '',
-                            style: TextStyle(
-                                fontSize: ScreenUtil().setSp(16),
-                                fontWeight: FontWeight.bold),
-                            blankSpace: 32.0,
-                            startPadding: 0,
-                            accelerationDuration: const Duration(seconds: 1),
-                            pauseAfterRound: const Duration(seconds: 2),
-                          )
-                        : Text(
-                            GetIt.I<AudioPlayerHandler>()
-                                    .mediaItem
-                                    .value
-                                    ?.displayTitle ??
-                                '',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                                fontSize: ScreenUtil().setSp(16),
-                                fontWeight: FontWeight.bold),
-                          )),
-              ),
-              Container(
-                height: 4,
-              ),
-              Text(
-                GetIt.I<AudioPlayerHandler>()
-                        .mediaItem
-                        .value
-                        ?.displaySubtitle ??
-                    '',
-                maxLines: 1,
-                textAlign: TextAlign.center,
-                overflow: TextOverflow.clip,
-                style: TextStyle(
-                  fontSize: ScreenUtil().setSp(12),
-                  color: Colors.white,
-                ),
-              ),
-            ],
-          ),
+        padding: EdgeInsets.fromLTRB(18, 0, 18, 16),
+        child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+        SeekBar(8.0),
+        Container(
+        height: 8.0,
+        ),
+        Padding(
+        padding: EdgeInsets.symmetric(horizontal: 4.0),
+        child: Hero(
+        tag: 'player-title',
+        child: SizedBox(
+        height: ScreenUtil().setSp(18),
+        child: (GetIt.I<AudioPlayerHandler>()
+        .mediaItem
+        .value
+        ?.displayTitle ??
+        '')
+        .length >=
+        42
+        ? Marquee(
+        text: GetIt.I<AudioPlayerHandler>()
+        .mediaItem
+        .value
+        ?.displayTitle ??
+        '',
+        style: TextStyle(
+        fontSize: ScreenUtil().setSp(16),
+        fontWeight: FontWeight.bold),
+        blankSpace: 32.0,
+        startPadding: 0,
+        accelerationDuration: const Duration(seconds: 1),
+        pauseAfterRound: const Duration(seconds: 2),
+        )
+        : Text(
+        GetIt.I<AudioPlayerHandler>()
+        .mediaItem
+        .value
+        ?.displayTitle ??
+        '',
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: TextStyle(
+        fontSize: ScreenUtil().setSp(16),
+        fontWeight: FontWeight.bold),
+        )),
+        ),
+        ),
+        Container(
+        height: 4,
+        ),
+        Hero(
+        tag: 'player-artist',
+        child: Material(
+        type: MaterialType.transparency,
+        child: Text(
+        GetIt.I<AudioPlayerHandler>()
+        .mediaItem
+        .value
+        ?.displaySubtitle ??
+        '',
+        maxLines: 1,
+        textAlign: TextAlign.center,
+        overflow: TextOverflow.clip,
+        style: TextStyle(
+        fontSize: ScreenUtil().setSp(12),
+        color: Colors.white,
+        ),
+        ),
+        ),
+        ),
+        ],
+        ),
         ),
         PlaybackControls(ScreenUtil().setSp(25)),
         Padding(

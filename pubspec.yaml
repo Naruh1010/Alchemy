@@ -82,8 +82,6 @@ dependencies:
   scrobblenaut:
     path: ./scrobblenaut
   share_plus: ^11.0.0
-  sliding_up_panel:
-    path: ./sliding_up_panel
   spotify: ^0.13.1
   sqflite: ^2.3.0
   url_launcher: ^6.2.2
