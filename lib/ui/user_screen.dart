@@ -25,8 +25,9 @@ class UserScreen extends StatefulWidget {
 }
 
 class _UserScreenState extends State<UserScreen> {
-  Color? gradientColor =
-      cache.userColor != null ? Color(cache.userColor ?? 0) : null;
+  Color? gradientColor = cache.userColor != null
+      ? Color(cache.userColor ?? 0)
+      : null;
   String? userEmail = cache.userEmail;
   String? userName = cache.userName;
   ImageDetails? userPicture = ImageDetails.fromJson(cache.userPicture);
@@ -64,12 +65,18 @@ class _UserScreenState extends State<UserScreen> {
             Container(
               width: MediaQuery.of(context).size.width,
               padding: EdgeInsets.only(
-                  top: MediaQuery.of(context).padding.top * 1.5),
+                top: MediaQuery.of(context).padding.top * 1.5,
+              ),
               decoration: BoxDecoration(
-                  gradient: LinearGradient(colors: [
-                gradientColor ?? Theme.of(context).scaffoldBackgroundColor,
-                Theme.of(context).scaffoldBackgroundColor
-              ], begin: Alignment.topCenter, end: Alignment.bottomCenter)),
+                gradient: LinearGradient(
+                  colors: [
+                    gradientColor ?? Theme.of(context).scaffoldBackgroundColor,
+                    Theme.of(context).scaffoldBackgroundColor,
+                  ],
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                ),
+              ),
               alignment: Alignment.bottomCenter,
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -80,10 +87,11 @@ class _UserScreenState extends State<UserScreen> {
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
-                            blurRadius: 10,
-                            color: Theme.of(context).scaffoldBackgroundColor,
-                            spreadRadius: 5,
-                            offset: Offset(0, 8))
+                          blurRadius: 10,
+                          color: Theme.of(context).scaffoldBackgroundColor,
+                          spreadRadius: 5,
+                          offset: Offset(0, 8),
+                        ),
                       ],
                     ),
                     child: CircleAvatar(
@@ -99,9 +107,7 @@ class _UserScreenState extends State<UserScreen> {
                         ),
                         child: Container(
                           clipBehavior: Clip.hardEdge,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                          ),
+                          decoration: BoxDecoration(shape: BoxShape.circle),
                           child: CachedImage(url: userPicture?.fullUrl ?? ''),
                         ),
                       ),
@@ -109,11 +115,14 @@ class _UserScreenState extends State<UserScreen> {
                   ),
                   Padding(
                     padding: EdgeInsets.only(
-                        top: MediaQuery.of(context).size.height * 0.01),
+                      top: MediaQuery.of(context).size.height * 0.01,
+                    ),
                     child: Text(
                       userName ?? '',
-                      style:
-                          TextStyle(fontWeight: FontWeight.w600, fontSize: 18),
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 18,
+                      ),
                     ),
                   ),
                   Padding(
@@ -121,125 +130,144 @@ class _UserScreenState extends State<UserScreen> {
                     child: Text(
                       userEmail ?? '',
                       style: TextStyle(
-                          fontWeight: FontWeight.w300,
-                          color: Theme.of(context).secondaryHeaderColor),
+                        fontWeight: FontWeight.w300,
+                        color: Theme.of(context).secondaryHeaderColor,
+                      ),
                     ),
-                  )
+                  ),
                 ],
               ),
             ),
-            SizedBox(
-              height: MediaQuery.of(context).size.width * 0.05,
-            ),
+            SizedBox(height: MediaQuery.of(context).size.width * 0.05),
             ListTile(
               contentPadding: EdgeInsets.symmetric(
-                  horizontal: MediaQuery.of(context).size.width * 0.05),
+                horizontal: MediaQuery.of(context).size.width * 0.05,
+              ),
               leading: Icon(AlchemyIcons.pen),
               title: Text('Edit profile'),
               trailing: Icon(AlchemyIcons.chevron_end),
               onTap: () {
-                Navigator.of(context).push(MaterialPageRoute(
-                    builder: (context) => UpdateUserScreen()));
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (context) => UpdateUserScreen()),
+                );
               },
             ),
             ListTile(
               contentPadding: EdgeInsets.symmetric(
-                  horizontal: MediaQuery.of(context).size.width * 0.05),
+                horizontal: MediaQuery.of(context).size.width * 0.05,
+              ),
               leading: Icon(AlchemyIcons.settings),
               title: Text('Access settings'),
               trailing: Icon(AlchemyIcons.chevron_end),
               onTap: () {
                 Navigator.of(context).push(
-                    MaterialPageRoute(builder: (context) => SettingsScreen()));
+                  MaterialPageRoute(builder: (context) => SettingsScreen()),
+                );
               },
             ),
             FreezerDivider(),
             ListTile(
               contentPadding: EdgeInsets.symmetric(
-                  horizontal: MediaQuery.of(context).size.width * 0.05),
+                horizontal: MediaQuery.of(context).size.width * 0.05,
+              ),
               leading: Icon(AlchemyIcons.double_note),
               title: Text('Your tracks'),
               trailing: Icon(AlchemyIcons.chevron_end),
               onTap: () {
                 Navigator.of(context).push(
-                    MaterialPageRoute(builder: (context) => LibraryTracks()));
+                  MaterialPageRoute(builder: (context) => LibraryTracks()),
+                );
               },
             ),
             ListTile(
               contentPadding: EdgeInsets.symmetric(
-                  horizontal: MediaQuery.of(context).size.width * 0.05),
+                horizontal: MediaQuery.of(context).size.width * 0.05,
+              ),
               leading: Icon(AlchemyIcons.podcast),
               title: Text('Your podcasts'),
               trailing: Icon(AlchemyIcons.chevron_end),
               onTap: () {
-                Navigator.of(context).push(
-                    MaterialPageRoute(builder: (context) => LibraryShows()));
+                Navigator.of(
+                  context,
+                ).push(MaterialPageRoute(builder: (context) => LibraryShows()));
               },
             ),
             ListTile(
               contentPadding: EdgeInsets.symmetric(
-                  horizontal: MediaQuery.of(context).size.width * 0.05),
+                horizontal: MediaQuery.of(context).size.width * 0.05,
+              ),
               leading: Icon(AlchemyIcons.arrow_time),
               title: Text('Your history'),
               trailing: Icon(AlchemyIcons.chevron_end),
               onTap: () {
                 Navigator.of(context).push(
-                    MaterialPageRoute(builder: (context) => HistoryScreen()));
+                  MaterialPageRoute(builder: (context) => HistoryScreen()),
+                );
               },
             ),
             ListTile(
               contentPadding: EdgeInsets.symmetric(
-                  horizontal: MediaQuery.of(context).size.width * 0.05),
+                horizontal: MediaQuery.of(context).size.width * 0.05,
+              ),
               leading: Icon(AlchemyIcons.download),
               title: Text('Your downloads'),
               trailing: Icon(AlchemyIcons.chevron_end),
               onTap: () {
                 Navigator.of(context).push(
-                    MaterialPageRoute(builder: (context) => DownloadsScreen()));
+                  MaterialPageRoute(builder: (context) => DownloadsScreen()),
+                );
               },
             ),
             ListTile(
               contentPadding: EdgeInsets.symmetric(
-                  horizontal: MediaQuery.of(context).size.width * 0.05),
+                horizontal: MediaQuery.of(context).size.width * 0.05,
+              ),
               leading: Icon(AlchemyIcons.book),
               title: Text('Your playlists'),
               trailing: Icon(AlchemyIcons.chevron_end),
               onTap: () {
-                Navigator.of(context).push(MaterialPageRoute(
-                    builder: (context) => LibraryPlaylists()));
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (context) => LibraryPlaylists()),
+                );
               },
             ),
             ListTile(
               contentPadding: EdgeInsets.symmetric(
-                  horizontal: MediaQuery.of(context).size.width * 0.05),
+                horizontal: MediaQuery.of(context).size.width * 0.05,
+              ),
               leading: Icon(AlchemyIcons.album),
               title: Text('Your albums'),
               trailing: Icon(AlchemyIcons.chevron_end),
               onTap: () {
                 Navigator.of(context).push(
-                    MaterialPageRoute(builder: (context) => LibraryAlbums()));
+                  MaterialPageRoute(builder: (context) => LibraryAlbums()),
+                );
               },
             ),
             ListTile(
               contentPadding: EdgeInsets.symmetric(
-                  horizontal: MediaQuery.of(context).size.width * 0.05),
+                horizontal: MediaQuery.of(context).size.width * 0.05,
+              ),
               leading: Icon(AlchemyIcons.human_circle),
               title: Text('Your artists'),
               trailing: Icon(AlchemyIcons.chevron_end),
               onTap: () {
                 Navigator.of(context).push(
-                    MaterialPageRoute(builder: (context) => LibraryArtists()));
+                  MaterialPageRoute(builder: (context) => LibraryArtists()),
+                );
               },
             ),
             ListenableBuilder(
-                listenable: playerBarState,
-                builder: (BuildContext context, Widget? child) {
-                  return AnimatedPadding(
-                    duration: Duration(milliseconds: 200),
-                    padding:
-                        EdgeInsets.only(bottom: playerBarState.state ? 80 : 0),
-                  );
-                }),
+              listenable: playerBarState,
+              builder: (BuildContext context, Widget? child) {
+                return AnimatedPadding(
+                  duration: Duration(milliseconds: 200),
+                  padding: EdgeInsets.only(
+                    bottom: playerBarState.state ? 80 : 0,
+                  ),
+                );
+              },
+            ),
           ],
         ),
       ),
@@ -274,21 +302,23 @@ class _UpdateUserScreenState extends State<UpdateUserScreen> {
   final FocusNode _emailFieldFocusNode = FocusNode();
 
   Future<void> _load() async {
-    Map<String, dynamic> data =
-        await deezerAPI.callGwLightApi('deezer.getUserData');
+    Map<String, dynamic> data = await deezerAPI.callGwLightApi(
+      'deezer.getUserData',
+    );
     if (mounted) {
       setState(() {
         cache.userName = data['results']['USER']['BLOG_NAME'] ?? '';
         cache.userPicture = ImageDetails.fromPrivateString(
-                data['results']['USER']['USER_PICTURE'],
-                type: 'user')
-            .toJson();
+          data['results']['USER']['USER_PICTURE'],
+          type: 'user',
+        ).toJson();
         cache.userEmail = data['results']['USER']['EMAIL'];
         cache.userSex = data['results']['USER']['USER_GENDER'];
         _name = data['results']['USER']['BLOG_NAME'] ?? '';
         _picture = ImageDetails.fromPrivateString(
-            data['results']['USER']['USER_PICTURE'],
-            type: 'user');
+          data['results']['USER']['USER_PICTURE'],
+          type: 'user',
+        );
         _email = data['results']['USER']['EMAIL'];
         _sex = data['results']['USER']['USER_GENDER'];
         cache.save();
@@ -299,13 +329,11 @@ class _UpdateUserScreenState extends State<UpdateUserScreen> {
   @override
   void initState() {
     if (mounted) {
-      setState(
-        () {
-          _name = cache.userName;
-          _email = cache.userEmail;
-          _picture = ImageDetails.fromJson(cache.userPicture);
-        },
-      );
+      setState(() {
+        _name = cache.userName;
+        _email = cache.userEmail;
+        _picture = ImageDetails.fromJson(cache.userPicture);
+      });
     }
     _load();
 
@@ -322,77 +350,75 @@ class _UpdateUserScreenState extends State<UpdateUserScreen> {
         'Edit your profile'.i18n,
         actions: [
           TextButton(
-              onPressed: () async {
-                if (_name == '') {
-                  Fluttertoast.showToast(
-                      msg: "The username can't be empty.".i18n);
-                  if (mounted) {
-                    setState(() {
-                      _emptyName = true;
-                    });
-                  }
-                  return;
-                }
-                if (_email == '') {
-                  Fluttertoast.showToast(msg: "The email can't be empty.".i18n);
-                  if (mounted) {
-                    setState(() {
-                      _emptyEmail = true;
-                    });
-                  }
-                  return;
-                }
-                if (mounted) {
-                  setState(() {
-                    _isLoading = true;
-                    _keyboardListenerFocusNode.unfocus();
-                    _nameFieldFocusNode.unfocus();
-                    _emailFieldFocusNode.unfocus();
-                  });
-                }
-
-                if (_imageBytes?.isNotEmpty ?? false) {
-                  List<int>? imageToUpload = _imageBytes;
-                  String? s = await deezerAPI.profilePictureUpload(
-                      imageData: _imageBytes!);
-                  if (s != null && mounted) {
-                    setState(() {
-                      _picture =
-                          ImageDetails.fromPrivateString(s, type: 'user');
-                      cache.userPicture = _picture.toJson();
-                      cache.save();
-                    });
-                  }
-                }
-
-                if (_name != cache.userName) {
-                  await deezerAPI.updateUser(name: _name);
-                  _load();
-                }
-                if (_email != cache.userEmail) {}
-                if (_sex != cache.userSex) {
-                  await deezerAPI.updateUser(sex: _sex);
-                  _load();
-                }
-
-                //Update
-
+            onPressed: () async {
+              if (_name == '') {
                 Fluttertoast.showToast(
-                    msg: 'Profile updated!'.i18n, gravity: ToastGravity.BOTTOM);
-
+                  msg: "The username can't be empty.".i18n,
+                );
                 if (mounted) {
                   setState(() {
-                    _isLoading = false;
+                    _emptyName = true;
                   });
                 }
-                if (context.mounted) Navigator.of(context).pop();
-              },
-              child: Text(
-                'Save',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                ),
-              ))
+                return;
+              }
+              if (_email == '') {
+                Fluttertoast.showToast(msg: "The email can't be empty.".i18n);
+                if (mounted) {
+                  setState(() {
+                    _emptyEmail = true;
+                  });
+                }
+                return;
+              }
+              if (mounted) {
+                setState(() {
+                  _isLoading = true;
+                  _keyboardListenerFocusNode.unfocus();
+                  _nameFieldFocusNode.unfocus();
+                  _emailFieldFocusNode.unfocus();
+                });
+              }
+
+              if (_imageBytes?.isNotEmpty ?? false) {
+                String? s = await deezerAPI.profilePictureUpload(
+                  imageData: _imageBytes!,
+                );
+                if (s != null && mounted) {
+                  setState(() {
+                    _picture = ImageDetails.fromPrivateString(s, type: 'user');
+                    cache.userPicture = _picture.toJson();
+                    cache.save();
+                  });
+                }
+              }
+
+              if (_name != cache.userName) {
+                await deezerAPI.updateUser(name: _name);
+                _load();
+              }
+              if (_email != cache.userEmail) {}
+              if (_sex != cache.userSex) {
+                await deezerAPI.updateUser(sex: _sex);
+                _load();
+              }
+
+              //Update
+
+              Fluttertoast.showToast(
+                msg: 'Profile updated!'.i18n,
+                gravity: ToastGravity.BOTTOM,
+              );
+
+              if (mounted) {
+                setState(() {
+                  _isLoading = false;
+                });
+              }
+              if (context.mounted) Navigator.of(context).pop();
+            },
+            child: Text('Save', style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
         ],
       ),
       body: Stack(
@@ -410,47 +436,49 @@ class _UpdateUserScreenState extends State<UpdateUserScreen> {
                       alignment: AlignmentDirectional.bottomEnd,
                       children: [
                         Container(
-                            clipBehavior: Clip.hardEdge,
-                            decoration: ShapeDecoration(
-                              shape: SmoothRectangleBorder(
-                                borderRadius: SmoothBorderRadius(
-                                  cornerRadius: 30,
-                                  cornerSmoothing: 0.8,
-                                ),
+                          clipBehavior: Clip.hardEdge,
+                          decoration: ShapeDecoration(
+                            shape: SmoothRectangleBorder(
+                              borderRadius: SmoothBorderRadius(
+                                cornerRadius: 30,
+                                cornerSmoothing: 0.8,
                               ),
                             ),
-                            child: (_imageBytes?.isNotEmpty ?? false)
-                                ? Image.memory(
-                                    _imageBytes as Uint8List,
-                                    height: 160,
-                                    width: 160,
-                                    fit: BoxFit.cover,
-                                  )
-                                : CachedImage(
-                                    url: _picture.fullUrl ?? '',
-                                    width: 160,
-                                    height: 160,
-                                  )),
+                          ),
+                          child: (_imageBytes?.isNotEmpty ?? false)
+                              ? Image.memory(
+                                  _imageBytes as Uint8List,
+                                  height: 160,
+                                  width: 160,
+                                  fit: BoxFit.cover,
+                                )
+                              : CachedImage(
+                                  url: _picture.fullUrl ?? '',
+                                  width: 160,
+                                  height: 160,
+                                ),
+                        ),
                         IconButton(
-                            onPressed: () async {
-                              ImagePicker picker = ImagePicker();
-                              XFile? imageFile = await picker.pickImage(
-                                source: ImageSource.gallery,
-                                maxWidth: 1000,
-                                maxHeight: 1000,
-                              );
-                              if (imageFile == null) return;
-                              List<int>? imageData =
-                                  await imageFile.readAsBytes();
-                              if (mounted) {
-                                setState(() {
-                                  _imageBytes = imageData;
-                                });
-                              }
-                            },
-                            icon: Icon(AlchemyIcons.pen))
+                          onPressed: () async {
+                            ImagePicker picker = ImagePicker();
+                            XFile? imageFile = await picker.pickImage(
+                              source: ImageSource.gallery,
+                              maxWidth: 1000,
+                              maxHeight: 1000,
+                            );
+                            if (imageFile == null) return;
+                            List<int>? imageData = await imageFile
+                                .readAsBytes();
+                            if (mounted) {
+                              setState(() {
+                                _imageBytes = imageData;
+                              });
+                            }
+                          },
+                          icon: Icon(AlchemyIcons.pen),
+                        ),
                       ],
-                    )
+                    ),
                   ],
                 ),
               ),
@@ -462,9 +490,7 @@ class _UpdateUserScreenState extends State<UpdateUserScreen> {
                 ),
               ),
               Padding(
-                padding: EdgeInsets.all(
-                  16,
-                ),
+                padding: EdgeInsets.all(16),
                 child: Row(
                   children: <Widget>[
                     Expanded(
@@ -493,12 +519,13 @@ class _UpdateUserScreenState extends State<UpdateUserScreen> {
                                       width: 1.5,
                                     )
                                   : _nameHasFocus
-                                      ? BorderSide(
-                                          color: settings.theme == Themes.Light
-                                              ? Colors.black.withAlpha(100)
-                                              : Colors.white.withAlpha(100),
-                                          width: 1.5)
-                                      : BorderSide.none,
+                                  ? BorderSide(
+                                      color: settings.theme == Themes.Light
+                                          ? Colors.black.withAlpha(100)
+                                          : Colors.white.withAlpha(100),
+                                      width: 1.5,
+                                    )
+                                  : BorderSide.none,
                             ),
                           ),
                           child: Focus(
@@ -532,16 +559,18 @@ class _UpdateUserScreenState extends State<UpdateUserScreen> {
                                 focusedBorder: InputBorder.none,
                                 enabledBorder: InputBorder.none,
                                 contentPadding: EdgeInsets.symmetric(
-                                    vertical: 4.0,
-                                    horizontal: 10.0), // Added contentPadding
+                                  vertical: 4.0,
+                                  horizontal: 10.0,
+                                ), // Added contentPadding
                               ),
                               controller: _nameController,
                               textInputAction: TextInputAction.next,
                               onSubmitted: (String s) {},
                               style: TextStyle(
-                                  color: settings.theme == Themes.Light
-                                      ? Colors.black
-                                      : Colors.white),
+                                color: settings.theme == Themes.Light
+                                    ? Colors.black
+                                    : Colors.white,
+                              ),
                               cursorColor: settings.theme == Themes.Light
                                   ? Colors.black
                                   : Colors.white,
@@ -561,9 +590,7 @@ class _UpdateUserScreenState extends State<UpdateUserScreen> {
                 ),
               ),
               Padding(
-                padding: EdgeInsets.all(
-                  16,
-                ),
+                padding: EdgeInsets.all(16),
                 child: Row(
                   children: <Widget>[
                     Expanded(
@@ -592,12 +619,13 @@ class _UpdateUserScreenState extends State<UpdateUserScreen> {
                                       width: 1.5,
                                     )
                                   : _emailHasFocus
-                                      ? BorderSide(
-                                          color: settings.theme == Themes.Light
-                                              ? Colors.black.withAlpha(100)
-                                              : Colors.white.withAlpha(100),
-                                          width: 1.5)
-                                      : BorderSide.none,
+                                  ? BorderSide(
+                                      color: settings.theme == Themes.Light
+                                          ? Colors.black.withAlpha(100)
+                                          : Colors.white.withAlpha(100),
+                                      width: 1.5,
+                                    )
+                                  : BorderSide.none,
                             ),
                           ),
                           child: Focus(
@@ -631,16 +659,18 @@ class _UpdateUserScreenState extends State<UpdateUserScreen> {
                                 focusedBorder: InputBorder.none,
                                 enabledBorder: InputBorder.none,
                                 contentPadding: EdgeInsets.symmetric(
-                                    vertical: 4.0,
-                                    horizontal: 10.0), // Added contentPadding
+                                  vertical: 4.0,
+                                  horizontal: 10.0,
+                                ), // Added contentPadding
                               ),
                               controller: _emailController,
                               textInputAction: TextInputAction.next,
                               onSubmitted: (String s) {},
                               style: TextStyle(
-                                  color: settings.theme == Themes.Light
-                                      ? Colors.black
-                                      : Colors.white),
+                                color: settings.theme == Themes.Light
+                                    ? Colors.black
+                                    : Colors.white,
+                              ),
                               cursorColor: settings.theme == Themes.Light
                                   ? Colors.black
                                   : Colors.white,
@@ -663,12 +693,13 @@ class _UpdateUserScreenState extends State<UpdateUserScreen> {
                     _sex == 'M'
                         ? 'Male'
                         : _sex == 'F'
-                            ? 'Female'
-                            : '',
+                        ? 'Female'
+                        : '',
                     style: TextStyle(
-                        color: settings.theme == Themes.Light
-                            ? Colors.black
-                            : Colors.white),
+                      color: settings.theme == Themes.Light
+                          ? Colors.black
+                          : Colors.white,
+                    ),
                   ),
                 ),
                 onTap: () {
@@ -683,8 +714,7 @@ class _UpdateUserScreenState extends State<UpdateUserScreen> {
                         title: const Text('Pick your gender'),
                         content: StatefulBuilder(
                           // Use StatefulBuilder to manage state within the dialog
-                          builder:
-                              (BuildContext context, StateSetter setState) {
+                          builder: (BuildContext context, StateSetter setState) {
                             return Column(
                               mainAxisSize: MainAxisSize
                                   .min, // Essential to prevent column from taking full height
@@ -705,8 +735,9 @@ class _UpdateUserScreenState extends State<UpdateUserScreen> {
                                           _sex = value!;
                                         });
                                       }
-                                      Navigator.of(dialogContext)
-                                          .pop(); // Close the dialog
+                                      Navigator.of(
+                                        dialogContext,
+                                      ).pop(); // Close the dialog
                                     },
                                   ),
                                 ),
@@ -726,8 +757,9 @@ class _UpdateUserScreenState extends State<UpdateUserScreen> {
                                           _sex = value!;
                                         });
                                       }
-                                      Navigator.of(dialogContext)
-                                          .pop(); // Close the dialog
+                                      Navigator.of(
+                                        dialogContext,
+                                      ).pop(); // Close the dialog
                                     },
                                   ),
                                 ),
@@ -749,7 +781,7 @@ class _UpdateUserScreenState extends State<UpdateUserScreen> {
                   child: CircularProgressIndicator(
                     color: Theme.of(context).primaryColor,
                   ),
-                )
+                ),
             ],
           ),
         ],

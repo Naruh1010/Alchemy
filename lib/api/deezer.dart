@@ -13,6 +13,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:logging/logging.dart';
 import 'package:alchemy/api/download.dart';
+import 'package:web_socket_channel/web_socket_channel.dart';
 
 import '../api/definitions.dart';
 import '../api/spotify.dart';
@@ -64,12 +65,22 @@ class DeezerAPI {
   Future? _authorizing;
 
   Future testFunction(BuildContext context) async {
-    Logger.root.info(getUser(userId ?? ''));
-/*    ImagePicker picker = ImagePicker();
-    XFile? imageFile = await picker.pickImage(source: ImageSource.gallery);
-    if (imageFile == null) return;
-    List<int>? imageData = await imageFile.readAsBytes();
-    Logger.root.info(await imageUpload(imageData: imageData));*/
+    final channel = WebSocketChannel.connect(
+      Uri.parse(
+          'wss://live.deezer.com/ws/cdf4443b70696637f6811b9fc5bbdae9fc5f446f825fa392750e4aa808aa56b52aaa2bd50659f8ed2f9befadcb9f8ea0ebcdf28e371baafa8217dd21'),
+    );
+
+    channel.sink.add(jsonEncode(['sub', '6393165803_6393165803_STREAM']));
+    channel.sink
+        .add(jsonEncode(['sub', '6393165803_6393165803_NotificationCenter']));
+    channel.sink
+        .add(jsonEncode(['sub', '6393165803_6393165803_QueueSynchronizer']));
+
+    channel.sink.add(jsonEncode(['sub', '-1_6393165803_USERFEED_6393165803']));
+
+    channel.stream.listen((message) {
+      Logger.root.info(message);
+    });
   }
 
   //Get headers
