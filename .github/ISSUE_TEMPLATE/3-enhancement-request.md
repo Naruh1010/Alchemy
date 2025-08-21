@@ -7,6 +7,8 @@ assignees:
 
 ---
 
+# Issues regarding apks will not be addressed (see #5)
+
 # **🚀 Enhancement Request**
 <!-- All issues sould be redacted in english (or french) or they will not be addressed -->
 <!-- All issues sould be detailed enough for developers to reproduce the bug or they will not be addressed -->

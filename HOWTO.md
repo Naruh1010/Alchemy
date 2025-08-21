@@ -1,7 +1,7 @@
 ![Alchemy](./assets/banner.png?raw=true)
 
-[![Flutter](https://img.shields.io/badge/Flutter-v3.32.7-blue?logo=flutter)](https://flutter.dev/)
-[![Dart](https://img.shields.io/badge/Dart-v3.8.1-blue?logo=dart)](https://dart.dev/)
+[![Flutter](https://img.shields.io/badge/Flutter-v3.35.1-blue?logo=flutter)](https://flutter.dev/)
+[![Dart](https://img.shields.io/badge/Dart-v3.9.0-blue?logo=dart)](https://dart.dev/)
 [![Android API](https://img.shields.io/badge/Android%20API-35-green?logo=android)](https://developer.android.com/about/versions/14)
 [![Java JDK](https://img.shields.io/badge/Java%20JDK-17-blue?logo=openjdk)](https://openjdk.java.net/projects/jdk/17/)
 [![License](https://img.shields.io/github/license/PetitPrinc3/Deezer?flat)](./LICENSE)
@@ -53,11 +53,27 @@ flutter clean
 > All of this can be achieved by using the provided script:
 > ```powershell -ep bypass -c .\run_build_runner.ps1```
 
+> [!WARNING]  
+> **Scrobblenaut** has a known compatibility issue (as of 08/2025).  
+> Refer to my [pull request](https://github.com/DJDoubleD/Scrobblenaut/pull/1) for a potential fix.  
+
+> [!WARNING]  
+> **sqflite** also seems to have a compatibility issue with the latest AGP, Kotlin and Flutter version.  
+> Compilation may fail with errors such as:  
+> - `error: cannot find symbol variable BAKLAVA`  
+> - `error: cannot find symbol method of(String,String,String)`  
+> - `error: cannot find symbol method threadId()`  
+>
+> I was able to bypass this issue by editing the affected lines in the `sqflite` package at:  
+> ```
+> ...\pub.dev\sqflite_android-2.4.2+2\android\src\main\java\com\tekartik\sqflite\Utils.java
+> ```
+
 ## Providing API Keys
 
 To use Alchemy, you'll need API keys from Deezer, Last.fm and ACRCloud:
 
-*   Deezer: [https://developers.deezer.com/myapps](https://developers.deezer.com/myapps) (Required for authentication)
+*   Deezer: You will need both the full gateway API key and the Mobile Key (Required for authentication)
 *   LastFm: [https://www.last.fm/fr/api](https://www.last.fm/fr/api) (Required for optional scrobbling)
 *   ACR Cloud [https://console.acrcloud.com/](https://console.acrcloud.com/) (Required for optional song or humming recognition)
 
@@ -106,6 +122,9 @@ Finally, build the release APK:
 flutter build apk --split-per-abi --release
 ```
 
-The produced APK will be under `build/app/outputs/flutter-apk`.
+The generated APKs will be found under `build/app/outputs/flutter-apk`.
 
-Don't forget to star this repo!
+
+---
+
+⭐ If this project helps you, don’t forget to **star the repo**!

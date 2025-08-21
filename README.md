@@ -5,8 +5,8 @@
 [![Latest commit](https://img.shields.io/github/last-commit/PetitPrinc3/Alchemy)](../../commit/master)
 [![License](https://img.shields.io/github/license/PetitPrinc3/Deezer?flat)](./LICENSE)
 
-[![Flutter](https://img.shields.io/badge/Flutter-v3.32.7-blue?logo=flutter)](https://flutter.dev/)
-[![Dart](https://img.shields.io/badge/Dart-v3.8.1-blue?logo=dart)](https://dart.dev/)
+[![Flutter](https://img.shields.io/badge/Flutter-v3.35.1-blue?logo=flutter)](https://flutter.dev/)
+[![Dart](https://img.shields.io/badge/Dart-v3.9.0-blue?logo=dart)](https://dart.dev/)
 [![Android API](https://img.shields.io/badge/Android%20API-35-green?logo=android)](https://developer.android.com/about/versions/14)
 [![Java JDK](https://img.shields.io/badge/Java%20JDK-17-blue?logo=openjdk)](https://openjdk.java.net/projects/jdk/17/)
 
@@ -44,13 +44,9 @@ Get Alchemy running: Follow [these instructions](./HOWTO.md) to compile it yours
 *   Lyrics provided by [LRCLIB](https://github.com/tranxuanthang/lrclib) by @tranxuanthang;
 *   Design inspired by [Mallari Kishor's Spotify Redesign](https://www.behance.net/gallery/194018249/Spotify-App-Redesign).
 
-## :building_construction: Upcoming Features
-
-*   Create notification settings;
-*   Remove the See All / View More button when it is not required.
-
 ## :lady_beetle: Bugs
 
+*   The transition between the player bar and player screen is awkward and should be replaced with a Deezer-like transition;
 *   There is an awkward display bug in the details screen and with the player bar in landscape mode due to the use of SafeAreas and ListTiles;
 *   Some home tiles are not and will not be implemented (Concerts, Did you know, Original videos, ...);
 *   [Tell me!](https://github.com/PetitPrinc3/Deezer/issues)

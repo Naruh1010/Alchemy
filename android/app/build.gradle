@@ -32,7 +32,7 @@ android {
     namespace 'definitely.not.deezer'
     compileSdk 35
     //ndkVersion flutter.ndkVersion
-    ndkVersion "26.1.10909125"
+    ndkVersion "29.0.13846066"
     buildFeatures.buildConfig = true
     
     compileOptions {
@@ -51,7 +51,7 @@ android {
         // You can update the following values to match your application needs.
         // For more information, see: https://docs.flutter.dev/deployment/android#reviewing-the-gradle-build-configuration.
         applicationId "definitely.not.deezer"
-        minSdk 21
+        minSdkVersion flutter.minSdkVersion
         targetSdk 35
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName

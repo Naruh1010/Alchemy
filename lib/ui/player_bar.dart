@@ -36,9 +36,11 @@ class _PlayerBarState extends State<PlayerBar> {
     if (audioHandler.mediaItem.value == null) return;
     try {
       ColorScheme palette = await ColorScheme.fromImageProvider(
-          provider: CachedNetworkImageProvider(
-              audioHandler.mediaItem.value?.extras?['thumb'] ??
-                  audioHandler.mediaItem.value?.artUri));
+        provider: CachedNetworkImageProvider(
+          audioHandler.mediaItem.value?.extras?['thumb'] ??
+              audioHandler.mediaItem.value?.artUri,
+        ),
+      );
 
       if (mounted) {
         setState(() {
@@ -105,8 +107,9 @@ class _PlayerBarState extends State<PlayerBar> {
       onVerticalDragEnd: (DragEndDetails details) async {
         if ((details.primaryVelocity ?? 0) < -100) {
           // Swiped up
-          Navigator.of(context)
-              .push(SlideBottomRoute(widget: const PlayerScreen()));
+          Navigator.of(
+            context,
+          ).push(SlideBottomRoute(widget: const PlayerScreen()));
         } else if ((details.primaryVelocity ?? 0) > 100) {
           // Swiped down => close
           await audioHandler.stop();
@@ -114,136 +117,143 @@ class _PlayerBarState extends State<PlayerBar> {
         updateColor();
       },
       child: StreamBuilder(
-          stream: Stream.periodic(const Duration(milliseconds: 150)),
-          builder: (BuildContext context, AsyncSnapshot snapshot) {
-            if (GetIt.I<AudioPlayerHandler>().mediaItem.value == null ||
-                GetIt.I<AudioPlayerHandler>()
-                        .playbackState
-                        .value
-                        .processingState ==
-                    AudioProcessingState.idle) {
-              return const SizedBox(
-                width: 0,
-                height: 0,
-              );
-            }
-            return Container(
-              clipBehavior: Clip.hardEdge,
-              decoration: ShapeDecoration(
-                color: Theme.of(context).scaffoldBackgroundColor,
-                shape: SmoothRectangleBorder(
-                  borderRadius: SmoothBorderRadius(
-                    cornerRadius: 20,
-                    cornerSmoothing: 0.4,
-                  ),
+        stream: Stream.periodic(const Duration(milliseconds: 150)),
+        builder: (BuildContext context, AsyncSnapshot snapshot) {
+          if (GetIt.I<AudioPlayerHandler>().mediaItem.value == null ||
+              GetIt.I<AudioPlayerHandler>()
+                      .playbackState
+                      .value
+                      .processingState ==
+                  AudioProcessingState.idle) {
+            return const SizedBox(width: 0, height: 0);
+          }
+          return Container(
+            clipBehavior: Clip.hardEdge,
+            decoration: ShapeDecoration(
+              color: Theme.of(context).scaffoldBackgroundColor,
+              shape: SmoothRectangleBorder(
+                borderRadius: SmoothBorderRadius(
+                  cornerRadius: 20,
+                  cornerSmoothing: 0.4,
                 ),
               ),
-              child: Container(
-                  decoration: BoxDecoration(
-                    color: _bgColor?.withAlpha(180) ??
-                        Theme.of(context).scaffoldBackgroundColor,
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: <Widget>[
-                      ListTile(
-                          dense: true,
-                          focusNode: focusNode,
-                          contentPadding:
-                              const EdgeInsets.symmetric(horizontal: 8.0),
-                          onTap: () {
-                            Navigator.of(context).push(
-                                SlideBottomRoute(widget: const PlayerScreen()));
-                            SystemChrome.setSystemUIOverlayStyle(
-                                SystemUiOverlayStyle(
-                              systemNavigationBarColor:
-                                  Theme.of(context).scaffoldBackgroundColor,
-                            ));
-                          },
-                          leading: Hero(
-                          tag: 'player-art',
-                          child: Padding(
-                          padding: EdgeInsets.only(left: 6),
-                          child: CachedImage(
+            ),
+            child: Container(
+              decoration: BoxDecoration(
+                color:
+                    _bgColor?.withAlpha(180) ??
+                    Theme.of(context).scaffoldBackgroundColor,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  ListTile(
+                    dense: true,
+                    focusNode: focusNode,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 8.0),
+                    onTap: () {
+                      Navigator.of(
+                        context,
+                      ).push(SlideBottomRoute(widget: const PlayerScreen()));
+                      SystemChrome.setSystemUIOverlayStyle(
+                        SystemUiOverlayStyle(
+                          systemNavigationBarColor: Theme.of(
+                            context,
+                          ).scaffoldBackgroundColor,
+                        ),
+                      );
+                    },
+                    leading: Hero(
+                      tag: 'player-art',
+                      child: Padding(
+                        padding: EdgeInsets.only(left: 6),
+                        child: CachedImage(
                           width: 40,
                           height: 40,
-                          url: GetIt.I<AudioPlayerHandler>()
-                          .mediaItem
-                          .value
-                          ?.extras?['thumb'] ??
+                          url:
+                              GetIt.I<AudioPlayerHandler>()
+                                  .mediaItem
+                                  .value
+                                  ?.extras?['thumb'] ??
+                              GetIt.I<AudioPlayerHandler>()
+                                  .mediaItem
+                                  .value
+                                  ?.artUri
+                                  .toString(),
+                        ),
+                      ),
+                    ),
+                    title: Hero(
+                      tag: 'player-title',
+                      child: Material(
+                        type: MaterialType.transparency,
+                        child: Text(
                           GetIt.I<AudioPlayerHandler>()
-                          .mediaItem
-                          .value
-                          ?.artUri
-                          .toString(),
-                          ),
-                          ),
-                          ),
-                          title: Hero(
-                          tag: 'player-title',
-                          child: Material(
-                          type: MaterialType.transparency,
-                          child: Text(
-                          GetIt.I<AudioPlayerHandler>()
-                          .mediaItem
-                          .value
-                          ?.displayTitle ??
-                          '',
+                                  .mediaItem
+                                  .value
+                                  ?.displayTitle ??
+                              '',
                           overflow: TextOverflow.clip,
                           style: TextStyle(
-                          fontWeight: FontWeight.bold, fontSize: 12),
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                            decoration: TextDecoration.none,
+                            color: Theme.of(
+                              context,
+                            ).textTheme.titleMedium?.color,
+                          ),
                           maxLines: 1,
-                          ),
-                          ),
-                          ),
-                          subtitle: Hero(
-                          tag: 'player-artist',
-                          child: Material(
-                          type: MaterialType.transparency,
-                          child: Text(
+                        ),
+                      ),
+                    ),
+                    subtitle: Hero(
+                      tag: 'player-artist',
+                      child: Material(
+                        type: MaterialType.transparency,
+                        child: Text(
                           GetIt.I<AudioPlayerHandler>()
-                          .mediaItem
-                          .value
-                          ?.displaySubtitle ??
-                          '',
+                                  .mediaItem
+                                  .value
+                                  ?.displaySubtitle ??
+                              '',
                           overflow: TextOverflow.clip,
                           style: TextStyle(fontSize: 10),
                           maxLines: 1,
-                          ),
-                          ),
-                          ),
-                          trailing: IconTheme(
-                            data: IconThemeData(
-                                color: settings.isDark
-                                    ? Colors.white
-                                    : Colors.grey[600]),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: <Widget>[
-                                PrevNextButton(
-                                  iconSize,
-                                  prev: true,
-                                  hidePrev: true,
-                                ),
-                                PlayPauseButton(iconSize),
-                                PrevNextButton(iconSize)
-                              ],
-                            ),
-                          )),
-                      SizedBox(
-                        height: 2,
-                        child: LinearProgressIndicator(
-                          backgroundColor:
-                              (_bgColor ?? Theme.of(context).primaryColor)
-                                  .withAlpha(25),
-                          color: _bgColor ?? Theme.of(context).primaryColor,
-                          value: _progress,
                         ),
-                      )
-                    ],
-                  )),
-            );
-          }),
+                      ),
+                    ),
+                    trailing: IconTheme(
+                      data: IconThemeData(
+                        color: settings.isDark
+                            ? Colors.white
+                            : Colors.grey[600],
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: <Widget>[
+                          PrevNextButton(iconSize, prev: true, hidePrev: true),
+                          PlayPauseButton(iconSize),
+                          PrevNextButton(iconSize),
+                        ],
+                      ),
+                    ),
+                  ),
+                  SizedBox(
+                    height: 2,
+                    child: LinearProgressIndicator(
+                      backgroundColor:
+                          (_bgColor ?? Theme.of(context).primaryColor)
+                              .withAlpha(25),
+                      color: _bgColor ?? Theme.of(context).primaryColor,
+                      value: _progress,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
     );
   }
 }
@@ -253,8 +263,12 @@ class PrevNextButton extends StatelessWidget {
   final bool prev;
   final bool hidePrev;
 
-  const PrevNextButton(this.size,
-      {super.key, this.prev = false, this.hidePrev = false});
+  const PrevNextButton(
+    this.size, {
+    super.key,
+    this.prev = false,
+    this.hidePrev = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -285,10 +299,7 @@ class PrevNextButton extends StatelessWidget {
         if (prev) {
           if (!(queueState?.hasPrevious ?? false)) {
             if (hidePrev) {
-              return const SizedBox(
-                height: 0,
-                width: 0,
-              );
+              return const SizedBox(height: 0, width: 0);
             }
             return IconButton(
               icon: Icon(
@@ -329,7 +340,9 @@ class _PlayPauseButtonState extends State<PlayPauseButton>
   @override
   void initState() {
     _controller = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 200));
+      vsync: this,
+      duration: const Duration(milliseconds: 200),
+    );
     super.initState();
   }
 
@@ -360,26 +373,30 @@ class _PlayPauseButtonState extends State<PlayPauseButton>
           }
 
           return IconButton(
-              splashRadius: widget.size,
-              icon: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 200),
-                  transitionBuilder: (child, anim) => RotationTransition(
-                        turns: child.key == ValueKey('icon1')
-                            ? Tween<double>(begin: 1, end: 0.75).animate(anim)
-                            : Tween<double>(begin: 0.75, end: 1).animate(anim),
-                        child: FadeTransition(opacity: anim, child: child),
-                      ),
-                  child: !playing
-                      ? Icon(AlchemyIcons.play_fill_small,
-                          key: const ValueKey('Play'))
-                      : Icon(
-                          AlchemyIcons.pause_fill_small,
-                          key: const ValueKey('Pause'),
-                        )),
-              iconSize: widget.size,
-              onPressed: playing
-                  ? () => GetIt.I<AudioPlayerHandler>().pause()
-                  : () => GetIt.I<AudioPlayerHandler>().play());
+            splashRadius: widget.size,
+            icon: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 200),
+              transitionBuilder: (child, anim) => RotationTransition(
+                turns: child.key == ValueKey('icon1')
+                    ? Tween<double>(begin: 1, end: 0.75).animate(anim)
+                    : Tween<double>(begin: 0.75, end: 1).animate(anim),
+                child: FadeTransition(opacity: anim, child: child),
+              ),
+              child: !playing
+                  ? Icon(
+                      AlchemyIcons.play_fill_small,
+                      key: const ValueKey('Play'),
+                    )
+                  : Icon(
+                      AlchemyIcons.pause_fill_small,
+                      key: const ValueKey('Pause'),
+                    ),
+            ),
+            iconSize: widget.size,
+            onPressed: playing
+                ? () => GetIt.I<AudioPlayerHandler>().pause()
+                : () => GetIt.I<AudioPlayerHandler>().play(),
+          );
         }
 
         switch (processingState) {
@@ -393,7 +410,8 @@ class _PlayPauseButtonState extends State<PlayPauseButton>
                 child: Transform.scale(
                   scale: 0.85, // Adjust the scale to 75% of the original size
                   child: CircularProgressIndicator(
-                      color: Theme.of(context).primaryColor),
+                    color: Theme.of(context).primaryColor,
+                  ),
                 ),
               ),
             );
