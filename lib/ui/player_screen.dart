@@ -469,6 +469,7 @@ class _PlayerScreenVerticalState extends State<PlayerScreenVertical> {
                                     ?.displayTitle ??
                                 '',
                             style: TextStyle(
+                              fontFamily: 'Poppins',
                               fontSize: ScreenUtil().setSp(16),
                               fontWeight: FontWeight.bold,
                               decoration: TextDecoration.none,

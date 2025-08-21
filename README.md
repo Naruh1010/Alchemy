@@ -12,6 +12,14 @@
 
 ---
 
+> [!IMPORTANT]
+> As I transition to other personal projects, development on Alchemy will slow down.
+> I am actively seeking developers who are interested in contributing and continuing this project.
+> If you’re interested, please feel free to get in touch—I’d be happy to assist you.
+> Thank you to everyone who has shown interest and support for this project.
+
+---
+
 #### :rocket: Alchemy Features:
 
 *   Log in with an official Deezer account;

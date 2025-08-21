@@ -195,6 +195,7 @@ class _PlayerBarState extends State<PlayerBar> {
                               '',
                           overflow: TextOverflow.clip,
                           style: TextStyle(
+                            fontFamily: 'Poppins',
                             fontWeight: FontWeight.bold,
                             fontSize: 12,
                             decoration: TextDecoration.none,
